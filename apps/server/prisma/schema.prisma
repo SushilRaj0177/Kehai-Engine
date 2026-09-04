@@ -1,0 +1,250 @@
+// Kehai Engine — core data model
+// PostgreSQL. Geospatial handled via lat/lng float pairs + Haversine at the
+// application layer (no PostGIS dependency needed at this scale, keeps the
+// stack deployable anywhere).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Identity
+// ─────────────────────────────────────────────────────────────────────────
+
+enum AuthProvider {
+  PASSWORD
+  GOOGLE
+}
+
+model User {
+  id            String       @id @default(cuid())
+  email         String       @unique
+  name          String
+  passwordHash  String? // null when provider is GOOGLE-only
+  provider      AuthProvider @default(PASSWORD)
+  googleSub     String?      @unique
+  avatarUrl     String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  memberships     Membership[]
+  registrations   Registration[]
+  attendances     AttendanceRecord[]
+  auditLogs       AuditLog[]
+  refreshTokens   RefreshToken[]
+  createdEvents   Event[]            @relation("EventCreatedBy")
+
+  @@index([email])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Multi-tenancy: Organization -> Membership -> Event
+// ─────────────────────────────────────────────────────────────────────────
+
+enum OrgRole {
+  OWNER
+  ADMIN
+  ORGANIZER
+  VIEWER
+}
+
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  logoUrl     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  memberships Membership[]
+  events      Event[]
+  auditLogs   AuditLog[]
+
+  @@index([slug])
+}
+
+model Membership {
+  id             String   @id @default(cuid())
+  userId         String
+  organizationId String
+  role           OrgRole  @default(ORGANIZER)
+  createdAt      DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Events
+// ─────────────────────────────────────────────────────────────────────────
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model Event {
+  id             String      @id @default(cuid())
+  organizationId String
+  createdById    String
+
+  name        String
+  description String?
+  venue       String
+  status      EventStatus @default(DRAFT)
+
+  startsAt DateTime
+  endsAt   DateTime
+
+  // Registration window (optional; null = always open until event starts)
+  registrationOpensAt  DateTime?
+  registrationClosesAt DateTime?
+
+  // Attendance window: how early/late a scan is accepted relative to start/end
+  attendanceOpensMinutesBefore Int @default(30)
+  attendanceClosesMinutesAfter Int @default(30)
+
+  capacity Int? // null = unlimited
+
+  // Geofence
+  latitude       Float
+  longitude      Float
+  geofenceRadiusM Int @default(100)
+
+  // QR lifecycle
+  qrSecret    String // per-event signing secret for rotating QR tokens
+  qrRotationSeconds Int @default(20)
+  qrRevoked   Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  cancelledAt DateTime?
+
+  organization  Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy     User               @relation("EventCreatedBy", fields: [createdById], references: [id])
+  registrations Registration[]
+  attendances   AttendanceRecord[]
+  auditLogs     AuditLog[]
+  insightCache  AiInsightCache[]
+
+  @@index([organizationId, status])
+  @@index([startsAt])
+}
+
+model Registration {
+  id        String   @id @default(cuid())
+  eventId   String
+  userId    String
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  attendance AttendanceRecord?
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Attendance
+// ─────────────────────────────────────────────────────────────────────────
+
+enum AttendanceMethod {
+  QR_GEO
+  MANUAL_OVERRIDE
+}
+
+model AttendanceRecord {
+  id             String           @id @default(cuid())
+  eventId        String
+  userId         String
+  registrationId String?          @unique
+
+  method AttendanceMethod @default(QR_GEO)
+
+  // Location snapshot at check-in (not retained beyond privacy window at the
+  // app layer — see PRIVACY.md). Coarsened to ~5 decimal places (~1.1m).
+  latitude          Float
+  longitude         Float
+  accuracyMeters    Float?
+  distanceMeters    Float
+  locationConfidence String // "high" | "medium" | "low" — derived from GPS accuracy
+
+  qrTokenJti String // jti of the QR token consumed, for replay auditing
+
+  checkedInAt DateTime @default(now())
+
+  overriddenById String? // organizer who manually marked attendance, if any
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  registration Registration? @relation(fields: [registrationId], references: [id])
+
+  @@unique([eventId, userId])
+  @@index([eventId, checkedInAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Audit log — lightweight, append-only trail for sensitive actions
+// ─────────────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  organizationId String?
+  eventId        String?
+  actorUserId    String?
+  action         String // e.g. "event.publish", "attendance.override"
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  event        Event?        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  actor        User?         @relation(fields: [actorUserId], references: [id])
+
+  @@index([organizationId, createdAt])
+  @@index([eventId, createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// AI insight cache — avoids recomputing/re-prompting for unchanged data
+// ─────────────────────────────────────────────────────────────────────────
+
+model AiInsightCache {
+  id        String   @id @default(cuid())
+  eventId   String
+  kind      String // "post_event_report" | "insight_bullets" | "anomaly_scan"
+  inputHash String // hash of the deterministic context fed to the model
+  content   Json
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, kind, inputHash])
+  @@index([eventId, kind])
+}

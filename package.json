@@ -1,0 +1,22 @@
+{
+  "name": "kehai-engine",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Kehai Engine — a geospatial attendance & event intelligence platform",
+  "packageManager": "pnpm@9.0.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "pnpm --parallel --filter ./apps/* dev",
+    "dev:server": "pnpm --filter server dev",
+    "dev:web": "pnpm --filter web dev",
+    "build": "pnpm --filter server build && pnpm --filter web build",
+    "test": "pnpm --filter server test",
+    "lint": "pnpm --filter server lint && pnpm --filter web lint",
+    "db:migrate": "pnpm --filter server prisma:migrate",
+    "db:generate": "pnpm --filter server prisma:generate",
+    "db:seed": "pnpm --filter server db:seed"
+  }
+}
