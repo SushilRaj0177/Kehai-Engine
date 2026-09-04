@@ -1,11 +1,14 @@
 FROM node:22-slim AS base
 WORKDIR /app
 RUN corepack enable
+# See apps/web/Dockerfile for why: Render's free build tier caps memory at
+# 512Mi, and pnpm's default install concurrency can exceed that.
+ENV NODE_OPTIONS=--max-old-space-size=384
 
 FROM base AS deps
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY apps/server/package.json apps/server/package.json
-RUN pnpm install --filter server --frozen-lockfile
+RUN pnpm install --filter server --frozen-lockfile --network-concurrency=4
 
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
