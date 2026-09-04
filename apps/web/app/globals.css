@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: #05070a;
+  color: #eef1f6;
+}
+
+body {
+  font-feature-settings: "ss01" on, "ss02" on;
+}
+
+::selection {
+  background: rgba(255, 45, 85, 0.35);
+  color: #fff;
+}
+
+/* subtle scanline overlay used behind hero/dashboard chrome */
+.bg-scanlines::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.02),
+    rgba(255, 255, 255, 0.02) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+.text-glow {
+  text-shadow: 0 0 18px rgba(255, 45, 85, 0.45);
+}
+
+.text-glow-cyan {
+  text-shadow: 0 0 18px rgba(34, 226, 245, 0.45);
+}
+
+/* Vertical Japanese caption strip used as decoration in wide empty margins */
+.vertical-jp {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  letter-spacing: 0.35em;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out both;
+}
+
+.hairline {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+  height: 1px;
+}
+
+/* Custom thin scrollbar for dark surfaces */
+.scroll-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+}

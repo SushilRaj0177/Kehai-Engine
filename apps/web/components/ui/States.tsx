@@ -1,0 +1,43 @@
+import { cn } from "@/lib/cn";
+
+export function LoadingBlock({ label = "Loading…", className }: { label?: string; className?: string }) {
+  return (
+    <div className={cn("flex items-center justify-center gap-3 py-16 text-white/40", className)}>
+      <span className="h-4 w-4 animate-spin rounded-full border-2 border-shu-500/70 border-t-transparent" />
+      <span className="text-sm font-mono tracking-wide">{label}</span>
+    </div>
+  );
+}
+
+export function ErrorBlock({ message, className }: { message: string; className?: string }) {
+  return (
+    <div className={cn("rounded-lg border border-shu-500/30 bg-shu-500/5 px-4 py-3 text-sm text-shu-300", className)}>
+      {message}
+    </div>
+  );
+}
+
+export function EmptyState({
+  title,
+  description,
+  action,
+  glyph = "無",
+  className,
+}: {
+  title: string;
+  description?: string;
+  action?: React.ReactNode;
+  glyph?: string;
+  className?: string;
+}) {
+  return (
+    <div className={cn("relative overflow-hidden rounded-xl border border-white/10 bg-void-800/40 px-8 py-14 text-center", className)}>
+      <span aria-hidden className="absolute -right-4 -top-6 select-none font-display text-[9rem] font-black text-white/[0.03]">
+        {glyph}
+      </span>
+      <p className="relative font-display text-lg font-semibold text-white/85">{title}</p>
+      {description ? <p className="relative mx-auto mt-2 max-w-sm text-sm text-white/45">{description}</p> : null}
+      {action ? <div className="relative mt-5 flex justify-center">{action}</div> : null}
+    </div>
+  );
+}
