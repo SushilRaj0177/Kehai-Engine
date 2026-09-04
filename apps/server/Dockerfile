@@ -28,4 +28,10 @@ COPY --from=build /app/apps/server/package.json ./apps/server/package.json
 
 WORKDIR /app/apps/server
 EXPOSE 4000
-CMD ["sh", "-c", "pnpm exec prisma migrate deploy && node dist/index.js"]
+# Invoke the prisma binary directly, never `pnpm exec` — pnpm validates
+# its own workspace state (pnpm-workspace.yaml, root package.json, lockfile)
+# before running anything, none of which exist in this runtime image, so
+# `pnpm exec` was silently re-running a full `pnpm install` on every boot
+# instead of just running the command (see apps/web/Dockerfile for the
+# same bug, hit first there).
+CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy && node dist/index.js"]
