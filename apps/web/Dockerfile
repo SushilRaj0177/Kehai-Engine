@@ -5,7 +5,7 @@ RUN corepack enable
 # concurrency and V8's default heap sizing can exceed that on this size of
 # dependency tree. Capping both keeps the build inside the limit instead of
 # getting OOM-killed mid-install.
-ENV NODE_OPTIONS=--max-old-space-size=384
+ENV NODE_OPTIONS=--max-old-space-size=300
 
 FROM base AS deps
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
