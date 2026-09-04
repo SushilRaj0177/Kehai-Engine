@@ -48,9 +48,9 @@ services:
       - key: QR_SIGNING_PEPPER
         generateValue: true
       - key: AI_MODEL
-        value: claude-sonnet-4-5
-      - key: ANTHROPIC_API_KEY
-        sync: false # optional — set in the Render dashboard to enable AI features
+        value: openai/gpt-oss-120b
+      - key: GROQ_API_KEY
+        sync: false # optional — set in the Render dashboard to enable AI features (free at console.groq.com/keys)
       - key: GOOGLE_CLIENT_ID
         sync: false # optional — set in the Render dashboard to enable Google sign-in
 

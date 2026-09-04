@@ -53,7 +53,7 @@ export async function answerOrgQuestion(organizationId: string, question: string
   if (!aiEnabled) {
     return {
       answer:
-        "AI natural-language answers are not configured on this server (no ANTHROPIC_API_KEY). " +
+        "AI natural-language answers are not configured on this server (no GROQ_API_KEY). " +
         `Here's the raw overview instead: ${overview.totalEvents} events, ` +
         `${overview.totalAttendance}/${overview.totalRegistrations} total attendance ` +
         `(${Math.round(overview.averageAttendanceRate * 100)}% average rate).`,
@@ -63,36 +63,49 @@ export async function answerOrgQuestion(organizationId: string, question: string
     };
   }
 
-  const routed = await structuredCall({
-    system:
-      "You route organizer questions about their event attendance data to one predefined analysis function. " +
-      "You never compute numbers yourself — you only pick the best matching intent.",
-    prompt: `Organizer question: "${question}"\n\nAvailable intents:\n${INTENTS.join(", ")}\n\nPick the single best match.`,
-    toolName: "route_intent",
-    toolDescription: "Select which deterministic analysis to run for this question.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        intent: { type: "string", enum: [...INTENTS] },
-        eventNameHint: { type: ["string", "null"], description: "Event name mentioned in the question, if any" },
+  try {
+    const routed = await structuredCall({
+      system:
+        "You route organizer questions about their event attendance data to one predefined analysis function. " +
+        "You never compute numbers yourself — you only pick the best matching intent.",
+      prompt: `Organizer question: "${question}"\n\nAvailable intents:\n${INTENTS.join(", ")}\n\nPick the single best match.`,
+      toolName: "route_intent",
+      toolDescription: "Select which deterministic analysis to run for this question.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          intent: { type: "string", enum: [...INTENTS] },
+          eventNameHint: { type: ["string", "null"], description: "Event name mentioned in the question, if any" },
+        },
+        required: ["intent"],
       },
-      required: ["intent"],
-    },
-    validate: (raw) => intentSchema.parse(raw),
-  });
+      validate: (raw) => intentSchema.parse(raw),
+    });
 
-  const supportingData = executeIntent(routed.intent, overview, routed.eventNameHint ?? null);
+    const supportingData = executeIntent(routed.intent, overview, routed.eventNameHint ?? null);
 
-  const answer = await textCall({
-    system:
-      "You answer an organizer's question using ONLY the JSON data provided. Never state a number that " +
-      "is not present in the JSON. Be concise (2-4 sentences). If the data doesn't fully answer the " +
-      "question, say what's missing.",
-    prompt: `Question: "${question}"\n\nComputed data:\n${JSON.stringify(supportingData, null, 2)}\n\nAnswer the question.`,
-    maxTokens: 400,
-  });
+    const answer = await textCall({
+      system:
+        "You answer an organizer's question using ONLY the JSON data provided. Never state a number that " +
+        "is not present in the JSON. Be concise (2-4 sentences). If the data doesn't fully answer the " +
+        "question, say what's missing.",
+      prompt: `Question: "${question}"\n\nComputed data:\n${JSON.stringify(supportingData, null, 2)}\n\nAnswer the question.`,
+      maxTokens: 400,
+    });
 
-  return { answer: answer.trim(), intent: routed.intent, supportingData, aiGenerated: true };
+    return { answer: answer.trim(), intent: routed.intent, supportingData, aiGenerated: true };
+  } catch (err) {
+    console.error("AI query failed, falling back to raw overview:", err);
+    return {
+      answer:
+        "The AI provider couldn't answer that just now, so here's the raw overview instead: " +
+        `${overview.totalEvents} events, ${overview.totalAttendance}/${overview.totalRegistrations} ` +
+        `total attendance (${Math.round(overview.averageAttendanceRate * 100)}% average rate).`,
+      intent: "org_overview",
+      supportingData: overview,
+      aiGenerated: false,
+    };
+  }
 }
 
 function executeIntent(intent: (typeof INTENTS)[number], overview: analyticsService.OrgOverview, nameHint: string | null) {
@@ -143,6 +156,21 @@ const reportSchema = z.object({
 });
 export type PostEventReport = z.infer<typeof reportSchema>;
 
+function deterministicReportFallback(analytics: analyticsService.EventAnalytics): PostEventReport & { aiGenerated: false } {
+  return {
+    title: `${analytics.eventName} — Attendance Summary`,
+    summary: `${analytics.attendance} of ${analytics.registrations} registrants attended (${Math.round(analytics.attendanceRate * 100)}%).`,
+    metrics: [
+      { label: "Registrations", value: String(analytics.registrations) },
+      { label: "Attendance", value: String(analytics.attendance) },
+      { label: "Attendance rate", value: `${Math.round(analytics.attendanceRate * 100)}%` },
+    ],
+    observations: [],
+    recommendations: [],
+    aiGenerated: false,
+  };
+}
+
 export async function generatePostEventReport(eventId: string): Promise<PostEventReport & { aiGenerated: boolean }> {
   const analytics = await analyticsService.computeEventAnalytics(eventId);
   const event = await prisma.event.findUnique({ where: { id: eventId } });
@@ -150,44 +178,38 @@ export async function generatePostEventReport(eventId: string): Promise<PostEven
   const overview = await analyticsService.computeOrgOverview(event.organizationId);
 
   if (!aiEnabled) {
-    return {
-      title: `${analytics.eventName} — Attendance Summary`,
-      summary: `${analytics.attendance} of ${analytics.registrations} registrants attended (${Math.round(analytics.attendanceRate * 100)}%).`,
-      metrics: [
-        { label: "Registrations", value: String(analytics.registrations) },
-        { label: "Attendance", value: String(analytics.attendance) },
-        { label: "Attendance rate", value: `${Math.round(analytics.attendanceRate * 100)}%` },
-      ],
-      observations: [],
-      recommendations: [],
-      aiGenerated: false,
-    };
+    return deterministicReportFallback(analytics);
   }
 
-  const report = await structuredCall({
-    system:
-      "You write a short, organizer-facing post-event report using only the exact JSON metrics provided. " +
-      "Never invent a figure. Prefer concrete, actionable recommendations over generic advice.",
-    prompt: `Event metrics:\n${JSON.stringify(analytics, null, 2)}\n\nOrganization history:\n${JSON.stringify(overview.events.slice(0, 6), null, 2)}`,
-    toolName: "emit_report",
-    toolDescription: "Return a structured post-event report.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        title: { type: "string" },
-        summary: { type: "string" },
-        metrics: {
-          type: "array",
-          items: { type: "object", properties: { label: { type: "string" }, value: { type: "string" } }, required: ["label", "value"] },
+  try {
+    const report = await structuredCall({
+      system:
+        "You write a short, organizer-facing post-event report using only the exact JSON metrics provided. " +
+        "Never invent a figure. Prefer concrete, actionable recommendations over generic advice.",
+      prompt: `Event metrics:\n${JSON.stringify(analytics, null, 2)}\n\nOrganization history:\n${JSON.stringify(overview.events.slice(0, 6), null, 2)}`,
+      toolName: "emit_report",
+      toolDescription: "Return a structured post-event report.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          summary: { type: "string" },
+          metrics: {
+            type: "array",
+            items: { type: "object", properties: { label: { type: "string" }, value: { type: "string" } }, required: ["label", "value"] },
+          },
+          observations: { type: "array", items: { type: "string" } },
+          recommendations: { type: "array", items: { type: "string" } },
         },
-        observations: { type: "array", items: { type: "string" } },
-        recommendations: { type: "array", items: { type: "string" } },
+        required: ["title", "summary", "metrics", "observations", "recommendations"],
       },
-      required: ["title", "summary", "metrics", "observations", "recommendations"],
-    },
-    maxTokens: 1200,
-    validate: (raw) => reportSchema.parse(raw),
-  });
+      maxTokens: 1200,
+      validate: (raw) => reportSchema.parse(raw),
+    });
 
-  return { ...report, aiGenerated: true };
+    return { ...report, aiGenerated: true };
+  } catch (err) {
+    console.error("AI report generation failed, falling back to deterministic summary:", err);
+    return deterministicReportFallback(analytics);
+  }
 }

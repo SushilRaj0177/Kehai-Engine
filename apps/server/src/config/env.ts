@@ -14,8 +14,8 @@ const envSchema = z.object({
 
   GOOGLE_CLIENT_ID: z.string().optional().default(""),
 
-  ANTHROPIC_API_KEY: z.string().optional().default(""),
-  AI_MODEL: z.string().default("claude-sonnet-4-5"),
+  GROQ_API_KEY: z.string().optional().default(""),
+  AI_MODEL: z.string().default("openai/gpt-oss-120b"),
 
   QR_SIGNING_PEPPER: z.string().min(8, "QR_SIGNING_PEPPER must be set"),
 });
@@ -30,5 +30,5 @@ if (!parsed.success) {
 
 export const env = parsed.data;
 export const isProd = env.NODE_ENV === "production";
-export const aiEnabled = env.ANTHROPIC_API_KEY.length > 0;
+export const aiEnabled = env.GROQ_API_KEY.length > 0;
 export const googleAuthEnabled = env.GOOGLE_CLIENT_ID.length > 0;

@@ -33,8 +33,8 @@ services:
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret-change-me}
       QR_SIGNING_PEPPER: ${QR_SIGNING_PEPPER:-dev-qr-pepper-change-me}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      AI_MODEL: ${AI_MODEL:-claude-sonnet-4-5}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-openai/gpt-oss-120b}
     ports:
       - "4000:4000"
 
