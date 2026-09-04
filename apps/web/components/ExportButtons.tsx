@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { API_BASE, getAccessToken } from "@/lib/api";
+import { getApiBase, getAccessToken } from "@/lib/api";
 import { Button } from "./ui/Button";
 
 export function ExportButtons({ eventId }: { eventId: string }) {
@@ -10,7 +10,7 @@ export function ExportButtons({ eventId }: { eventId: string }) {
   async function download(format: "csv" | "xlsx") {
     setDownloading(format);
     try {
-      const res = await fetch(`${API_BASE}/api/export/events/${eventId}/attendees.${format}`, {
+      const res = await fetch(`${getApiBase()}/api/export/events/${eventId}/attendees.${format}`, {
         headers: { Authorization: `Bearer ${getAccessToken() ?? ""}` },
       });
       if (!res.ok) throw new Error("Export failed");

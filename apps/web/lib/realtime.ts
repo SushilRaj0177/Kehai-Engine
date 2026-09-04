@@ -1,7 +1,7 @@
 "use client";
 
 import { io, type Socket } from "socket.io-client";
-import { API_BASE, getAccessToken } from "./api";
+import { getApiBase, getAccessToken } from "./api";
 
 export interface AttendanceUpdatePayload {
   type: "checkin";
@@ -27,7 +27,7 @@ export function subscribeToEvent(
   let connected = false;
 
   try {
-    socket = io(API_BASE, {
+    socket = io(getApiBase(), {
       path: "/realtime",
       auth: { token: getAccessToken() },
       transports: ["websocket", "polling"],

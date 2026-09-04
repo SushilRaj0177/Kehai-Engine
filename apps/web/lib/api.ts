@@ -1,4 +1,17 @@
-export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+// Resolved at request time from a server-injected value (see app/layout.tsx +
+// components/ApiBaseSetter.tsx), falling back to the build-time
+// NEXT_PUBLIC_API_URL for local dev. This deliberately avoids requiring the
+// API's URL to be known at Docker *build* time — a platform-agnostic
+// choice, not a workaround for one host.
+let resolvedApiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+
+export function configureApiBase(url: string) {
+  if (url) resolvedApiBase = url;
+}
+
+export function getApiBase(): string {
+  return resolvedApiBase;
+}
 
 export class ApiError extends Error {
   status: number;
@@ -39,7 +52,7 @@ async function refreshAccessToken(): Promise<string | null> {
   if (!refreshToken) return null;
 
   if (!refreshPromise) {
-    refreshPromise = fetch(`${API_BASE}/api/auth/refresh`, {
+    refreshPromise = fetch(`${resolvedApiBase}/api/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken }),
@@ -71,13 +84,13 @@ export async function apiFetch<T>(
   if (!raw) headers.set("Content-Type", "application/json");
   if (accessToken && !skipAuth) headers.set("Authorization", `Bearer ${accessToken}`);
 
-  let res = await fetch(`${API_BASE}${path}`, { ...init, headers });
+  let res = await fetch(`${resolvedApiBase}${path}`, { ...init, headers });
 
   if (res.status === 401 && !skipAuth) {
     const newToken = await refreshAccessToken();
     if (newToken) {
       headers.set("Authorization", `Bearer ${newToken}`);
-      res = await fetch(`${API_BASE}${path}`, { ...init, headers });
+      res = await fetch(`${resolvedApiBase}${path}`, { ...init, headers });
     }
   }
 
