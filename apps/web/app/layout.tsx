@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Noto_Sans_JP, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
+import { LocaleProvider } from "@/lib/i18n";
 import { ApiBaseSetter } from "@/components/ApiBaseSetter";
 
 const notoJp = Noto_Sans_JP({ subsets: ["latin"], weight: ["500", "700", "900"], variable: "--font-jp" });
@@ -29,7 +30,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${notoJp.variable} ${inter.variable} ${mono.variable}`}>
       <body className="min-h-screen bg-void-950 font-sans antialiased">
         <ApiBaseSetter apiBase={apiBase} />
-        <AuthProvider>{children}</AuthProvider>
+        <LocaleProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </LocaleProvider>
       </body>
     </html>
   );

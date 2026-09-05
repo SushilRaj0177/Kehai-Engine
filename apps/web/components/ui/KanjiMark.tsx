@@ -27,7 +27,13 @@ export function KanjiMark({
     <span
       aria-hidden
       className={cn(
-        "pointer-events-none relative z-10 select-none font-display font-black leading-none",
+        // No hardcoded position class here on purpose — every caller passes
+        // its own (absolute -right-6 ..., etc). Tailwind's stylesheet order
+        // doesn't follow class-list order, so a hardcoded "relative" here
+        // could silently beat a caller's "absolute" and collapse this back
+        // into normal document flow (the exact bug that made every kanji
+        // mark render top-left instead of at its intended position).
+        "pointer-events-none z-10 select-none font-display font-black leading-none",
         accent === "shu" ? "text-shu-500" : "text-kehai-500",
         animate && "kanji-breathe",
         className
