@@ -1,19 +1,15 @@
-# Render Blueprint — deploys the whole platform (Postgres + API + web) in
-# one pass. In the Render dashboard: New + -> Blueprint -> connect this repo.
+# Render Blueprint — deploys the database and API in one pass. The web
+# frontend is deployed separately on Vercel (see README "Deployment"),
+# which handles Next.js natively with no Docker involved.
+#
+# In the Render dashboard: New + -> Blueprint -> connect this repo.
 #
 # NOTE ON THE FREE PLAN: Render's free Postgres instances are deleted after
-# 90 days, and free web services spin down after 15 min of inactivity (first
-# request after that takes ~30-50s to wake up). That's a deliberate tradeoff
-# for now — see the "Support this project" note planned for the README/UI
-# (a donation prompt explaining that a paid database plan is what keeps
-# people's data from expiring). Upgrading the `postgres` plan below to
-# `starter` (or higher) removes the 90-day expiry.
-#
-# The two web services below reference each other by their predictable
-# https://<name>.onrender.com URL. If either service name is already taken
-# on Render, it'll get a suffix appended — if so, update the other
-# service's cross-reference env var (WEB_ORIGIN / API_URL) in the Render
-# dashboard after first deploy.
+# 90 days. That's a deliberate tradeoff for now — see the "Support this
+# project" note planned for the README/UI (a donation prompt explaining
+# that a paid database plan is what keeps people's data from expiring).
+# Upgrading the `postgres` plan below to `starter` (or higher) removes the
+# 90-day expiry.
 
 databases:
   - name: kehai-engine-db
@@ -40,7 +36,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: WEB_ORIGIN
-        value: https://kehai-engine-web.onrender.com
+        sync: false # set to your Vercel frontend URL in the Render dashboard once it's deployed
       - key: JWT_ACCESS_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
@@ -53,15 +49,3 @@ services:
         sync: false # optional — set in the Render dashboard to enable AI features (free at console.groq.com/keys)
       - key: GOOGLE_CLIENT_ID
         sync: false # optional — set in the Render dashboard to enable Google sign-in
-
-  - type: web
-    name: kehai-engine-web
-    runtime: docker
-    dockerfilePath: apps/web/Dockerfile
-    dockerContext: .
-    plan: free
-    envVars:
-      - key: API_URL
-        value: https://kehai-engine-api.onrender.com
-      - key: NODE_ENV
-        value: production
