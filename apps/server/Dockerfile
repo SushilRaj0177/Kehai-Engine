@@ -1,5 +1,9 @@
 FROM node:22-slim AS base
 WORKDIR /app
+# node:*-slim ships without OpenSSL, which Prisma's schema/query engine
+# binaries need to detect the correct build to use — without it, "prisma
+# migrate deploy" fails outright at runtime with a schema engine error.
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 RUN corepack enable
 # See apps/web/Dockerfile for why: Render's free build tier caps memory at
 # 512Mi, and pnpm's default install concurrency can exceed that.
