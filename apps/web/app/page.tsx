@@ -17,8 +17,13 @@ export default function LandingPage() {
       <NavBar />
 
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-grid bg-grid opacity-40" />
+        <div className="absolute inset-0 bg-void-950" />
+        <div className="absolute inset-0 bg-grid opacity-40" />
         <KatakanaRain columns={18} className="opacity-90" />
+        {/* Scrim over the grid/rain layers so the hero reads as a solid
+            dark panel instead of a washed-out, see-through backdrop —
+            sits below the scan-beam/glow so those stay fully vivid. */}
+        <div className="absolute inset-0 bg-void-950/55" />
         <div className="scan-beam" />
         <div
           aria-hidden
