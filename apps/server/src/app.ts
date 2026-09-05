@@ -15,12 +15,38 @@ import { aiRouter } from "./routes/ai.routes.js";
 import { exportRouter } from "./routes/export.routes.js";
 import { qrRouter } from "./routes/qr.routes.js";
 
+// WEB_ORIGIN is pasted by hand into the hosting dashboard, so tolerate a
+// trailing slash or stray whitespace instead of failing an exact string
+// match on it — a difference invisible in the dashboard's input box was
+// silently breaking every credentialed request (CORS rejects on the
+// client side with no server-side error to log, hence "genuinely broken"
+// with no logs to point at). Also accepts a comma-separated list so
+// multiple frontends (e.g. a Vercel preview alongside production) can be
+// allowed without another deploy.
+const allowedOrigins = env.WEB_ORIGIN.split(",")
+  .map((origin) => origin.trim().replace(/\/+$/, ""))
+  .filter(Boolean);
+
+function isAllowedOrigin(origin: string): boolean {
+  return allowedOrigins.includes(origin.trim().replace(/\/+$/, ""));
+}
+
 export function createApp() {
   const app = express();
 
   app.set("trust proxy", 1);
   app.use(helmet());
-  app.use(cors({ origin: env.WEB_ORIGIN, credentials: true }));
+  app.use(
+    cors({
+      origin(origin, callback) {
+        // No Origin header at all (curl, server-to-server, same-origin) —
+        // nothing to check against, let it through.
+        if (!origin || isAllowedOrigin(origin)) return callback(null, true);
+        callback(new Error(`Origin ${origin} is not allowed by CORS`));
+      },
+      credentials: true,
+    })
+  );
   app.use(compression());
   app.use(express.json({ limit: "1mb" }));
   app.use(morgan(isProd ? "combined" : "dev"));
