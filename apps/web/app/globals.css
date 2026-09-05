@@ -36,6 +36,41 @@ body {
   );
 }
 
+/* a single scan beam sweeping top to bottom, looping — used sparingly */
+.scan-beam {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.scan-beam::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 140px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(34, 226, 245, 0.05) 40%,
+    rgba(34, 226, 245, 0.09) 50%,
+    rgba(34, 226, 245, 0.05) 60%,
+    transparent
+  );
+  animation: scan-sweep 9s ease-in-out infinite;
+}
+@keyframes scan-sweep {
+  0% {
+    top: -140px;
+  }
+  50% {
+    top: 100%;
+  }
+  100% {
+    top: -140px;
+  }
+}
+
 .text-glow {
   text-shadow: 0 0 18px rgba(255, 45, 85, 0.45);
 }
@@ -66,6 +101,80 @@ body {
   animation: fade-in 0.4s ease-out both;
 }
 
+/* slow "breathing" opacity/scale drift for large background kanji marks —
+   deliberately subtle, reads as presence rather than motion */
+@keyframes kanji-breathe {
+  0%,
+  100% {
+    opacity: var(--kanji-min, 0.05);
+    transform: scale(1);
+  }
+  50% {
+    opacity: var(--kanji-max, 0.1);
+    transform: scale(1.015);
+  }
+}
+.kanji-breathe {
+  animation: kanji-breathe 7s ease-in-out infinite;
+}
+
+/* katakana/kanji "digital rain" column — each column is one element with a
+   tall repeating background-image-free text track scrolled via
+   background-position-less transform; see KatakanaRain.tsx for markup */
+@keyframes rain-fall {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0%);
+  }
+}
+.rain-column {
+  animation-name: rain-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+/* a small pulse used on circuit-divider nodes */
+@keyframes node-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    r: 2.2;
+  }
+  50% {
+    opacity: 1;
+    r: 3.4;
+  }
+}
+.node-pulse {
+  animation: node-pulse 2.4s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* traveling dash along a divider line, like a signal pulse */
+@keyframes dash-travel {
+  to {
+    stroke-dashoffset: -240;
+  }
+}
+.dash-travel {
+  stroke-dasharray: 6 14;
+  animation: dash-travel 5s linear infinite;
+}
+
+/* reveal-on-scroll: toggled by Reveal.tsx via IntersectionObserver */
+.reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .hairline {
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
   height: 1px;
@@ -79,4 +188,19 @@ body {
 .scroll-thin::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.15);
   border-radius: 999px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scan-beam::after,
+  .kanji-breathe,
+  .rain-column,
+  .node-pulse,
+  .dash-travel {
+    animation: none !important;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }

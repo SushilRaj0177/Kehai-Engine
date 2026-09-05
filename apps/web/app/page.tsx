@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { NavBar } from "@/components/NavBar";
+import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
 import { KanjiMark, VerticalCaption } from "@/components/ui/KanjiMark";
+import { KatakanaRain } from "@/components/ui/KatakanaRain";
+import { CircuitDivider } from "@/components/ui/CircuitDivider";
+import { Reveal } from "@/components/ui/Reveal";
 
 const PILLARS = [
   {
@@ -32,8 +36,11 @@ export default function LandingPage() {
     <div className="relative min-h-screen overflow-hidden">
       <NavBar />
 
-      <section className="relative border-b border-white/8">
+      <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-grid bg-grid opacity-40" />
+        <KatakanaRain columns={18} className="opacity-90" />
+        <div className="scan-beam" />
+
         <div className="relative mx-auto flex max-w-7xl flex-col items-start px-6 py-28 md:py-36">
           <KanjiMark glyph="気配" className="absolute -right-6 top-4 text-[13rem] md:text-[19rem]" />
           <VerticalCaption text="出席・検証・洞察" className="absolute right-8 top-16 hidden lg:block" />
@@ -66,44 +73,53 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          <div className="mt-16 grid w-full grid-cols-2 gap-6 border-t border-white/8 pt-8 sm:grid-cols-4">
-            <Stat value="±5m" label="geofence precision floor" />
-            <Stat value="20s" label="default QR rotation" />
-            <Stat value="4" label="layers of intelligence" />
-            <Stat value="0" label="fabricated metrics" />
+          <div className="relative mt-16 w-full pt-8">
+            <CircuitDivider className="absolute inset-x-0 top-0" />
+            <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
+              <Stat value="±5m" label="geofence precision floor" />
+              <Stat value="20s" label="default QR rotation" />
+              <Stat value="4" label="layers of intelligence" />
+              <Stat value="0" label="fabricated metrics" />
+            </div>
           </div>
         </div>
       </section>
 
+      <CircuitDivider />
+
       <section className="relative mx-auto max-w-7xl px-6 py-24">
-        <KanjiMark glyph="信" className="absolute -left-10 bottom-0 text-[16rem]" />
-        <div className="relative mb-12 max-w-2xl">
+        <KanjiMark glyph="信" accent="kehai" className="absolute -left-10 bottom-0 text-[16rem]" />
+        <Reveal className="relative mb-12 max-w-2xl">
           <h2 className="font-display text-3xl font-bold text-white">Not just an attendance form</h2>
           <p className="mt-3 text-white/50">
             Every layer — check-in, dashboard, analytics, AI — is built to be genuinely correct, not merely
             demo-shaped.
           </p>
-        </div>
+        </Reveal>
 
         <div className="relative grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {PILLARS.map((p) => (
-            <Card key={p.title} className="group relative overflow-hidden transition-colors hover:border-shu-500/30">
-              <CardBody>
-                <span className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/5 font-display text-lg font-bold text-white/70 group-hover:text-shu-400">
-                  {p.glyph}
-                </span>
-                <h3 className="font-display text-sm font-semibold text-white">{p.title}</h3>
-                <p className="mt-2 text-[13px] leading-relaxed text-white/45">{p.body}</p>
-              </CardBody>
-            </Card>
+          {PILLARS.map((p, i) => (
+            <Reveal key={p.title} delayMs={i * 90}>
+              <Card className="group relative h-full overflow-hidden transition-colors hover:border-shu-500/30">
+                <CardBody>
+                  <span className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/5 font-display text-lg font-bold text-white/70 group-hover:text-shu-400">
+                    {p.glyph}
+                  </span>
+                  <h3 className="font-display text-sm font-semibold text-white">{p.title}</h3>
+                  <p className="mt-2 text-[13px] leading-relaxed text-white/45">{p.body}</p>
+                </CardBody>
+              </Card>
+            </Reveal>
           ))}
         </div>
       </section>
 
-      <section className="relative border-t border-white/8 bg-void-900/40">
+      <CircuitDivider />
+
+      <section className="relative bg-void-900/40">
         <div className="mx-auto max-w-7xl px-6 py-20">
           <div className="grid gap-10 lg:grid-cols-[1fr_1.2fr] lg:items-center">
-            <div>
+            <Reveal>
               <span className="text-xs font-semibold uppercase tracking-widest text-kehai-400">The flow</span>
               <h2 className="mt-2 font-display text-3xl font-bold text-white">
                 Raw check-ins become decisions
@@ -112,7 +128,7 @@ export default function LandingPage() {
                 Attendance → information → insight → recommendation → action. Analytics are computed
                 exactly; AI explains what changed and what to do next.
               </p>
-            </div>
+            </Reveal>
             <ol className="space-y-3">
               {[
                 "Organizer publishes an event with a geofenced venue and rotating QR.",
@@ -121,21 +137,21 @@ export default function LandingPage() {
                 "Dashboard updates live — count, rate, and arrival timeline redraw instantly.",
                 "AI layer explains anomalies and answers questions grounded in exact data.",
               ].map((step, i) => (
-                <li key={step} className="flex items-start gap-4 rounded-lg border border-white/8 bg-void-800/50 px-4 py-3">
-                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-shu-500/15 font-mono text-xs font-bold text-shu-400">
-                    {i + 1}
-                  </span>
-                  <span className="text-sm text-white/70">{step}</span>
-                </li>
+                <Reveal key={step} delayMs={i * 80}>
+                  <li className="flex items-start gap-4 rounded-lg border border-white/8 bg-void-800/50 px-4 py-3">
+                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-shu-500/15 font-mono text-xs font-bold text-shu-400">
+                      {i + 1}
+                    </span>
+                    <span className="text-sm text-white/70">{step}</span>
+                  </li>
+                </Reveal>
               ))}
             </ol>
           </div>
         </div>
       </section>
 
-      <footer className="border-t border-white/8 px-6 py-10 text-center text-xs text-white/30">
-        Kehai Engine — built as an attendance &amp; event intelligence platform, not a college assignment.
-      </footer>
+      <Footer />
     </div>
   );
 }

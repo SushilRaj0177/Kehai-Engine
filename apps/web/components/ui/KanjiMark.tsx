@@ -11,10 +11,12 @@ export function KanjiMark({
   glyph,
   className,
   accent = "shu",
+  animate = true,
 }: {
   glyph: string;
   className?: string;
   accent?: "shu" | "kehai";
+  animate?: boolean;
 }) {
   return (
     <span
@@ -22,6 +24,7 @@ export function KanjiMark({
       className={cn(
         "pointer-events-none select-none font-display font-black leading-none",
         accent === "shu" ? "text-shu-500/[0.06]" : "text-kehai-500/[0.06]",
+        animate && "kanji-breathe",
         className
       )}
     >
