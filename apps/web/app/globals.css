@@ -135,35 +135,6 @@ body {
   animation-iteration-count: infinite;
 }
 
-/* a small pulse used on circuit-divider nodes */
-@keyframes node-pulse {
-  0%,
-  100% {
-    opacity: 0.35;
-    r: 2.2;
-  }
-  50% {
-    opacity: 1;
-    r: 3.4;
-  }
-}
-.node-pulse {
-  animation: node-pulse 2.4s ease-in-out infinite;
-  transform-box: fill-box;
-  transform-origin: center;
-}
-
-/* traveling dash along a divider line, like a signal pulse */
-@keyframes dash-travel {
-  to {
-    stroke-dashoffset: -240;
-  }
-}
-.dash-travel {
-  stroke-dasharray: 6 14;
-  animation: dash-travel 5s linear infinite;
-}
-
 /* reveal-on-scroll: toggled by Reveal.tsx via IntersectionObserver */
 .reveal {
   opacity: 0;
@@ -173,11 +144,6 @@ body {
 .reveal.is-visible {
   opacity: 1;
   transform: translateY(0);
-}
-
-.hairline {
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
-  height: 1px;
 }
 
 /* Custom thin scrollbar for dark surfaces */
@@ -193,9 +159,7 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .scan-beam::after,
   .kanji-breathe,
-  .rain-column,
-  .node-pulse,
-  .dash-travel {
+  .rain-column {
     animation: none !important;
   }
   .reveal {

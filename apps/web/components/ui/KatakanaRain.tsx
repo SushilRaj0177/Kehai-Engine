@@ -1,39 +1,63 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+
 const GLYPHS =
   "ケハイエンジンシステムデータネットワーク検証出席洞察信頼気配催事組織現場知識確認接続監視解析距離時間座標認証";
 
-// Deterministic pseudo-random pick so server and client render identically
-// (no hydration mismatch) while still looking varied — a fixed LCG seeded
-// by position, not Math.random().
-function pick(seed: number, len: number): number {
+// Deterministic first paint (seeded, not Math.random) so SSR and hydration
+// match exactly — real randomness only kicks in client-side, post-mount.
+function seededPick(seed: number, len: number): number {
   const x = Math.sin(seed * 12.9898) * 43758.5453;
   return Math.floor((x - Math.floor(x)) * len);
 }
 
-function column(colIndex: number, rows: number): string[] {
-  return Array.from({ length: rows }, (_, row) => GLYPHS[pick(colIndex * 97 + row * 31 + 1, GLYPHS.length)]);
+function initialMatrix(cols: number, rows: number): string[][] {
+  return Array.from({ length: cols }, (_, c) =>
+    Array.from({ length: rows }, (_, r) => GLYPHS[seededPick(c * 97 + r * 31 + 1, GLYPHS.length)])
+  );
 }
 
 /**
- * A column-based "digital rain" of katakana/kanji drifting downward behind
- * hero content — genuinely animated (CSS keyframes, GPU-cheap transform-only),
- * not a static decorative glyph. Deterministic output keeps SSR and
- * hydration in sync without needing client-side JS at all.
+ * Digital rain: columns of katakana/kanji drifting down (CSS transform,
+ * GPU-cheap) while individual glyphs flicker to new characters as they
+ * fall — the actual behavior people mean by "Matrix rain," not a static
+ * falling list. Glyph mutation runs client-side only after mount so the
+ * server-rendered HTML and first client paint match exactly.
  */
 export function KatakanaRain({ columns = 16, className = "" }: { columns?: number; className?: string }) {
   const rows = 24;
-  const cols = Array.from({ length: columns }, (_, i) => i);
+  const [matrix, setMatrix] = useState<string[][]>(() => initialMatrix(columns, rows));
+  const matrixRef = useRef(matrix);
+  matrixRef.current = matrix;
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const interval = setInterval(() => {
+      const next = matrixRef.current.map((col) => [...col]);
+      // mutate a handful of random cells each tick — cheap, and reads as flicker rather than a full repaint
+      for (let i = 0; i < 14; i++) {
+        const c = Math.floor(Math.random() * columns);
+        const r = Math.floor(Math.random() * rows);
+        next[c][r] = GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
+      }
+      setMatrix(next);
+    }, 120);
+
+    return () => clearInterval(interval);
+  }, [columns, rows]);
 
   return (
     <div aria-hidden className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}>
       <div className="flex h-full w-full justify-between">
-        {cols.map((c) => {
-          const chars = column(c, rows);
-          const duration = 14 + (c % 5) * 3.5; // 14–28s, varied per column
-          const delay = -(c * 1.7) % duration; // negative delay: already mid-loop, staggered
+        {matrix.map((chars, c) => {
+          const duration = 14 + (c % 5) * 3.5;
+          const delay = -(c * 1.7) % duration;
           return (
             <div key={c} className="relative h-full flex-1 overflow-hidden">
               <div
-                className="rain-column absolute inset-x-0 top-0 flex flex-col items-center font-mono text-[11px] leading-[2.1] text-kehai-400/[0.14]"
+                className="rain-column absolute inset-x-0 top-0 flex flex-col items-center font-mono text-[11px] leading-[2.1] text-kehai-400/[0.16]"
                 style={{ animationDuration: `${duration}s`, animationDelay: `${delay}s` }}
               >
                 {[...chars, ...chars].map((ch, i) => (
