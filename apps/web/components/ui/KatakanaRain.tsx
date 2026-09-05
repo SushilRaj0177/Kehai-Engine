@@ -34,16 +34,23 @@ export function KatakanaRain({ columns = 16, className = "" }: { columns?: numbe
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
+    const totalCells = columns * rows;
+    // Mutate a large fraction of all cells every tick — the previous version
+    // touched only ~14 cells total out of 400+ every 120ms, so almost every
+    // glyph sat still for seconds at a time and only a couple ever seemed to
+    // change. A real digital-rain effect has glyphs flickering constantly,
+    // all over, not just one spot.
+    const mutationsPerTick = Math.ceil(totalCells * 0.25);
+
     const interval = setInterval(() => {
       const next = matrixRef.current.map((col) => [...col]);
-      // mutate a handful of random cells each tick — cheap, and reads as flicker rather than a full repaint
-      for (let i = 0; i < 14; i++) {
+      for (let i = 0; i < mutationsPerTick; i++) {
         const c = Math.floor(Math.random() * columns);
         const r = Math.floor(Math.random() * rows);
         next[c][r] = GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
       }
       setMatrix(next);
-    }, 120);
+    }, 90);
 
     return () => clearInterval(interval);
   }, [columns, rows]);

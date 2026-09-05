@@ -121,9 +121,16 @@ body {
 /* katakana/kanji "digital rain" column — each column is one element with a
    tall repeating background-image-free text track scrolled via
    background-position-less transform; see KatakanaRain.tsx for markup */
+/* Content is rendered twice back-to-back (see KatakanaRain.tsx), so this
+   element's own height is 2x one copy's height — translating by exactly
+   -50% (one copy's worth) makes the loop seamless: the frame at -50% is
+   pixel-identical to the frame at 0%, since both copies are identical.
+   (An earlier -100%/0% version translated by the *full* doubled height,
+   which meant the whole rain block was invisible above the viewport for
+   the first half of every cycle — the "killed halfway" bug.) */
 @keyframes rain-fall {
   from {
-    transform: translateY(-100%);
+    transform: translateY(-50%);
   }
   to {
     transform: translateY(0%);

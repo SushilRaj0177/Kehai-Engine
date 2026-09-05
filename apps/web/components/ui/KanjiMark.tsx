@@ -12,21 +12,37 @@ export function KanjiMark({
   className,
   accent = "shu",
   animate = true,
+  prominent = false,
 }: {
   glyph: string;
   className?: string;
   accent?: "shu" | "kehai";
   animate?: boolean;
+  /** Boosts opacity for placements that need to read clearly over busy
+   * backgrounds (e.g. sitting in front of the hero's rain effect) instead
+   * of the default barely-there texture opacity. */
+  prominent?: boolean;
 }) {
   return (
     <span
       aria-hidden
       className={cn(
-        "pointer-events-none select-none font-display font-black leading-none",
-        accent === "shu" ? "text-shu-500/[0.06]" : "text-kehai-500/[0.06]",
+        "pointer-events-none relative z-10 select-none font-display font-black leading-none",
+        accent === "shu" ? "text-shu-500" : "text-kehai-500",
         animate && "kanji-breathe",
         className
       )}
+      style={
+        {
+          // The visible faintness comes entirely from this element-level
+          // opacity (animated by kanji-breathe), not from a low-alpha text
+          // color — stacking both used to multiply out to ~0.5% actual
+          // opacity, which read as "not there" against any busy background.
+          "--kanji-min": prominent ? 0.14 : 0.05,
+          "--kanji-max": prominent ? 0.22 : 0.1,
+          opacity: animate ? undefined : prominent ? 0.18 : 0.07,
+        } as React.CSSProperties
+      }
     >
       {glyph}
     </span>

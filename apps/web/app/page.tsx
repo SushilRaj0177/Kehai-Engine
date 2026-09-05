@@ -52,7 +52,7 @@ export default function LandingPage() {
         />
 
         <div className="relative mx-auto flex max-w-7xl flex-col items-start px-6 py-28 md:py-36">
-          <KanjiMark glyph="気配" className="absolute -right-6 top-4 text-[13rem] md:text-[19rem]" />
+          <KanjiMark glyph="気配" prominent className="absolute -right-6 top-4 text-[13rem] md:text-[19rem]" />
           <VerticalCaption text="出席・検証・洞察" className="absolute right-8 top-16 hidden lg:block" />
 
           <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-shu-500/30 bg-shu-500/10 px-3 py-1 text-xs font-medium uppercase tracking-widest text-shu-400">
