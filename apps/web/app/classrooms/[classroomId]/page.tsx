@@ -10,11 +10,11 @@ import { Badge } from "@/components/ui/Badge";
 import { LoadingBlock, ErrorBlock, EmptyState } from "@/components/ui/States";
 import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
-import { ClassSessionQrPanel } from "@/components/ClassSessionQrPanel";
+import { ClassSessionManager } from "@/components/ClassSessionManager";
 import { ClassroomRoster } from "@/components/ClassroomRoster";
 import { AttendanceHeatmap } from "@/components/AttendanceHeatmap";
+import { LiveIndicator } from "@/components/ui/LiveIndicator";
 import { useClassroom, useClassroomHeatmap, useClassroomRoster } from "@/lib/hooks";
-import { apiFetch, ApiError } from "@/lib/api";
 import { subscribeToClassroom } from "@/lib/realtime";
 import { useLocale } from "@/lib/i18n";
 
@@ -29,9 +29,6 @@ export default function ClassroomDetailPage() {
   const { mutate: mutateRoster } = useClassroomRoster(classroomId);
   const { data: heatmap } = useClassroomHeatmap(classroomId, classroom?.isTeacher ? studentParam : undefined);
 
-  const [starting, setStarting] = useState(false);
-  const [ending, setEnding] = useState(false);
-  const [sessionError, setSessionError] = useState<string | null>(null);
   const [liveConnected, setLiveConnected] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -73,32 +70,6 @@ export default function ClassroomDetailPage() {
     );
   }
 
-  async function startSession() {
-    setSessionError(null);
-    setStarting(true);
-    try {
-      await apiFetch(`/api/classrooms/${classroomId}/sessions/today`, { method: "POST" });
-      await mutate();
-    } catch (err) {
-      setSessionError(err instanceof ApiError ? err.message : t("classroomDetail.sessionStartError"));
-    } finally {
-      setStarting(false);
-    }
-  }
-
-  async function endSession() {
-    setSessionError(null);
-    setEnding(true);
-    try {
-      await apiFetch(`/api/classrooms/${classroomId}/sessions/current/close`, { method: "POST" });
-      await mutate();
-    } catch (err) {
-      setSessionError(err instanceof ApiError ? err.message : t("classroomDetail.sessionEndError"));
-    } finally {
-      setEnding(false);
-    }
-  }
-
   const viewingStudent = classroom.isTeacher && !!studentParam;
 
   return (
@@ -121,31 +92,15 @@ export default function ClassroomDetailPage() {
                 <Badge status="ACTIVE">{t("classroomDetail.sessionOpenBadge")}</Badge>
               )}
               {classroom.isTeacher && (
-                <span className={`flex items-center gap-1.5 text-xs ${liveConnected ? "text-emerald-400" : "text-white/30"}`}>
-                  <span className={`h-1.5 w-1.5 rounded-full ${liveConnected ? "bg-emerald-400 animate-pulseGlow" : "bg-white/30"}`} />
-                  {liveConnected ? t("eventControl.live") : t("eventControl.polling")}
-                </span>
+                <LiveIndicator connected={liveConnected} />
               )}
             </div>
             <h1 className="font-display text-3xl font-black text-white md:text-4xl">{classroom.name}</h1>
             <p className="mt-2 text-base text-white/45">
               {[classroom.courseCode, classroom.semesterLabel].filter(Boolean).join(" · ")}
+              {classroom.openSession && ` · ${classroom.openSession.label || t("classroomDetail.untitledSession")}`}
             </p>
           </div>
-
-          {classroom.isTeacher && (
-            <div className="flex flex-wrap gap-2">
-              {classroom.openSession ? (
-                <Button variant="danger" size="sm" loading={ending} onClick={endSession}>
-                  {t("classroomDetail.endSession")}
-                </Button>
-              ) : (
-                <Button variant="primary" size="sm" loading={starting} onClick={startSession}>
-                  {t("classroomDetail.startSession")}
-                </Button>
-              )}
-            </div>
-          )}
 
           {!classroom.isTeacher && classroom.openSession && (
             <Link href={`/classrooms/${classroomId}/checkin`}>
@@ -155,7 +110,6 @@ export default function ClassroomDetailPage() {
             </Link>
           )}
         </div>
-        {sessionError && <ErrorBlock message={sessionError} className="relative z-20 mt-3" />}
 
         {classroom.isTeacher ? (
           <div className="relative z-20 mt-12 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
@@ -189,7 +143,11 @@ export default function ClassroomDetailPage() {
             </div>
 
             <div className="space-y-6">
-              <ClassSessionQrPanel classroomId={classroomId} active={!!classroom.openSession} />
+              <ClassSessionManager
+                classroomId={classroomId}
+                openSession={classroom.openSession}
+                onSessionsChanged={() => mutate()}
+              />
 
               <Card>
                 <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">

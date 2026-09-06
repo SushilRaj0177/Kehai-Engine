@@ -15,12 +15,24 @@ interface QrResponse {
 
 /**
  * The classroom-session equivalent of LiveQrPanel — same rotating-QR visual
- * and interaction pattern, pointed at the classroom's *current* recurring
- * session instead of a one-off event. Kept as its own small component
- * (rather than generalizing LiveQrPanel's base path) so the existing event
- * control room usage is never at risk of regressing.
+ * and interaction pattern, pointed at a specific session (identified by
+ * sessionId, passed down by the parent once it knows which one is open —
+ * the parent only mounts this while a session is actually open) instead of
+ * a one-off event. Kept as its own small component (rather than
+ * generalizing LiveQrPanel's base path) so the existing event control room
+ * usage is never at risk of regressing.
  */
-export function ClassSessionQrPanel({ classroomId, active }: { classroomId: string; active: boolean }) {
+export function ClassSessionQrPanel({
+  classroomId,
+  sessionId,
+  onEndSession,
+  ending,
+}: {
+  classroomId: string;
+  sessionId: string;
+  onEndSession: () => void;
+  ending: boolean;
+}) {
   const { t } = useLocale();
   const [qr, setQr] = useState<QrResponse | null>(null);
   const [countdown, setCountdown] = useState(0);
@@ -31,26 +43,26 @@ export function ClassSessionQrPanel({ classroomId, active }: { classroomId: stri
 
   const fetchQr = useCallback(async () => {
     try {
-      const data = await apiFetch<QrResponse>(`/api/classrooms/${classroomId}/sessions/current/qr`);
+      const data = await apiFetch<QrResponse>(`/api/classrooms/${classroomId}/sessions/${sessionId}/qr`);
       setQr(data);
       setError(null);
       setCountdown(data.rotationSeconds);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t("qrPanel.qrLoadError"));
     }
-  }, [classroomId, t]);
+  }, [classroomId, sessionId, t]);
 
   useEffect(() => {
-    if (!active) return;
+    setQr(null);
     void fetchQr();
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, fetchQr]);
+  }, [sessionId, fetchQr]);
 
   useEffect(() => {
-    if (!qr || !active) return;
+    if (!qr) return;
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
       setCountdown((c) => {
@@ -65,13 +77,13 @@ export function ClassSessionQrPanel({ classroomId, active }: { classroomId: stri
       if (timerRef.current) clearInterval(timerRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qr?.expiresAt, active]);
+  }, [qr?.expiresAt, sessionId]);
 
   async function changeRotation(seconds: number) {
     setSavingRotation(true);
     setError(null);
     try {
-      await apiFetch(`/api/classrooms/${classroomId}/sessions/current`, {
+      await apiFetch(`/api/classrooms/${classroomId}/sessions/${sessionId}`, {
         method: "PATCH",
         body: JSON.stringify({ qrRotationSeconds: seconds }),
       });
@@ -81,14 +93,6 @@ export function ClassSessionQrPanel({ classroomId, active }: { classroomId: stri
     } finally {
       setSavingRotation(false);
     }
-  }
-
-  if (!active) {
-    return (
-      <Card>
-        <CardBody className="py-10 text-center text-sm text-white/40">{t("qrPanel.inactiveHint")}</CardBody>
-      </Card>
-    );
   }
 
   return (
@@ -115,6 +119,9 @@ export function ClassSessionQrPanel({ classroomId, active }: { classroomId: stri
           </Button>
           <Button variant="ghost" size="sm" onClick={() => setShowSettings((s) => !s)}>
             {showSettings ? t("qrPanel.closeSettings") : t("qrPanel.changeRotation")}
+          </Button>
+          <Button variant="danger" size="sm" loading={ending} onClick={onEndSession}>
+            {t("classroomDetail.endSession")}
           </Button>
         </div>
 

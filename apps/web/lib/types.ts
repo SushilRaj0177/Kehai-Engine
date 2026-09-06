@@ -132,7 +132,18 @@ export interface ClassroomDetail {
   isEnrolled: boolean;
   joinCode?: string;
   studentCount: number;
-  openSession: { id: string; date: string; status: "OPEN" } | null;
+  openSession: { id: string; label: string | null; date: string; status: "OPEN" } | null;
+}
+
+export interface ClassSessionSummary {
+  id: string;
+  label: string | null;
+  date: string;
+  status: "OPEN" | "CLOSED";
+  qrRotationSeconds: number;
+  openedAt: string;
+  closedAt: string | null;
+  presentCount: number;
 }
 
 export interface RosterRow {
