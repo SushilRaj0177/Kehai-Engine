@@ -176,7 +176,7 @@ export default function LandingPage() {
             sitting on top of it, not the blob itself. */}
         <div
           ref={(el) => { glowRefs.current[4] = el; }}
-          className="absolute left-0 top-[88%] h-[500px] w-[650px] rounded-full bg-shu-500/[0.24] blur-[130px] sm:bg-shu-500/[0.16]"
+          className="absolute left-0 top-[88%] h-[500px] w-[650px] rounded-full bg-shu-500/[0.32] blur-[130px] sm:bg-shu-500/[0.24]"
         />
 
         {/* Katakana rain + starfield live here (not inside the hero section
@@ -232,17 +232,21 @@ export default function LandingPage() {
             max-w-7xl content column below) so it actually sits against the
             right edge of the viewport, not the right edge of a narrower
             centered container. */}
-        {/* Mobile gets its own (much smaller) size and a small opacity boost
-            — at the sm/md sizes below, two full-width characters were wide
-            enough that most of the glyph's visible bulk sat on the left
-            half of a narrow phone screen even anchored to the right edge,
-            reading as "on the left" rather than as a right-edge accent.
-            sm:/md: below are exactly the pre-existing values, so tablet
-            and desktop are byte-for-byte unchanged. */}
+        {/* Same size/layout as always (still wraps into its vertical
+            two-character stack on narrow screens) — only the anchor
+            changed. -right-6 pushed the whole shrink-to-fit box (sized to
+            viewport-width-minus-offset once wrapped) further right than
+            the viewport itself, so on mobile most of it — everything past
+            the first character — was silently clipped by the page's own
+            overflow-x:hidden, leaving only a sliver visible near the
+            left-center. right-0 keeps the box's own right edge flush with
+            the viewport's, and text-right keeps the (possibly two-line)
+            content anchored to that edge, so nothing is cropped; mobile
+            gets a small opacity boost, sm:/md: sizes are unchanged. */}
         <KanjiMark
           glyph="気配"
           prominent
-          className="hero-kanji-mobile absolute -right-6 top-2 text-[7rem] sm:text-[13rem] md:text-[19rem]"
+          className="hero-kanji-mobile absolute right-0 top-2 text-right text-[13rem] md:text-[19rem]"
         />
         <VerticalCaption text="出席・検証・洞察" className="absolute right-10 top-14 hidden lg:block" />
 
