@@ -14,8 +14,8 @@ import { useLocale } from "@/lib/i18n";
 
 // Base (static) transform per glow blob — scroll-driven parallax offset
 // gets appended to these at runtime, never replaces them.
-const GLOW_BASE_TRANSFORMS = ["translate(-50%, -10%)", "translate(25%, 0)", "translate(-33%, 0)", "translate(25%, 0)"];
-const GLOW_PARALLAX_SPEED = [0.12, 0.22, 0.18, 0.28];
+const GLOW_BASE_TRANSFORMS = ["translate(-50%, -10%)", "translate(25%, 0)", "translate(-33%, 0)", "translate(25%, 0)", "translate(-25%, 0)"];
+const GLOW_PARALLAX_SPEED = [0.12, 0.22, 0.18, 0.28, 0.25];
 
 export default function LandingPage() {
   const { t, locale, pillars, steps } = useLocale();
@@ -65,9 +65,11 @@ export default function LandingPage() {
           ref={(el) => { glowRefs.current[0] = el; }}
           className="absolute left-1/2 top-0 h-[620px] w-[1000px] rounded-full bg-shu-500/[0.14] blur-[160px]"
         />
+        {/* Pillars-section glow — widened and brightened (was too dim/narrow
+            to register against that section's plain background). */}
         <div
           ref={(el) => { glowRefs.current[1] = el; }}
-          className="absolute right-0 top-[30%] h-[400px] w-[500px] rounded-full bg-kehai-500/[0.08] blur-[130px]"
+          className="absolute right-0 top-[28%] h-[500px] w-[750px] rounded-full bg-kehai-500/[0.12] blur-[150px]"
         />
         <div
           ref={(el) => { glowRefs.current[2] = el; }}
@@ -77,6 +79,31 @@ export default function LandingPage() {
           ref={(el) => { glowRefs.current[3] = el; }}
           className="absolute right-0 top-[88%] h-[450px] w-[550px] rounded-full bg-kehai-500/[0.07] blur-[140px]"
         />
+        {/* Mirrors the blob above on the left, same size/brightness, so the
+            flow/footer area reads as a matched red+cyan pair instead of
+            cyan-only. */}
+        <div
+          ref={(el) => { glowRefs.current[4] = el; }}
+          className="absolute left-0 top-[88%] h-[450px] w-[550px] rounded-full bg-shu-500/[0.07] blur-[140px]"
+        />
+
+        {/* Katakana rain + starfield live here (not inside the hero section
+            below) specifically so they start at the true top of the page —
+            nested inside the hero section, they'd only begin after the
+            NavBar's own flow height (~80px), reading as "dropping in from a
+            border" partway down instead of being there from y:0. Height is
+            capped and mask-faded at the bottom so it tapers into the
+            pillars section instead of hard-cutting at the hero's edge. */}
+        <div
+          className="absolute inset-x-0 top-0 h-[1050px] overflow-hidden"
+          style={{
+            maskImage: "linear-gradient(to bottom, black 65%, transparent 100%)",
+            WebkitMaskImage: "linear-gradient(to bottom, black 65%, transparent 100%)",
+          }}
+        >
+          <StarField count={50} />
+          <KatakanaRain columns={18} className="opacity-90" />
+        </div>
       </div>
 
       <div className="relative z-10">
@@ -84,8 +111,6 @@ export default function LandingPage() {
 
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-grid opacity-40" />
-        <StarField count={50} />
-        <KatakanaRain columns={18} className="opacity-90" />
         {/* Scrim over the grid/rain layers so the hero reads as a solid
             dark panel instead of a washed-out, see-through backdrop —
             lightened from /55 to /45 for a slightly brighter overall feel. */}
