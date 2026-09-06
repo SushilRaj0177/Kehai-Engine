@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
 import { ErrorBlock, LoadingBlock } from "@/components/ui/States";
 import { KanjiMark } from "@/components/ui/KanjiMark";
+import { PageGlow } from "@/components/ui/PageGlow";
 import { QrScanner } from "@/components/QrScanner";
 import { useAuth } from "@/lib/auth-context";
 import { useEvent } from "@/lib/hooks";
@@ -105,14 +106,15 @@ export default function AttendPage() {
   if (authLoading) return <LoadingBlock />;
 
   return (
-    <div className="min-h-screen">
+    <div className="relative min-h-screen">
+      <PageGlow />
       <NavBar />
       <div className="relative mx-auto max-w-lg px-6 py-16 text-center">
-        <KanjiMark glyph="確認" className="absolute -right-4 top-0 text-[7rem]" />
-        <h1 className="relative font-display text-2xl font-black text-white md:text-3xl">{event?.name ?? "Check in"}</h1>
-        <p className="relative mt-2 text-base text-white/45">Verify your presence with QR + location.</p>
+        <KanjiMark glyph="確認" className="absolute -right-4 top-0 text-[4rem] sm:text-[7rem]" />
+        <h1 className="relative z-20 font-display text-2xl font-black text-white md:text-3xl">{event?.name ?? "Check in"}</h1>
+        <p className="relative z-20 mt-2 text-base text-white/45">Verify your presence with QR + location.</p>
 
-        <div className="relative mt-10">
+        <div className="relative z-20 mt-10">
           {step === "scan" && (
             <div className="space-y-4">
               <QrScanner onDecoded={handleDecoded} />
