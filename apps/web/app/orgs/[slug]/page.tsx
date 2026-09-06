@@ -9,6 +9,7 @@ import { TiltCard } from "@/components/ui/TiltCard";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState, LoadingBlock } from "@/components/ui/States";
 import { KanjiMark } from "@/components/ui/KanjiMark";
+import { PageGlow } from "@/components/ui/PageGlow";
 import { useMyOrganizations, useOrgEvents, useOrgOverview } from "@/lib/hooks";
 import { formatDateRange } from "@/lib/format";
 
@@ -23,9 +24,10 @@ export default function OrgPage() {
   if (orgsLoading) return <LoadingBlock />;
   if (!org) {
     return (
-      <div className="min-h-screen">
+      <div className="relative min-h-screen">
+        <PageGlow />
         <NavBar />
-        <div className="mx-auto max-w-lg px-6 py-24">
+        <div className="relative mx-auto max-w-lg px-6 py-24">
           <EmptyState title="Organization not found" description="You may not be a member, or it doesn't exist." />
         </div>
       </div>
@@ -33,7 +35,8 @@ export default function OrgPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="relative min-h-screen">
+      <PageGlow />
       <NavBar />
       <div className="relative mx-auto max-w-6xl px-6 py-20">
         <KanjiMark glyph="催" className="absolute -right-6 top-0 text-[10rem]" />

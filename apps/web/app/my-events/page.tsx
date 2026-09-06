@@ -7,6 +7,7 @@ import { NavBar } from "@/components/NavBar";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState, LoadingBlock } from "@/components/ui/States";
 import { KanjiMark } from "@/components/ui/KanjiMark";
+import { PageGlow } from "@/components/ui/PageGlow";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth-context";
 import { useMyRegistrations } from "@/lib/hooks";
@@ -28,7 +29,8 @@ export default function MyEventsPage() {
   const past = registrations?.filter((r) => new Date(r.event.endsAt).getTime() < now) ?? [];
 
   return (
-    <div className="min-h-screen">
+    <div className="relative min-h-screen">
+      <PageGlow />
       <NavBar />
       <div className="relative mx-auto max-w-5xl px-6 py-20">
         <KanjiMark glyph="出席" className="absolute -right-6 top-0 text-[9rem]" />
