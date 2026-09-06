@@ -17,7 +17,14 @@ export function verifyAccessToken(token: string): AccessTokenPayload {
 }
 
 export function signRefreshToken(userId: string): string {
-  return jwt.sign({ sub: userId, typ: "refresh" }, env.JWT_REFRESH_SECRET, {
+  // A JWT's claims plus its expiry are otherwise identical for the same
+  // user signed twice within the same second (jsonwebtoken's exp/iat only
+  // have second-level granularity) — two near-simultaneous logins (or
+  // logging in, out, and back in fast) would then produce the exact same
+  // token string, colliding on the stored tokenHash's unique constraint.
+  // A random jti guarantees every issued token is distinct regardless of
+  // timing.
+  return jwt.sign({ sub: userId, typ: "refresh", jti: crypto.randomBytes(16).toString("hex") }, env.JWT_REFRESH_SECRET, {
     expiresIn: env.JWT_REFRESH_TTL as any,
   });
 }
