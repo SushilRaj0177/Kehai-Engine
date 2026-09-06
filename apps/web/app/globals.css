@@ -10,6 +10,17 @@ html,
 body {
   background: #05070a;
   color: #eef1f6;
+  /* The homepage clips its decorative sections (hero, pillars, flow) with
+     their own overflow-hidden, but every other page just has a bare
+     `relative` wrapper around its KanjiMark watermark — on mobile that
+     glyph's negative-offset position pushes it slightly past the
+     viewport's right edge, and without a horizontal-overflow guard
+     anywhere, the browser responds by silently widening its layout
+     viewport to fit that overflow and scaling everything down to
+     compensate, which is exactly the "auto-zoom"/reflow this page-to-page
+     navigation was showing on mobile. A page-level guard here is a lot
+     more robust than tracking down and clipping every offending glyph. */
+  overflow-x: hidden;
 }
 
 body {
