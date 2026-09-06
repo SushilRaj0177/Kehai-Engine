@@ -10,6 +10,7 @@ import { TiltCard } from "@/components/ui/TiltCard";
 import { Input, Label } from "@/components/ui/Input";
 import { EmptyState, ErrorBlock, LoadingBlock } from "@/components/ui/States";
 import { KanjiMark } from "@/components/ui/KanjiMark";
+import { PageGlow } from "@/components/ui/PageGlow";
 import { useAuth } from "@/lib/auth-context";
 import { useMyOrganizations } from "@/lib/hooks";
 import { apiFetch, ApiError } from "@/lib/api";
@@ -23,9 +24,10 @@ export default function DashboardPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen">
+      <div className="relative min-h-screen">
+        <PageGlow />
         <NavBar />
-        <div className="mx-auto max-w-lg px-6 py-24 text-center">
+        <div className="relative mx-auto max-w-lg px-6 py-24 text-center">
           <p className="text-white/60">Sign in to access your organizer console.</p>
           <Link href="/login">
             <Button className="mt-4">Sign in</Button>
@@ -36,19 +38,32 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="relative min-h-screen">
+      <PageGlow />
       <NavBar />
       <div className="relative mx-auto max-w-6xl px-6 py-20">
         <KanjiMark glyph="組織" className="absolute -right-4 top-0 text-[10rem]" />
-        <div className="relative flex flex-wrap items-center justify-between gap-4">
+        <div className="relative flex flex-wrap items-end justify-between gap-4">
           <div>
             <span className="text-xs font-semibold uppercase tracking-widest text-shu-400">Organizer console</span>
             <h1 className="mt-3 font-display text-4xl font-black text-white md:text-5xl">Your organizations</h1>
-            <p className="mt-3 text-lg text-white/50">Every event, attendee, and check-in lives under an organization.</p>
+            <p className="mt-3 max-w-xl text-lg text-white/50">
+              Every event, attendee, and check-in lives under an organization.
+            </p>
           </div>
-          <Button size="lg" onClick={() => setShowCreate((s) => !s)}>
-            {showCreate ? "Cancel" : "New organization"}
-          </Button>
+          <div className="flex items-center gap-5">
+            {!!orgs?.length && (
+              <div className="hidden text-right sm:block">
+                <div className="font-display text-3xl font-bold text-white">{orgs.length}</div>
+                <div className="text-xs uppercase tracking-wider text-white/40">
+                  {orgs.length === 1 ? "organization" : "organizations"}
+                </div>
+              </div>
+            )}
+            <Button size="lg" onClick={() => setShowCreate((s) => !s)}>
+              {showCreate ? "Cancel" : "New organization"}
+            </Button>
+          </div>
         </div>
 
         {showCreate && (
@@ -77,13 +92,20 @@ export default function DashboardPage() {
                   <TiltCard className="h-full rounded-2xl">
                     <Card className="h-full transition-colors hover:border-shu-500/30">
                       <CardBody className="relative z-10 py-6">
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-display text-lg font-bold text-white">{org.name}</h3>
-                          <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-white/50">
-                            {org.role}
+                        <div className="flex items-center gap-4">
+                          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/[0.09] bg-gradient-to-br from-shu-500/20 to-kehai-500/10 font-display text-xl font-black text-white/90">
+                            {org.name.trim().charAt(0).toUpperCase()}
                           </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <h3 className="truncate font-display text-lg font-bold text-white">{org.name}</h3>
+                              <span className="shrink-0 rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-white/50">
+                                {org.role}
+                              </span>
+                            </div>
+                            <p className="mt-1 truncate text-sm text-white/35">/{org.slug}</p>
+                          </div>
                         </div>
-                        <p className="mt-1.5 text-sm text-white/35">/{org.slug}</p>
                       </CardBody>
                     </Card>
                   </TiltCard>

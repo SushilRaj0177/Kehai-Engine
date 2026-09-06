@@ -7,6 +7,7 @@ import { TiltCard } from "@/components/ui/TiltCard";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState, LoadingBlock } from "@/components/ui/States";
 import { KanjiMark } from "@/components/ui/KanjiMark";
+import { PageGlow } from "@/components/ui/PageGlow";
 import { usePublicEvents } from "@/lib/hooks";
 import { formatDateRange } from "@/lib/format";
 
@@ -14,7 +15,8 @@ export default function DiscoverEventsPage() {
   const { data: events, isLoading } = usePublicEvents();
 
   return (
-    <div className="min-h-screen">
+    <div className="relative min-h-screen">
+      <PageGlow />
       <NavBar />
       <div className="relative mx-auto max-w-6xl px-6 py-20">
         <KanjiMark glyph="催事" className="absolute -right-6 top-0 text-[10rem]" />

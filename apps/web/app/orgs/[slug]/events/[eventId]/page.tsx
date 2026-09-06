@@ -8,6 +8,7 @@ import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { LoadingBlock, ErrorBlock } from "@/components/ui/States";
 import { KanjiMark } from "@/components/ui/KanjiMark";
+import { PageGlow } from "@/components/ui/PageGlow";
 import { LiveQrPanel } from "@/components/LiveQrPanel";
 import { ProgressRing } from "@/components/ui/ProgressRing";
 import { ArrivalTimelineChart } from "@/components/charts/ArrivalTimelineChart";
@@ -78,7 +79,8 @@ export default function EventControlRoomPage() {
   const rate = registrations > 0 ? attendance / registrations : 0;
 
   return (
-    <div className="min-h-screen">
+    <div className="relative min-h-screen">
+      <PageGlow />
       <NavBar />
       <div className="relative mx-auto max-w-6xl px-6 py-16">
         <KanjiMark glyph="現場" className="absolute -right-6 top-0 text-[9rem]" />
