@@ -176,7 +176,7 @@ export default function LandingPage() {
             sitting on top of it, not the blob itself. */}
         <div
           ref={(el) => { glowRefs.current[4] = el; }}
-          className="absolute left-0 top-[88%] h-[500px] w-[650px] rounded-full bg-shu-500/[0.32] blur-[130px] sm:bg-shu-500/[0.24]"
+          className="absolute left-0 top-[88%] h-[500px] w-[650px] rounded-full bg-shu-500/[0.42] blur-[130px] sm:bg-shu-500/[0.34]"
         />
 
         {/* Katakana rain + starfield live here (not inside the hero section
@@ -258,7 +258,11 @@ export default function LandingPage() {
             since z-index beats DOM order once either side sets one) tinted
             individual letters wherever its strokes crossed the text. */}
         <div className="relative z-20 mx-auto flex max-w-7xl flex-col items-start px-6 py-16 md:py-20">
-          <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-shu-500/30 bg-shu-500/10 px-3 py-1 text-xs font-medium uppercase tracking-widest text-shu-400">
+          {/* Slightly smaller + more opaque on mobile only (bg-shu-500/20 vs
+              the desktop 10%) — sm: below restores the exact original
+              values, and since this is a breakpoint (not a fixed width) it
+              holds for every mobile screen size, not just one. */}
+          <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-shu-500/30 bg-shu-500/20 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-widest text-shu-400 sm:bg-shu-500/10 sm:px-3 sm:py-1 sm:text-xs">
             <span className="h-1.5 w-1.5 rounded-full bg-shu-400 animate-pulseGlow" />
             {t("hero.badge")}
           </span>
