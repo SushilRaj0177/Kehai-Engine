@@ -88,3 +88,73 @@ export interface PostEventReport {
   recommendations: string[];
   aiGenerated: boolean;
 }
+
+// --- Classrooms (recurring daily QR + geofence attendance for teachers) ---
+
+export interface ClassroomSummary {
+  id: string;
+  name: string;
+  courseCode: string | null;
+  semesterLabel: string | null;
+  joinCode: string;
+  hasGeofence: boolean;
+  geofenceRadiusM: number | null;
+  createdAt: string;
+  studentCount: number;
+  sessionCount: number;
+}
+
+export interface EnrolledClassroom {
+  classroom: {
+    id: string;
+    name: string;
+    courseCode: string | null;
+    semesterLabel: string | null;
+    teacherName: string;
+    hasGeofence: boolean;
+  };
+  joinedAt: string;
+  presentDays: number;
+  totalDays: number;
+  attendanceRate: number;
+  currentStreak: number;
+}
+
+export interface ClassroomDetail {
+  id: string;
+  name: string;
+  courseCode: string | null;
+  semesterLabel: string | null;
+  hasGeofence: boolean;
+  geofenceRadiusM: number | null;
+  createdAt: string;
+  isTeacher: boolean;
+  isEnrolled: boolean;
+  joinCode?: string;
+  studentCount: number;
+  openSession: { id: string; date: string; status: "OPEN" } | null;
+}
+
+export interface RosterRow {
+  enrollmentId: string;
+  student: { id: string; name: string; email: string; avatarUrl?: string | null };
+  joinedAt: string;
+  presentDays: number;
+  totalDays: number;
+  attendanceRate: number;
+  lastAttendedAt: string | null;
+}
+
+export interface HeatmapDay {
+  date: string;
+  level: 0 | 1 | 2 | 3 | 4;
+}
+
+export interface HeatmapResponse {
+  scope: "class" | "student";
+  days: HeatmapDay[];
+  totalSessions: number;
+  presentCount: number;
+  currentStreak: number;
+  longestStreak: number;
+}

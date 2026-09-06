@@ -37,6 +37,15 @@ export function initRealtime(server: HttpServer): SocketIOServer {
     socket.on("leave:event", (eventId: string) => {
       if (typeof eventId === "string") socket.leave(eventRoom(eventId));
     });
+
+    socket.on("join:classroom", (classroomId: string) => {
+      if (typeof classroomId === "string" && classroomId.length > 0) {
+        socket.join(classroomRoom(classroomId));
+      }
+    });
+    socket.on("leave:classroom", (classroomId: string) => {
+      if (typeof classroomId === "string") socket.leave(classroomRoom(classroomId));
+    });
   });
 
   return io;
@@ -62,4 +71,29 @@ export function emitAttendanceUpdate(
 
 export function emitEventUpdate(eventId: string, payload: Record<string, unknown>) {
   io?.to(eventRoom(eventId)).emit("event:update", payload);
+}
+
+function classroomRoom(classroomId: string) {
+  return `classroom:${classroomId}`;
+}
+
+export function emitClassroomJoin(
+  classroomId: string,
+  payload: { studentName: string; joinedAt: string; totalEnrolled: number }
+) {
+  io?.to(classroomRoom(classroomId)).emit("classroom:join", payload);
+}
+
+export function emitClassAttendanceUpdate(
+  classroomId: string,
+  payload: {
+    type: "checkin";
+    studentName: string;
+    checkedInAt: string;
+    totalPresent: number;
+    totalEnrolled: number;
+    attendanceRate: number;
+  }
+) {
+  io?.to(classroomRoom(classroomId)).emit("classattendance:update", payload);
 }

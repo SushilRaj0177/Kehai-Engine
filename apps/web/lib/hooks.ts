@@ -5,12 +5,17 @@ import { apiFetch } from "./api";
 import type {
   AttendeeRow,
   Anomaly,
+  ClassroomDetail,
+  ClassroomSummary,
+  EnrolledClassroom,
   EventAnalytics,
   EventInsights,
   EventSummary,
+  HeatmapResponse,
   MyRegistration,
   Organization,
   PostEventReport,
+  RosterRow,
 } from "./types";
 
 const fetcher = <T,>(path: string) => apiFetch<T>(path);
@@ -71,4 +76,29 @@ export function useAiStatus() {
 
 export function useOrgOverview(orgId: string | undefined) {
   return useSWR(orgId ? `/api/analytics/orgs/${orgId}/overview` : null, fetcher);
+}
+
+export function useMyClassrooms() {
+  return useSWR<ClassroomSummary[]>("/api/classrooms/mine", fetcher);
+}
+
+export function useEnrolledClassrooms() {
+  return useSWR<EnrolledClassroom[]>("/api/classrooms/enrolled", fetcher);
+}
+
+export function useClassroom(id: string | undefined) {
+  return useSWR<ClassroomDetail>(id ? `/api/classrooms/${id}` : null, fetcher);
+}
+
+export function useClassroomRoster(id: string | undefined) {
+  return useSWR<RosterRow[]>(id ? `/api/classrooms/${id}/roster` : null, fetcher, {
+    refreshInterval: 8000,
+  });
+}
+
+export function useClassroomHeatmap(id: string | undefined, studentId?: string) {
+  const qs = studentId ? `?studentId=${encodeURIComponent(studentId)}` : "";
+  return useSWR<HeatmapResponse>(id ? `/api/classrooms/${id}/heatmap${qs}` : null, fetcher, {
+    refreshInterval: 10000,
+  });
 }

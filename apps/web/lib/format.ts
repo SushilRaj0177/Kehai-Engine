@@ -17,6 +17,13 @@ export function formatRelativeMinutes(minutes: number): string {
   return minutes < 0 ? `${abs}m early` : `${abs}m after start`;
 }
 
+export function formatDate(iso: string, locale: "en" | "ja" = "en"): string {
+  const intlLocale = locale === "ja" ? "ja-JP" : "en-US";
+  return new Intl.DateTimeFormat(intlLocale, { month: locale === "ja" ? "long" : "short", day: "numeric", year: "numeric" }).format(
+    new Date(iso)
+  );
+}
+
 export function toLocalDatetimeInputValue(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
