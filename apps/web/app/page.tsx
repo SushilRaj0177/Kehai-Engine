@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import { NavBar } from "@/components/NavBar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/Button";
@@ -11,15 +12,77 @@ import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { StarField } from "@/components/ui/StarField";
 import { useLocale } from "@/lib/i18n";
 
+// Base (static) transform per glow blob — scroll-driven parallax offset
+// gets appended to these at runtime, never replaces them.
+const GLOW_BASE_TRANSFORMS = ["translate(-50%, -10%)", "translate(25%, 0)", "translate(-33%, 0)", "translate(25%, 0)"];
+const GLOW_PARALLAX_SPEED = [0.12, 0.22, 0.18, 0.28];
+
 export default function LandingPage() {
   const { t, locale, pillars, steps } = useLocale();
+  const glowRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  useEffect(() => {
+    let raf = 0;
+    function apply() {
+      const y = window.scrollY;
+      glowRefs.current.forEach((el, i) => {
+        if (!el) return;
+        el.style.transform = `${GLOW_BASE_TRANSFORMS[i]} translateY(${y * GLOW_PARALLAX_SPEED[i]}px)`;
+      });
+      raf = 0;
+    }
+    function onScroll() {
+      if (raf) return;
+      raf = requestAnimationFrame(apply);
+    }
+    apply();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
 
   return (
     <ClickRippleLayer className="relative min-h-screen overflow-hidden">
+      {/* Ambient background spanning the whole page, not just the hero —
+          sized to the full document height (absolute + inset-0 against
+          this root, which is exactly as tall as all the sections below
+          combined) so the red/cyan glow keeps showing up as you scroll
+          instead of vanishing the moment the hero ends. Base color first,
+          then several glow blobs distributed at different heights down
+          the page rather than one blob that only reaches the top. */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+        <div className="absolute inset-0 bg-void-900" />
+        {/* Top blob centered right at the very top edge (was shifted up by
+            translate-y-1/3, which pushed its brightest point above y:0 and
+            left a dim/seam-looking strip right where the page starts —
+            fixed by centering it at the top instead of past it). Each blob's
+            transform is fully JS-managed (base offset + scroll parallax) so
+            no Tailwind transform utility classes here — they'd fight the
+            inline style the scroll handler sets. */}
+        <div
+          ref={(el) => { glowRefs.current[0] = el; }}
+          className="absolute left-1/2 top-0 h-[620px] w-[1000px] rounded-full bg-shu-500/[0.14] blur-[160px]"
+        />
+        <div
+          ref={(el) => { glowRefs.current[1] = el; }}
+          className="absolute right-0 top-[30%] h-[400px] w-[500px] rounded-full bg-kehai-500/[0.08] blur-[130px]"
+        />
+        <div
+          ref={(el) => { glowRefs.current[2] = el; }}
+          className="absolute left-0 top-[62%] h-[500px] w-[600px] rounded-full bg-shu-500/[0.07] blur-[150px]"
+        />
+        <div
+          ref={(el) => { glowRefs.current[3] = el; }}
+          className="absolute right-0 top-[88%] h-[450px] w-[550px] rounded-full bg-kehai-500/[0.07] blur-[140px]"
+        />
+      </div>
+
+      <div className="relative z-10">
       <NavBar />
 
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-void-900" />
         <div className="absolute inset-0 bg-grid opacity-40" />
         <StarField count={50} />
         <KatakanaRain columns={18} className="opacity-90" />
@@ -27,17 +90,6 @@ export default function LandingPage() {
             dark panel instead of a washed-out, see-through backdrop —
             lightened from /55 to /45 for a slightly brighter overall feel. */}
         <div className="absolute inset-0 bg-void-950/45" />
-        {/* Soft diffuse ambient light instead of one hard-edged blob —
-            two overlapping glows (shu + kehai) reading closer to a real
-            light source than a flat colored circle. */}
-        <div
-          aria-hidden
-          className="absolute left-1/2 top-0 h-[620px] w-[1000px] -translate-x-1/2 -translate-y-1/3 rounded-full bg-shu-500/[0.12] blur-[160px]"
-        />
-        <div
-          aria-hidden
-          className="absolute right-0 top-1/3 h-[400px] w-[500px] translate-x-1/4 rounded-full bg-kehai-500/[0.08] blur-[130px]"
-        />
 
         {/* Positioned relative to this full-width section (not the centered
             max-w-7xl content column below) so it actually sits against the
@@ -170,6 +222,7 @@ export default function LandingPage() {
       </section>
 
       <Footer />
+      </div>
     </ClickRippleLayer>
   );
 }
