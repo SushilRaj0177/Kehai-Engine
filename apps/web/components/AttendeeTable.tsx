@@ -50,34 +50,59 @@ export function AttendeeTable({ eventId }: { eventId: string }) {
       ) : !data?.length ? (
         <p className="py-8 text-center text-sm text-white/35">{t("attendeeTable.noMatch")}</p>
       ) : (
-        <div className="scroll-thin max-h-96 overflow-auto rounded-lg">
-          <table className="w-full text-left text-sm">
-            <thead className="sticky top-0 bg-void-900/95 text-[11px] uppercase tracking-wider text-white/40">
-              <tr>
-                <th className="px-4 py-2.5 font-medium">{t("attendeeTable.colName")}</th>
-                <th className="px-4 py-2.5 font-medium">{t("attendeeTable.colEmail")}</th>
-                <th className="px-4 py-2.5 font-medium">{t("attendeeTable.colStatus")}</th>
-                <th className="px-4 py-2.5 font-medium">{t("attendeeTable.colCheckedIn")}</th>
-                <th className="px-4 py-2.5 font-medium">{t("attendeeTable.colDistance")}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/6">
-              {data.map((row) => (
-                <tr key={row.registrationId} className="text-white/75">
-                  <td className="px-4 py-2.5 font-medium text-white">{row.user.name}</td>
-                  <td className="px-4 py-2.5 text-white/50">{row.user.email}</td>
-                  <td className="px-4 py-2.5">
-                    {row.attended ? <Badge status="COMPLETED">{t("badge.attended")}</Badge> : <Badge>{t("badge.pending")}</Badge>}
-                  </td>
-                  <td className="px-4 py-2.5 text-white/50">
+        <>
+          <div className="scroll-thin max-h-96 space-y-2 overflow-auto sm:hidden">
+            {data.map((row) => (
+              <div key={row.registrationId} className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-3.5 py-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-white">{row.user.name}</p>
+                    <p className="truncate text-xs text-white/45">{row.user.email}</p>
+                  </div>
+                  {row.attended ? <Badge status="COMPLETED">{t("badge.attended")}</Badge> : <Badge>{t("badge.pending")}</Badge>}
+                </div>
+                <div className="mt-2.5 flex items-center gap-4 border-t border-white/[0.06] pt-2.5 text-xs text-white/45">
+                  <span>
+                    {t("attendeeTable.colCheckedIn")}:{" "}
                     {row.checkedInAt ? new Date(row.checkedInAt).toLocaleTimeString(locale === "ja" ? "ja-JP" : "en-US") : "—"}
-                  </td>
-                  <td className="px-4 py-2.5 text-white/50">{row.distanceMeters != null ? `${row.distanceMeters}m` : "—"}</td>
+                  </span>
+                  <span>
+                    {t("attendeeTable.colDistance")}: {row.distanceMeters != null ? `${row.distanceMeters}m` : "—"}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="scroll-thin hidden max-h-96 overflow-auto rounded-lg sm:block">
+            <table className="w-full text-left text-sm">
+              <thead className="sticky top-0 bg-void-900/95 text-[11px] uppercase tracking-wider text-white/40">
+                <tr>
+                  <th className="px-4 py-2.5 font-medium">{t("attendeeTable.colName")}</th>
+                  <th className="px-4 py-2.5 font-medium">{t("attendeeTable.colEmail")}</th>
+                  <th className="px-4 py-2.5 font-medium">{t("attendeeTable.colStatus")}</th>
+                  <th className="px-4 py-2.5 font-medium">{t("attendeeTable.colCheckedIn")}</th>
+                  <th className="px-4 py-2.5 font-medium">{t("attendeeTable.colDistance")}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-white/6">
+                {data.map((row) => (
+                  <tr key={row.registrationId} className="text-white/75">
+                    <td className="px-4 py-2.5 font-medium text-white">{row.user.name}</td>
+                    <td className="px-4 py-2.5 text-white/50">{row.user.email}</td>
+                    <td className="px-4 py-2.5">
+                      {row.attended ? <Badge status="COMPLETED">{t("badge.attended")}</Badge> : <Badge>{t("badge.pending")}</Badge>}
+                    </td>
+                    <td className="px-4 py-2.5 text-white/50">
+                      {row.checkedInAt ? new Date(row.checkedInAt).toLocaleTimeString(locale === "ja" ? "ja-JP" : "en-US") : "—"}
+                    </td>
+                    <td className="px-4 py-2.5 text-white/50">{row.distanceMeters != null ? `${row.distanceMeters}m` : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   );
