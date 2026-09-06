@@ -19,7 +19,7 @@ export default function DiscoverEventsPage() {
       <PageGlow />
       <NavBar />
       <div className="relative mx-auto max-w-6xl px-6 py-20">
-        <KanjiMark glyph="催事" className="absolute -right-6 top-0 text-[10rem]" />
+        <KanjiMark glyph="催事" className="absolute -right-6 top-0 text-[6rem] sm:text-[10rem]" />
         <span className="relative text-xs font-semibold uppercase tracking-widest text-shu-400">Live right now</span>
         <h1 className="relative mt-3 font-display text-4xl font-black text-white md:text-5xl">Discover events</h1>
         <p className="relative mt-3 text-lg text-white/50">

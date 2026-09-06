@@ -33,7 +33,7 @@ export default function MyEventsPage() {
       <PageGlow />
       <NavBar />
       <div className="relative mx-auto max-w-5xl px-6 py-20">
-        <KanjiMark glyph="出席" className="absolute -right-6 top-0 text-[9rem]" />
+        <KanjiMark glyph="出席" className="absolute -right-6 top-0 text-[5rem] sm:text-[9rem]" />
 
         <span className="text-xs font-semibold uppercase tracking-widest text-shu-400">Your presence, tracked</span>
         <h1 className="mt-3 font-display text-4xl font-black leading-tight text-white md:text-5xl">My events</h1>

@@ -42,7 +42,7 @@ export default function DashboardPage() {
       <PageGlow />
       <NavBar />
       <div className="relative mx-auto max-w-6xl px-6 py-20">
-        <KanjiMark glyph="組織" className="absolute -right-4 top-0 text-[10rem]" />
+        <KanjiMark glyph="組織" className="absolute -right-4 top-0 text-[6rem] sm:text-[10rem]" />
         <div className="relative flex flex-wrap items-end justify-between gap-4">
           <div>
             <span className="text-xs font-semibold uppercase tracking-widest text-shu-400">Organizer console</span>

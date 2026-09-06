@@ -39,7 +39,7 @@ export default function OrgPage() {
       <PageGlow />
       <NavBar />
       <div className="relative mx-auto max-w-6xl px-6 py-20">
-        <KanjiMark glyph="催" className="absolute -right-6 top-0 text-[10rem]" />
+        <KanjiMark glyph="催" className="absolute -right-6 top-0 text-[6rem] sm:text-[10rem]" />
         <div className="relative flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="font-display text-4xl font-black text-white md:text-5xl">{org.name}</h1>

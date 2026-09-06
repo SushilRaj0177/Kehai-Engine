@@ -83,7 +83,7 @@ export default function EventControlRoomPage() {
       <PageGlow />
       <NavBar />
       <div className="relative mx-auto max-w-6xl px-6 py-16">
-        <KanjiMark glyph="現場" className="absolute -right-6 top-0 text-[9rem]" />
+        <KanjiMark glyph="現場" className="absolute -right-6 top-0 text-[5rem] sm:text-[9rem]" />
 
         <div className="relative flex flex-wrap items-start justify-between gap-4">
           <div>
