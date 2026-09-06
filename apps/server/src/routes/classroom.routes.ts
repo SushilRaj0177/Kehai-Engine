@@ -1,4 +1,5 @@
 import { Router } from "express";
+import QRCode from "qrcode";
 import { asyncHandler } from "../middleware/error.js";
 import { requireAuth, requireClassroomTeacher } from "../middleware/auth.js";
 import { attendanceRateLimit } from "../middleware/rateLimit.js";
@@ -9,6 +10,7 @@ import {
   classCheckInSchema,
 } from "../validators/classroom.js";
 import * as classroomService from "../services/classroom.service.js";
+import { env } from "../config/env.js";
 import { z } from "zod";
 
 export const classroomRouter = Router();
@@ -127,7 +129,10 @@ classroomRouter.get(
   requireAuth,
   requireClassroomTeacher(),
   asyncHandler(async (req, res) => {
-    res.json(await classroomService.issueSessionQr(req.params.classroomId));
+    const { token, expiresAt, rotationSeconds } = await classroomService.issueSessionQr(req.params.classroomId);
+    const deepLink = `${env.WEB_ORIGIN}/classrooms/${req.params.classroomId}/checkin?t=${encodeURIComponent(token)}`;
+    const dataUrl = await QRCode.toDataURL(deepLink, { margin: 1, width: 480, color: { dark: "#0a0e14", light: "#ffffff" } });
+    res.json({ dataUrl, expiresAt, rotationSeconds });
   })
 );
 
