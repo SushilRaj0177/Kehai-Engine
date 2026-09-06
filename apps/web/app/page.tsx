@@ -42,13 +42,23 @@ export default function LandingPage() {
             {t("hero.badge")}
           </span>
 
-          <h1 className="max-w-3xl font-display text-5xl font-black leading-[1.05] tracking-tight text-white md:text-7xl">
+          <h1
+            className={`max-w-3xl font-display text-5xl font-black tracking-tight text-white md:text-7xl ${
+              locale === "ja" ? "leading-[1.25]" : "leading-[1.05]"
+            }`}
+          >
             {t("hero.titleLine1")} <span className="text-glow text-shu-400">{t("hero.titleVerify")}</span>.
             <br />
             {t("hero.titleLine2")} <span className="text-glow-cyan text-kehai-400">{t("hero.titleTrust")}</span>.
           </h1>
 
-          <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/65 md:text-xl">{t("hero.body")}</p>
+          <p
+            className={`mt-6 max-w-xl text-lg text-white/65 md:text-xl ${
+              locale === "ja" ? "leading-loose" : "leading-relaxed"
+            }`}
+          >
+            {t("hero.body")}
+          </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/register">
@@ -73,7 +83,9 @@ export default function LandingPage() {
       <section className="relative mx-auto max-w-5xl px-6 py-28 md:py-36">
         <Reveal variant="curtain" className="mb-16 max-w-2xl">
           <span className="text-xs font-semibold uppercase tracking-widest text-shu-400">{t("pillars.kicker")}</span>
-          <h2 className="mt-3 font-display text-4xl font-bold leading-tight text-white md:text-5xl">
+          <h2 className={`mt-3 font-display text-4xl font-bold text-white md:text-5xl ${
+              locale === "ja" ? "leading-snug" : "leading-tight"
+            }`}>
             {t("pillars.title")}
           </h2>
           <p className="mt-4 text-lg text-white/60">{t("pillars.subtitle")}</p>
@@ -101,7 +113,9 @@ export default function LandingPage() {
         <div className="relative mx-auto max-w-5xl px-6">
           <Reveal className="mb-16 max-w-2xl">
             <span className="text-xs font-semibold uppercase tracking-widest text-kehai-400">{t("flow.kicker")}</span>
-            <h2 className="mt-3 font-display text-4xl font-bold leading-tight text-white md:text-5xl">
+            <h2 className={`mt-3 font-display text-4xl font-bold text-white md:text-5xl ${
+              locale === "ja" ? "leading-snug" : "leading-tight"
+            }`}>
               {t("flow.title")}
             </h2>
             <p className="mt-4 text-lg text-white/60">{t("flow.subtitle")}</p>
