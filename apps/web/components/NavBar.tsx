@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useLocale } from "@/lib/i18n";
 import { Button } from "./ui/Button";
@@ -159,8 +159,40 @@ function MobileMenuLink({ href, onNavigate, children }: { href: string; onNaviga
 
 function LocaleSwitch({ locale, onToggle }: { locale: "en" | "ja"; onToggle: () => void }) {
   const isJa = locale === "ja";
+  const trackRef = useRef<HTMLButtonElement>(null);
+  const thumbRef = useRef<HTMLSpanElement>(null);
+  const enRef = useRef<HTMLSpanElement>(null);
+  const jaRef = useRef<HTMLSpanElement>(null);
+
+  // A fixed-width thumb spanning exactly half the track (the previous
+  // approach) never actually matches either label's own width — "EN" is
+  // much narrower than "日本語", so the fill either left a lot of empty
+  // padding around the short label or sat too tight against the long one.
+  // Measuring each label and sizing/positioning the thumb to hug whichever
+  // is active keeps the sliding-thumb motion but makes the fill actually
+  // enclose the text instead of just occupying a fixed half.
+  useEffect(() => {
+    function place() {
+      const track = trackRef.current;
+      const thumb = thumbRef.current;
+      const active = (isJa ? jaRef.current : enRef.current) as HTMLSpanElement | null;
+      if (!track || !thumb || !active) return;
+      const trackRect = track.getBoundingClientRect();
+      const activeRect = active.getBoundingClientRect();
+      const padX = trackRect.height * 0.34;
+      const width = activeRect.width + padX * 2;
+      const left = activeRect.left - trackRect.left - padX;
+      thumb.style.width = `${width}px`;
+      thumb.style.transform = `translateX(${left}px)`;
+    }
+    place();
+    window.addEventListener("resize", place);
+    return () => window.removeEventListener("resize", place);
+  }, [isJa]);
+
   return (
     <button
+      ref={trackRef}
       type="button"
       onClick={onToggle}
       aria-label="Toggle language"
@@ -168,18 +200,13 @@ function LocaleSwitch({ locale, onToggle }: { locale: "en" | "ja"; onToggle: () 
       className="relative mr-1 h-8 w-20 shrink-0 rounded-full border border-white/10 bg-white/[0.04] transition-colors hover:border-white/20 sm:h-9 sm:w-[132px]"
     >
       {/* sliding thumb — real physical motion, not a color-swap toggle.
-          Smaller track+thumb on mobile (80/32px vs 132/64px desktop) — the
-          previous mobile size (92/44px) left too little clearance between
-          the thumb and whichever label it wasn't covering, so the thumb
-          visibly crept onto the far label's edge in both states. Travel
-          distance is recomputed for each size (track - thumb - 2*inset) so
-          the thumb still lands flush against the far edge either way.
-          Desktop values unchanged. */}
+          Width and position are set imperatively (see the effect above) to
+          hug whichever label is active, rather than a fixed half-track
+          size that fit neither label well. */}
       <span
+        ref={thumbRef}
         aria-hidden
-        className={`absolute inset-y-[2px] left-[2px] w-8 rounded-full bg-gradient-to-br from-shu-500 to-shu-600 shadow-[0_0_12px_rgba(255,45,85,0.5)] transition-transform duration-300 ease-out sm:inset-y-[3px] sm:left-[3px] sm:w-16 ${
-          isJa ? "translate-x-11 sm:translate-x-[62px]" : "translate-x-0"
-        }`}
+        className="absolute inset-y-[2px] left-0 rounded-full bg-gradient-to-br from-shu-500 to-shu-600 shadow-[0_0_12px_rgba(255,45,85,0.5)] transition-[transform,width] duration-300 ease-out sm:inset-y-[3px]"
       />
       {/* z-10 makes sure these labels always paint above the thumb — the
           Japanese label specifically needs font-display (Noto Sans JP);
@@ -187,9 +214,13 @@ function LocaleSwitch({ locale, onToggle }: { locale: "en" | "ja"; onToggle: () 
           under font-bold and reads as nearly invisible at this size.
           日本語 ("nihongo" = "the Japanese language") — not 日 alone,
           which just means "day/sun" and is ambiguous as a language label. */}
-      <span className="relative z-10 flex h-full items-center justify-between px-1.5 text-[10px] font-bold tracking-wide sm:px-3 sm:text-xs">
-        <span className={isJa ? "text-white/35" : "text-white"}>EN</span>
-        <span className={`font-display text-[10px] sm:text-sm ${isJa ? "text-white" : "text-white/35"}`}>日本語</span>
+      <span className="relative z-10 flex h-full items-center justify-between px-2.5 text-[10px] font-bold tracking-wide sm:px-4 sm:text-xs">
+        <span ref={enRef} className={isJa ? "text-white/35" : "text-white"}>
+          EN
+        </span>
+        <span ref={jaRef} className={`font-display text-[10px] sm:text-sm ${isJa ? "text-white" : "text-white/35"}`}>
+          日本語
+        </span>
       </span>
     </button>
   );

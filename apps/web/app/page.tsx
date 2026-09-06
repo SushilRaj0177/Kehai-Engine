@@ -159,11 +159,10 @@ export default function LandingPage() {
           ref={(el) => { glowRefs.current[2] = el; }}
           className="absolute left-0 top-[62%] h-[500px] w-[600px] rounded-full bg-shu-500/[0.07] blur-[150px]"
         />
-        {/* Dimmer cyan on mobile only (0.10 vs the desktop 0.16) — paired
-            with the red blob's mobile-only bump below, so the bottom
-            gradient on a phone reads red-dominant instead of an even
-            red/cyan split that came across as a flat gray wash. Desktop
-            keeps the original even pair. */}
+        {/* Dimmer cyan on mobile (0.10 vs the desktop 0.16), paired with
+            the red blob's mobile-only bump below, so the bottom gradient
+            on a phone reads red-dominant with cyan still present rather
+            than an even split. Desktop keeps the original even pair. */}
         <div
           ref={(el) => { glowRefs.current[3] = el; }}
           className="absolute right-0 top-[88%] h-[500px] w-[650px] rounded-full bg-kehai-500/[0.10] blur-[130px] sm:bg-kehai-500/[0.16]"
