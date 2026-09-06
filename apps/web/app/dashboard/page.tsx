@@ -37,14 +37,17 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen">
       <NavBar />
-      <div className="relative mx-auto max-w-5xl px-6 py-16">
-        <KanjiMark glyph="組織" className="absolute -right-4 top-0 text-[9rem]" />
-        <div className="relative flex items-center justify-between">
+      <div className="relative mx-auto max-w-6xl px-6 py-20">
+        <KanjiMark glyph="組織" className="absolute -right-4 top-0 text-[10rem]" />
+        <div className="relative flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="font-display text-2xl font-bold text-white">Your organizations</h1>
-            <p className="mt-1 text-sm text-white/45">Every event, attendee, and check-in lives under an organization.</p>
+            <span className="text-xs font-semibold uppercase tracking-widest text-shu-400">Organizer console</span>
+            <h1 className="mt-3 font-display text-4xl font-black text-white md:text-5xl">Your organizations</h1>
+            <p className="mt-3 text-lg text-white/50">Every event, attendee, and check-in lives under an organization.</p>
           </div>
-          <Button onClick={() => setShowCreate((s) => !s)}>{showCreate ? "Cancel" : "New organization"}</Button>
+          <Button size="lg" onClick={() => setShowCreate((s) => !s)}>
+            {showCreate ? "Cancel" : "New organization"}
+          </Button>
         </div>
 
         {showCreate && (
@@ -56,7 +59,7 @@ export default function DashboardPage() {
           />
         )}
 
-        <div className="relative mt-8">
+        <div className="relative mt-14">
           {isLoading ? (
             <LoadingBlock />
           ) : !orgs?.length ? (
@@ -67,18 +70,18 @@ export default function DashboardPage() {
               action={<Button onClick={() => setShowCreate(true)}>Create your first organization</Button>}
             />
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-5 sm:grid-cols-2">
               {orgs.map((org) => (
                 <Link key={org.id} href={`/orgs/${org.slug}`}>
                   <Card className="h-full transition-colors hover:border-shu-500/30">
-                    <CardBody>
+                    <CardBody className="py-6">
                       <div className="flex items-center justify-between">
-                        <h3 className="font-display text-base font-semibold text-white">{org.name}</h3>
-                        <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white/50">
+                        <h3 className="font-display text-lg font-bold text-white">{org.name}</h3>
+                        <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-white/50">
                           {org.role}
                         </span>
                       </div>
-                      <p className="mt-1 text-xs text-white/35">/{org.slug}</p>
+                      <p className="mt-1.5 text-sm text-white/35">/{org.slug}</p>
                     </CardBody>
                   </Card>
                 </Link>

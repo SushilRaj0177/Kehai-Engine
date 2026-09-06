@@ -107,12 +107,12 @@ export default function AttendPage() {
   return (
     <div className="min-h-screen">
       <NavBar />
-      <div className="relative mx-auto max-w-md px-6 py-14 text-center">
-        <KanjiMark glyph="確認" className="absolute -right-4 top-0 text-[6rem]" />
-        <h1 className="relative font-display text-xl font-bold text-white">{event?.name ?? "Check in"}</h1>
-        <p className="relative mt-1 text-sm text-white/45">Verify your presence with QR + location.</p>
+      <div className="relative mx-auto max-w-lg px-6 py-16 text-center">
+        <KanjiMark glyph="確認" className="absolute -right-4 top-0 text-[7rem]" />
+        <h1 className="relative font-display text-2xl font-black text-white md:text-3xl">{event?.name ?? "Check in"}</h1>
+        <p className="relative mt-2 text-base text-white/45">Verify your presence with QR + location.</p>
 
-        <div className="relative mt-8">
+        <div className="relative mt-10">
           {step === "scan" && (
             <div className="space-y-4">
               <QrScanner onDecoded={handleDecoded} />

@@ -15,8 +15,15 @@ export function NavBar() {
   const primaryOrg = memberships[0]?.organization;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-void-950/80 backdrop-blur-xl">
-      <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-6">
+    // Floating capsule, not a flat edge-to-edge bar: margin on every side,
+    // a fully rounded shell, and a soft ambient glow standing in for what
+    // was a single hard 1px border — the bar reads as an object sitting on
+    // the page instead of a wall cutting across it.
+    <header className="sticky top-4 z-40 px-4">
+      <div
+        className="mx-auto flex h-[64px] max-w-6xl items-center justify-between rounded-full border border-white/[0.08] bg-void-950/70 px-3 pl-6 backdrop-blur-2xl"
+        style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.02), 0 12px 40px -12px rgba(0,0,0,0.6), 0 0 60px -20px rgba(255,45,85,0.18)" }}
+      >
         <Link href="/" className="group flex items-center gap-2.5">
           <span className="font-display text-2xl font-black leading-none text-shu-400 transition-[text-shadow] duration-300 group-hover:[text-shadow:0_0_22px_rgba(255,45,85,0.65)]">
             気
@@ -33,6 +40,11 @@ export function NavBar() {
             {t("nav.discover")}
           </NavLink>
           {user && (
+            <NavLink href="/my-events" active={pathname === "/my-events"}>
+              {t("nav.myEvents")}
+            </NavLink>
+          )}
+          {user && (
             <NavLink
               href={primaryOrg ? `/orgs/${primaryOrg.slug}` : "/dashboard"}
               active={!!pathname?.startsWith("/orgs") || pathname === "/dashboard"}
@@ -43,19 +55,7 @@ export function NavBar() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={toggle}
-            aria-label="Toggle language"
-            className="mr-1 flex items-center rounded-full border border-white/10 bg-white/[0.03] p-0.5 text-xs font-semibold tracking-wide text-white/40 transition-colors hover:border-white/20"
-          >
-            <span className={`rounded-full px-2.5 py-1 transition-colors ${locale === "en" ? "bg-white/10 text-white" : ""}`}>
-              EN
-            </span>
-            <span className={`rounded-full px-2.5 py-1 transition-colors ${locale === "ja" ? "bg-white/10 text-white" : ""}`}>
-              日本語
-            </span>
-          </button>
+          <LocaleSwitch locale={locale} onToggle={toggle} />
 
           {user ? (
             <>
@@ -88,6 +88,31 @@ export function NavBar() {
         </div>
       </div>
     </header>
+  );
+}
+
+function LocaleSwitch({ locale, onToggle }: { locale: "en" | "ja"; onToggle: () => void }) {
+  const isJa = locale === "ja";
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label="Toggle language"
+      aria-pressed={isJa}
+      className="relative mr-1 h-8 w-[86px] shrink-0 rounded-full border border-white/10 bg-white/[0.04] transition-colors hover:border-white/20"
+    >
+      {/* sliding thumb — real physical motion, not a color-swap toggle */}
+      <span
+        aria-hidden
+        className={`absolute inset-y-[3px] left-[3px] w-10 rounded-full bg-gradient-to-br from-shu-500 to-shu-600 shadow-[0_0_12px_rgba(255,45,85,0.5)] transition-transform duration-300 ease-out ${
+          isJa ? "translate-x-[38px]" : "translate-x-0"
+        }`}
+      />
+      <span className="relative flex h-full items-center justify-between px-2.5 text-[11px] font-bold tracking-wide">
+        <span className={isJa ? "text-white/35" : "text-white"}>EN</span>
+        <span className={isJa ? "text-white" : "text-white/35"}>日</span>
+      </span>
+    </button>
   );
 }
 

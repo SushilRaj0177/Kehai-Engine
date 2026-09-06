@@ -8,6 +8,7 @@ import type {
   EventAnalytics,
   EventInsights,
   EventSummary,
+  MyRegistration,
   Organization,
   PostEventReport,
 } from "./types";
@@ -24,6 +25,10 @@ export function useOrgEvents(orgId: string | undefined) {
 
 export function usePublicEvents() {
   return useSWR<EventSummary[]>("/api/events", fetcher);
+}
+
+export function useMyRegistrations(enabled: boolean) {
+  return useSWR<MyRegistration[]>(enabled ? "/api/events/mine" : null, fetcher);
 }
 
 export function useEvent(eventId: string | undefined) {

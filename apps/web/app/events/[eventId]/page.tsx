@@ -49,47 +49,53 @@ export default function EventDetailPage() {
   return (
     <div className="min-h-screen">
       <NavBar />
-      <div className="relative mx-auto max-w-3xl px-6 py-14">
-        <KanjiMark glyph="詳細" className="absolute -right-6 top-0 text-[7rem]" />
+      <div className="relative mx-auto max-w-3xl px-6 py-20">
+        <KanjiMark glyph="詳細" className="absolute -right-6 top-0 text-[9rem]" />
 
-        <div className="relative flex items-center gap-2">
+        <div className="relative flex items-center gap-2.5">
           <Badge status={event.status}>{event.status}</Badge>
-          <span className="text-xs text-white/40">{event.organization?.name}</span>
+          <span className="text-sm text-white/40">{event.organization?.name}</span>
         </div>
-        <h1 className="relative mt-2 font-display text-3xl font-bold text-white">{event.name}</h1>
-        <p className="relative mt-2 text-sm text-white/50">{formatDateRange(event.startsAt, event.endsAt)} · {event.venue}</p>
+        <h1 className="relative mt-4 font-display text-4xl font-black leading-tight text-white md:text-5xl">
+          {event.name}
+        </h1>
+        <p className="relative mt-3 text-lg text-white/50">
+          {formatDateRange(event.startsAt, event.endsAt)} · {event.venue}
+        </p>
 
-        {event.description && <p className="relative mt-4 text-sm leading-relaxed text-white/60">{event.description}</p>}
+        {event.description && <p className="relative mt-5 text-base leading-relaxed text-white/60">{event.description}</p>}
 
-        {error && <ErrorBlock message={error} className="relative mt-4" />}
+        {error && <ErrorBlock message={error} className="relative mt-5" />}
 
-        <div className="relative mt-6 flex flex-wrap items-center gap-3">
+        <div className="relative mt-8 flex flex-wrap items-center gap-4">
           {event.hasAttended ? (
             <Badge status="COMPLETED">Attendance confirmed</Badge>
           ) : event.isRegistered ? (
             isOpen ? (
               <Link href={`/attend/${event.id}`}>
-                <Button variant="cyan">Check in with QR</Button>
+                <Button variant="cyan" size="lg">
+                  Check in with QR
+                </Button>
               </Link>
             ) : (
               <Badge>Registered</Badge>
             )
           ) : isOpen ? (
-            <Button onClick={register} loading={registering}>
+            <Button size="lg" onClick={register} loading={registering}>
               Register to attend
             </Button>
           ) : (
             <Badge>Registration closed</Badge>
           )}
-          <span className="text-xs text-white/35">
+          <span className="text-sm text-white/35">
             {event._count.registrations} registered{event.capacity ? ` / ${event.capacity} capacity` : ""} · {event._count.attendances} attended
           </span>
         </div>
 
-        <Card className="relative mt-8">
-          <CardBody>
+        <Card className="relative mt-10">
+          <CardBody className="py-6">
             <EventMap latitude={event.latitude} longitude={event.longitude} radiusM={event.geofenceRadiusM} />
-            <p className="mt-3 text-[11px] text-white/35">
+            <p className="mt-4 text-sm text-white/35">
               You must be within ~{event.geofenceRadiusM}m of this location (plus your device&apos;s GPS margin) to check in.
             </p>
           </CardBody>

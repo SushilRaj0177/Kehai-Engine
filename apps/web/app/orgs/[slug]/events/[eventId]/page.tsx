@@ -79,20 +79,20 @@ export default function EventControlRoomPage() {
   return (
     <div className="min-h-screen">
       <NavBar />
-      <div className="relative mx-auto max-w-6xl px-6 py-12">
-        <KanjiMark glyph="現場" className="absolute -right-6 top-0 text-[8rem]" />
+      <div className="relative mx-auto max-w-6xl px-6 py-16">
+        <KanjiMark glyph="現場" className="absolute -right-6 top-0 text-[9rem]" />
 
         <div className="relative flex flex-wrap items-start justify-between gap-4">
           <div>
-            <div className="mb-2 flex items-center gap-2">
+            <div className="mb-3 flex items-center gap-2.5">
               <Badge status={event.status}>{event.status}</Badge>
-              <span className={`flex items-center gap-1 text-[11px] ${liveConnected ? "text-emerald-400" : "text-white/30"}`}>
+              <span className={`flex items-center gap-1.5 text-xs ${liveConnected ? "text-emerald-400" : "text-white/30"}`}>
                 <span className={`h-1.5 w-1.5 rounded-full ${liveConnected ? "bg-emerald-400 animate-pulseGlow" : "bg-white/30"}`} />
                 {liveConnected ? "live" : "polling"}
               </span>
             </div>
-            <h1 className="font-display text-2xl font-bold text-white">{event.name}</h1>
-            <p className="mt-1 text-sm text-white/45">
+            <h1 className="font-display text-3xl font-black text-white md:text-4xl">{event.name}</h1>
+            <p className="mt-2 text-base text-white/45">
               {formatDateRange(event.startsAt, event.endsAt)} · {event.venue}
             </p>
           </div>
@@ -114,14 +114,14 @@ export default function EventControlRoomPage() {
         </div>
         {statusError && <ErrorBlock message={statusError} className="relative mt-3" />}
 
-        <div className="relative mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="relative mt-12 grid grid-cols-2 gap-8 sm:grid-cols-4">
           <StatTile label="Registrations" value={registrations} />
           <StatTile label="Attendance" value={attendance} accent="shu" />
           <StatTile label="Attendance rate" value={`${Math.round(rate * 100)}%`} accent="cyan" />
           <StatTile label="No-show rate" value={`${Math.round((analytics?.noShowRate ?? (1 - rate)) * 100)}%`} />
         </div>
 
-        <div className="relative mt-10 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+        <div className="relative mt-14 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
           <div className="space-y-6">
             <Card>
               <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">Arrival timeline</CardHeader>
@@ -139,7 +139,11 @@ export default function EventControlRoomPage() {
           </div>
 
           <div className="space-y-6">
-            <LiveQrPanel eventId={event.id} active={event.status === "PUBLISHED" || event.status === "ACTIVE"} />
+            <LiveQrPanel
+              eventId={event.id}
+              active={event.status === "PUBLISHED" || event.status === "ACTIVE"}
+              editable={!!org}
+            />
             {org && <AiInsightsPanel eventId={event.id} orgId={org.id} />}
           </div>
         </div>
@@ -165,9 +169,9 @@ function labelFor(status: EventStatus): string {
 
 function StatTile({ label, value, accent }: { label: string; value: React.ReactNode; accent?: "shu" | "cyan" }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-void-800/50 px-4 py-4">
+    <div>
       <div
-        className={`font-display text-2xl font-bold ${
+        className={`font-display text-3xl font-bold md:text-4xl ${
           accent === "shu" ? "text-shu-400" : accent === "cyan" ? "text-kehai-400" : "text-white"
         }`}
       >

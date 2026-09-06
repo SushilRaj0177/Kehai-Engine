@@ -6,6 +6,7 @@ import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Input, Label, Textarea } from "@/components/ui/Input";
+import { QrRotationInput } from "@/components/ui/QrRotationInput";
 import { ErrorBlock, LoadingBlock } from "@/components/ui/States";
 import { KanjiMark } from "@/components/ui/KanjiMark";
 import { useMyOrganizations } from "@/lib/hooks";
@@ -89,12 +90,15 @@ export default function NewEventPage() {
   return (
     <div className="min-h-screen">
       <NavBar />
-      <div className="relative mx-auto max-w-2xl px-6 py-14">
-        <KanjiMark glyph="新" className="absolute -right-4 top-0 text-[8rem]" />
-        <h1 className="relative font-display text-2xl font-bold text-white">New event</h1>
-        <p className="relative mt-1 text-sm text-white/45">Set the venue geofence carefully — this is what verifies real attendance.</p>
+      <div className="relative mx-auto max-w-3xl px-6 py-20">
+        <KanjiMark glyph="新" className="absolute -right-4 top-0 text-[9rem]" />
+        <span className="relative text-xs font-semibold uppercase tracking-widest text-shu-400">Create</span>
+        <h1 className="relative mt-3 font-display text-4xl font-black text-white md:text-5xl">New event</h1>
+        <p className="relative mt-3 text-lg text-white/50">
+          Set the venue geofence carefully — this is what verifies real attendance.
+        </p>
 
-        <form onSubmit={handleSubmit} className="relative mt-8 space-y-5">
+        <form onSubmit={handleSubmit} className="relative mt-12 space-y-6">
           {error && <ErrorBlock message={error} />}
 
           <Card>
@@ -155,9 +159,14 @@ export default function NewEventPage() {
                 </p>
               </div>
               <div>
-                <Label htmlFor="qrRotation">QR rotation interval (seconds)</Label>
-                <Input id="qrRotation" type="number" min={5} max={300} required value={form.qrRotationSeconds} onChange={(e) => set("qrRotationSeconds", e.target.value)} />
-                <p className="mt-1 text-[11px] text-white/35">How often the displayed check-in QR code refreshes.</p>
+                <Label htmlFor="qrRotation">QR rotation interval</Label>
+                <QrRotationInput
+                  value={Number(form.qrRotationSeconds) || 20}
+                  onChange={(seconds) => set("qrRotationSeconds", String(seconds))}
+                />
+                <p className="mt-2 text-[11px] text-white/35">
+                  How often the displayed check-in QR code refreshes — you can change this later too.
+                </p>
               </div>
             </CardBody>
           </Card>

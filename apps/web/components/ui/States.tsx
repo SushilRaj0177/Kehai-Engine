@@ -31,13 +31,13 @@ export function EmptyState({
   className?: string;
 }) {
   return (
-    <div className={cn("relative overflow-hidden rounded-xl border border-white/10 bg-void-800/40 px-8 py-14 text-center", className)}>
-      <span aria-hidden className="absolute -right-4 -top-6 select-none font-display text-[9rem] font-black text-white/[0.03]">
+    <div className={cn("relative overflow-hidden rounded-2xl border border-white/[0.06] bg-void-800/30 px-8 py-20 text-center", className)}>
+      <span aria-hidden className="absolute -right-4 -top-6 select-none font-display text-[10rem] font-black text-white/[0.03]">
         {glyph}
       </span>
-      <p className="relative font-display text-lg font-semibold text-white/85">{title}</p>
-      {description ? <p className="relative mx-auto mt-2 max-w-sm text-sm text-white/45">{description}</p> : null}
-      {action ? <div className="relative mt-5 flex justify-center">{action}</div> : null}
+      <p className="relative font-display text-2xl font-bold text-white/85">{title}</p>
+      {description ? <p className="relative mx-auto mt-3 max-w-md text-base text-white/45">{description}</p> : null}
+      {action ? <div className="relative mt-7 flex justify-center">{action}</div> : null}
     </div>
   );
 }

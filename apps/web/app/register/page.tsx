@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/Button";
-import { Card, CardBody } from "@/components/ui/Card";
 import { Input, Label } from "@/components/ui/Input";
 import { ErrorBlock } from "@/components/ui/States";
 import { KanjiMark } from "@/components/ui/KanjiMark";
@@ -38,45 +37,45 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen">
       <NavBar />
-      <div className="relative mx-auto flex max-w-md flex-col justify-center px-6 py-24">
-        <KanjiMark glyph="始" className="absolute -right-8 -top-4 text-[9rem]" />
-        <h1 className="relative font-display text-2xl font-bold text-white">Create your account</h1>
-        <p className="relative mt-1 text-sm text-white/45">Start an organization or register for events as an attendee.</p>
+      <div className="relative mx-auto flex min-h-[calc(100vh-160px)] max-w-xl flex-col justify-center px-6 py-16">
+        <KanjiMark glyph="始" className="absolute -right-10 top-0 text-[12rem]" />
 
-        <Card className="relative mt-8">
-          <CardBody>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {error && <ErrorBlock message={error} />}
-              <div>
-                <Label htmlFor="name">Full name</Label>
-                <Input id="name" required value={name} onChange={(e) => setName(e.target.value)} />
-              </div>
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-              </div>
-              <div>
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  minLength={8}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-                <p className="mt-1 text-[11px] text-white/35">At least 8 characters.</p>
-              </div>
-              <Button type="submit" className="w-full" loading={loading}>
-                Create account
-              </Button>
-            </form>
-          </CardBody>
-        </Card>
+        <span className="relative text-xs font-semibold uppercase tracking-widest text-shu-400">Get started</span>
+        <h1 className="relative mt-3 font-display text-4xl font-black text-white md:text-5xl">Create your account</h1>
+        <p className="relative mt-3 text-lg text-white/50">
+          Start an organization or register for events as an attendee.
+        </p>
 
-        <p className="relative mt-6 text-center text-sm text-white/40">
+        <form onSubmit={handleSubmit} className="relative mt-12 space-y-6">
+          {error && <ErrorBlock message={error} />}
+          <div>
+            <Label htmlFor="name">Full name</Label>
+            <Input id="name" required value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div>
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+          </div>
+          <div>
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              required
+              minLength={8}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <p className="mt-2 text-sm text-white/35">At least 8 characters.</p>
+          </div>
+          <Button type="submit" size="lg" className="w-full" loading={loading}>
+            Create account
+          </Button>
+        </form>
+
+        <p className="relative mt-8 text-center text-base text-white/45">
           Already have an account?{" "}
-          <Link href="/login" className="text-shu-400 hover:text-shu-300">
+          <Link href="/login" className="font-medium text-shu-400 hover:text-shu-300">
             Sign in
           </Link>
         </p>
