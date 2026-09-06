@@ -165,18 +165,20 @@ function LocaleSwitch({ locale, onToggle }: { locale: "en" | "ja"; onToggle: () 
       onClick={onToggle}
       aria-label="Toggle language"
       aria-pressed={isJa}
-      className="relative mr-1 h-9 w-[92px] shrink-0 rounded-full border border-white/10 bg-white/[0.04] transition-colors hover:border-white/20 sm:w-[132px]"
+      className="relative mr-1 h-8 w-20 shrink-0 rounded-full border border-white/10 bg-white/[0.04] transition-colors hover:border-white/20 sm:h-9 sm:w-[132px]"
     >
       {/* sliding thumb — real physical motion, not a color-swap toggle.
-          Narrower track+thumb on mobile (92/44px vs 132/64px desktop) so
-          this fits next to the CTA buttons on a narrow phone; the travel
-          distance (translate-x) is scaled to match each track's own math
-          (track - thumb - 2*inset), so the thumb still lands flush against
-          the right edge at either size. Desktop values unchanged. */}
+          Smaller track+thumb on mobile (80/32px vs 132/64px desktop) — the
+          previous mobile size (92/44px) left too little clearance between
+          the thumb and whichever label it wasn't covering, so the thumb
+          visibly crept onto the far label's edge in both states. Travel
+          distance is recomputed for each size (track - thumb - 2*inset) so
+          the thumb still lands flush against the far edge either way.
+          Desktop values unchanged. */}
       <span
         aria-hidden
-        className={`absolute inset-y-[3px] left-[3px] w-11 rounded-full bg-gradient-to-br from-shu-500 to-shu-600 shadow-[0_0_12px_rgba(255,45,85,0.5)] transition-transform duration-300 ease-out sm:w-16 ${
-          isJa ? "translate-x-[42px] sm:translate-x-[62px]" : "translate-x-0"
+        className={`absolute inset-y-[2px] left-[2px] w-8 rounded-full bg-gradient-to-br from-shu-500 to-shu-600 shadow-[0_0_12px_rgba(255,45,85,0.5)] transition-transform duration-300 ease-out sm:inset-y-[3px] sm:left-[3px] sm:w-16 ${
+          isJa ? "translate-x-11 sm:translate-x-[62px]" : "translate-x-0"
         }`}
       />
       {/* z-10 makes sure these labels always paint above the thumb — the
@@ -185,9 +187,9 @@ function LocaleSwitch({ locale, onToggle }: { locale: "en" | "ja"; onToggle: () 
           under font-bold and reads as nearly invisible at this size.
           日本語 ("nihongo" = "the Japanese language") — not 日 alone,
           which just means "day/sun" and is ambiguous as a language label. */}
-      <span className="relative z-10 flex h-full items-center justify-between px-2.5 text-xs font-bold tracking-wide sm:px-3">
+      <span className="relative z-10 flex h-full items-center justify-between px-1.5 text-[10px] font-bold tracking-wide sm:px-3 sm:text-xs">
         <span className={isJa ? "text-white/35" : "text-white"}>EN</span>
-        <span className={`font-display text-xs sm:text-sm ${isJa ? "text-white" : "text-white/35"}`}>日本語</span>
+        <span className={`font-display text-[10px] sm:text-sm ${isJa ? "text-white" : "text-white/35"}`}>日本語</span>
       </span>
     </button>
   );

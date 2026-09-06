@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NavBar } from "@/components/NavBar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/Button";
@@ -24,6 +24,51 @@ export default function LandingPage() {
   const flowOlRef = useRef<HTMLOListElement>(null);
   const flowLineRef = useRef<HTMLDivElement>(null);
   const flowLastIconRef = useRef<HTMLSpanElement>(null);
+  const pillarRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const [activePillar, setActivePillar] = useState<number | null>(null);
+
+  useEffect(() => {
+    const isTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+    if (!isTouch) return;
+
+    let raf = 0;
+    function check() {
+      raf = 0;
+      const viewportCenter = window.innerHeight / 2;
+      // Closest-to-center wins, not "is this one within range" per glyph —
+      // independent per-glyph thresholds let two adjacent glyphs both
+      // qualify at once (the rows sit closer together than twice any
+      // threshold generous enough to trigger at all), which is exactly why
+      // two kanji were glowing together. A single nearest-neighbor pick
+      // guarantees at most one is ever active.
+      let closestIndex: number | null = null;
+      let closestDist = Infinity;
+      pillarRefs.current.forEach((el, i) => {
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        if (rect.bottom < 0 || rect.top > window.innerHeight) return;
+        const center = rect.top + rect.height / 2;
+        const dist = Math.abs(center - viewportCenter);
+        if (dist < closestDist) {
+          closestDist = dist;
+          closestIndex = i;
+        }
+      });
+      setActivePillar(closestDist < window.innerHeight * 0.35 ? closestIndex : null);
+    }
+    function onScroll() {
+      if (raf) return;
+      raf = requestAnimationFrame(check);
+    }
+    check();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
 
   useEffect(() => {
     function adjust() {
@@ -114,9 +159,14 @@ export default function LandingPage() {
           ref={(el) => { glowRefs.current[2] = el; }}
           className="absolute left-0 top-[62%] h-[500px] w-[600px] rounded-full bg-shu-500/[0.07] blur-[150px]"
         />
+        {/* Dimmer cyan on mobile only (0.10 vs the desktop 0.16) — paired
+            with the red blob's mobile-only bump below, so the bottom
+            gradient on a phone reads red-dominant instead of an even
+            red/cyan split that came across as a flat gray wash. Desktop
+            keeps the original even pair. */}
         <div
           ref={(el) => { glowRefs.current[3] = el; }}
-          className="absolute right-0 top-[88%] h-[500px] w-[650px] rounded-full bg-kehai-500/[0.16] blur-[130px]"
+          className="absolute right-0 top-[88%] h-[500px] w-[650px] rounded-full bg-kehai-500/[0.10] blur-[130px] sm:bg-kehai-500/[0.16]"
         />
         {/* Mirrors the blob above on the left, same size/brightness, so the
             flow/footer area reads as a matched red+cyan pair instead of
@@ -127,7 +177,7 @@ export default function LandingPage() {
             sitting on top of it, not the blob itself. */}
         <div
           ref={(el) => { glowRefs.current[4] = el; }}
-          className="absolute left-0 top-[88%] h-[500px] w-[650px] rounded-full bg-shu-500/[0.16] blur-[130px]"
+          className="absolute left-0 top-[88%] h-[500px] w-[650px] rounded-full bg-shu-500/[0.24] blur-[130px] sm:bg-shu-500/[0.16]"
         />
 
         {/* Katakana rain + starfield live here (not inside the hero section
@@ -252,7 +302,13 @@ export default function LandingPage() {
           {pillars.map((p, i) => (
             <Reveal key={p.glyph} delayMs={i * 80}>
               <div className="group grid gap-4 py-10 sm:grid-cols-[auto_1fr] sm:items-center sm:gap-10">
-                <PillarGlyph glyph={p.glyph} />
+                <PillarGlyph
+                  ref={(el) => {
+                    pillarRefs.current[i] = el;
+                  }}
+                  glyph={p.glyph}
+                  active={activePillar === i}
+                />
                 <div>
                   <h3 className="font-display text-xl font-bold text-white sm:text-2xl">{p.title[locale]}</h3>
                   <p className="mt-2 max-w-xl text-base leading-relaxed text-white/60">{p.body[locale]}</p>
