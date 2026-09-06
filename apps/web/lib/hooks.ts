@@ -7,6 +7,7 @@ import type {
   Anomaly,
   ClassroomDetail,
   ClassroomSummary,
+  ClassSessionSummary,
   EnrolledClassroom,
   EventAnalytics,
   EventInsights,
@@ -92,6 +93,12 @@ export function useClassroom(id: string | undefined) {
 
 export function useClassroomRoster(id: string | undefined) {
   return useSWR<RosterRow[]>(id ? `/api/classrooms/${id}/roster` : null, fetcher, {
+    refreshInterval: 8000,
+  });
+}
+
+export function useClassroomSessions(id: string | undefined) {
+  return useSWR<ClassSessionSummary[]>(id ? `/api/classrooms/${id}/sessions` : null, fetcher, {
     refreshInterval: 8000,
   });
 }
