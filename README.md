@@ -54,6 +54,21 @@ event data.
 - Scan the organizer's QR (in-app camera scanner or by opening the code's deep link directly)
 - Share location once, see an honest distance readout, and get a confirmed/rejected check-in with a real reason
 
+**Classrooms (teacher side)** — a second, parallel workflow for tracking a
+class's attendance over a semester rather than a one-off event:
+- Create a classroom and share a 6-character join code or link
+- Start, name, end, and restart as many check-in sessions as needed — a
+  lecture and a separate quiz on the same day are two independent sessions,
+  each with its own QR and its own record
+- Get notified in real time the moment a student joins
+- Track both individual and whole-class attendance on a GitHub-contribution
+  -style heatmap, with current/longest streaks
+
+**Classrooms (student side)**
+- Join a class by typing its code
+- Check in the same QR + geofence way as an event
+- See their own attendance heatmap and streak for every class they're in
+
 ---
 
 ## Architecture
@@ -113,9 +128,19 @@ lightweight AuditLog and an AI insight cache. See
 
 ## Authentication & authorization
 
-- **JWT access + refresh tokens.** Access tokens are short-lived (15m
-  default); refresh tokens are stored hashed (`RefreshToken.tokenHash`,
-  SHA-256) and revocable.
+- **JWT access + refresh tokens, persistent by design.** Access tokens are
+  long-lived (7d default) and refresh tokens (stored hashed,
+  `RefreshToken.tokenHash`, SHA-256) do **not** rotate on use — they slide
+  their expiry forward on every refresh instead. A session ends only on
+  explicit logout or a password reset (which revokes every refresh token
+  for that user), matching a "stay signed in" expectation. Rotating on
+  every refresh was tried first and abandoned: it meant any interrupted
+  request (a page reload mid-refresh, two tabs refreshing near-
+  simultaneously) could strand the client holding an already-invalidated
+  token, forcing a spurious logout.
+- **Forgot/reset password**, email-delivered via Resend
+  (`RESEND_API_KEY` — optional, see Environment variables). A reset always
+  revokes every existing session for that account.
 - **Google OAuth 2.0** via `google-auth-library`, verifying the ID token
   server-side. Optional — the platform works fully with password auth if
   `GOOGLE_CLIENT_ID` is unset.
@@ -123,6 +148,8 @@ lightweight AuditLog and an AI insight cache. See
   `requireOrgRole(minRole)` middleware re-reads the caller's `Membership`
   row from the database on every call — it never trusts a role embedded in
   a client-supplied token. Roles: `VIEWER < ORGANIZER < ADMIN < OWNER`.
+  Classrooms mirror this with `requireClassroomTeacher()`, re-checking
+  `Classroom.teacherId` the same way.
 
 ---
 
@@ -250,9 +277,12 @@ see `apps/server/prisma/seed.ts` for the full list).
 See `apps/server/.env.example` and `apps/web/.env.example` for the full,
 commented list. Nothing is hardcoded — every URL and secret is
 environment-driven. AI features (`GROQ_API_KEY` — free tier, no credit card
-required, get one at console.groq.com/keys) and Google sign-in
-(`GOOGLE_CLIENT_ID`) are both optional; the platform is fully functional
-without them (password auth + deterministic analytics fallbacks).
+required, get one at console.groq.com/keys), Google sign-in
+(`GOOGLE_CLIENT_ID`), and password-reset email (`RESEND_API_KEY` — free
+tier, no credit card required, get one at resend.com/api-keys) are all
+optional; the platform is fully functional without any of them (password
+auth still works, a reset request without an email key configured just
+logs the link server-side instead of emailing it).
 
 ---
 
@@ -262,11 +292,14 @@ without them (password auth + deterministic analytics fallbacks).
 pnpm --filter server test
 ```
 
-28 tests (Vitest): geofence math (including accuracy-padding edge cases and
+43 tests (Vitest): geofence math (including accuracy-padding edge cases and
 invalid-coordinate rejection), QR token signing/verification (cross-event
-rejection, expiry, tamper resistance), duplicate check-in prevention and
-geofence rejection against a real Postgres database, event lifecycle
-transition validity, and analytics correctness.
+rejection, expiry, tamper resistance) for both events and classroom
+sessions, duplicate check-in prevention and geofence rejection against a
+real Postgres database, event lifecycle transition validity, join-code
+generation, streak computation, analytics correctness, and the auth session
+lifecycle (refresh non-rotation, logout revocation, password reset
+revoking every session).
 
 Frontend: `pnpm --filter web build` runs a full production build with
 type-checking. The complete demo flow (register → org → event → publish →
@@ -368,6 +401,7 @@ All routes are under `/api`. Representative endpoints:
 | Method | Path | Notes |
 |---|---|---|
 | POST | `/api/auth/register`, `/login`, `/google`, `/refresh` | Auth |
+| POST | `/api/auth/forgot-password`, `/reset-password` | Password recovery (always 200, no account enumeration) |
 | GET | `/api/auth/me` | Current user + memberships |
 | POST | `/api/orgs` | Create organization |
 | POST | `/api/orgs/:orgId/events` | Create event (role: ORGANIZER+) |
@@ -380,6 +414,13 @@ All routes are under `/api`. Representative endpoints:
 | GET | `/api/ai/events/:eventId/insights` · `/report` | AI-interpreted insights / report |
 | POST | `/api/ai/orgs/:orgId/ask` | Natural-language query |
 | GET | `/api/export/events/:eventId/attendees.csv` · `.xlsx` | Export |
+| POST | `/api/classrooms` · GET `/mine` · `/enrolled` | Create / list classrooms |
+| POST | `/api/classrooms/join` | Join by 6-character code |
+| GET/POST/PATCH | `/api/classrooms/:id/sessions[/:sessionId]` | List, start, rename, or re-rotate a session |
+| POST | `/api/classrooms/:id/sessions/:sessionId/close` · `/reopen` | End or restart a session |
+| GET | `/api/classrooms/:id/sessions/:sessionId/qr` | Issue that session's rotating QR image |
+| POST | `/api/classrooms/:id/checkin` | QR + geofence verified check-in |
+| GET | `/api/classrooms/:id/heatmap` · `/roster` | Attendance heatmap / per-student roster |
 
 ---
 
@@ -403,8 +444,9 @@ All routes are under `/api`. Representative endpoints:
   not a cryptographic proof of physical presence (a rooted device with a
   mocked GPS provider could still lie). See `PRIVACY.md` for the full,
   honest statement.
-- Multi-language UI (English only today) — the data model and AI layer have
-  no language assumptions baked in, so localization is additive, not a
+- Bilingual UI (English/Japanese) today — the i18n system
+  (`apps/web/lib/i18n.tsx`) is a flat dictionary keyed by dot-path, so
+  adding a third language is additive (one more locale column), not a
   rewrite.
 - No native mobile app — the attendee flow is a mobile-optimized web app
   using the browser's camera and geolocation APIs.
