@@ -27,7 +27,15 @@ export default function LandingPage() {
       const y = window.scrollY;
       glowRefs.current.forEach((el, i) => {
         if (!el) return;
-        el.style.transform = `${GLOW_BASE_TRANSFORMS[i]} translateY(${y * GLOW_PARALLAX_SPEED[i]}px)`;
+        // Clamped, not just `y * speed` — on a page this tall, an
+        // unbounded offset drags a blob hundreds of px away from the
+        // top-X% position it was placed at by the time you've scrolled
+        // anywhere near it, which is exactly why the footer's red/cyan
+        // pair went invisible at the bottom of the page even though they
+        // showed up fine partway down. Capping it keeps the parallax feel
+        // near the top of the page without derailing anything below it.
+        const offset = Math.min(y * GLOW_PARALLAX_SPEED[i], 90);
+        el.style.transform = `${GLOW_BASE_TRANSFORMS[i]} translateY(${offset}px)`;
       });
       raf = 0;
     }
@@ -69,7 +77,7 @@ export default function LandingPage() {
             to register against that section's plain background). */}
         <div
           ref={(el) => { glowRefs.current[1] = el; }}
-          className="absolute right-0 top-[28%] h-[500px] w-[750px] rounded-full bg-kehai-500/[0.12] blur-[150px]"
+          className="absolute right-0 top-[28%] h-[500px] w-[750px] rounded-full bg-kehai-500/[0.10] blur-[150px]"
         />
         <div
           ref={(el) => { glowRefs.current[2] = el; }}
@@ -77,14 +85,18 @@ export default function LandingPage() {
         />
         <div
           ref={(el) => { glowRefs.current[3] = el; }}
-          className="absolute right-0 top-[88%] h-[450px] w-[550px] rounded-full bg-kehai-500/[0.07] blur-[140px]"
+          className="absolute right-0 top-[88%] h-[500px] w-[650px] rounded-full bg-kehai-500/[0.16] blur-[130px]"
         />
         {/* Mirrors the blob above on the left, same size/brightness, so the
             flow/footer area reads as a matched red+cyan pair instead of
-            cyan-only. */}
+            cyan-only — bumped from 0.07 to 0.16 (matching the blob above)
+            since 0.07 was too faint to register as a visible glow at all
+            against this section's dark background, unlike the right side
+            which reads brighter only because of the teal kanji watermark
+            sitting on top of it, not the blob itself. */}
         <div
           ref={(el) => { glowRefs.current[4] = el; }}
-          className="absolute left-0 top-[88%] h-[450px] w-[550px] rounded-full bg-shu-500/[0.07] blur-[140px]"
+          className="absolute left-0 top-[88%] h-[500px] w-[650px] rounded-full bg-shu-500/[0.16] blur-[130px]"
         />
 
         {/* Katakana rain + starfield live here (not inside the hero section
@@ -110,11 +122,26 @@ export default function LandingPage() {
       <NavBar />
 
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-grid opacity-40" />
-        {/* Scrim over the grid/rain layers so the hero reads as a solid
-            dark panel instead of a washed-out, see-through backdrop —
-            lightened from /55 to /45 for a slightly brighter overall feel. */}
-        <div className="absolute inset-0 bg-void-950/45" />
+        {/* Grid + scrim faded in/out at the top and bottom instead of a hard
+            inset-0 rectangle — an unmasked scrim clipped exactly to this
+            section's box created a visible seam right where it started
+            (behind the navbar) and another where it ended (into the pillars
+            section), since only this box got the extra darkening on top of
+            the page-wide ambient layer. Fading both edges blends it into
+            the surrounding background instead of hard-cutting. */}
+        <div
+          className="absolute inset-0"
+          style={{
+            maskImage: "linear-gradient(to bottom, transparent 0, black 120px, black calc(100% - 140px), transparent 100%)",
+            WebkitMaskImage: "linear-gradient(to bottom, transparent 0, black 120px, black calc(100% - 140px), transparent 100%)",
+          }}
+        >
+          <div className="absolute inset-0 bg-grid opacity-40" />
+          {/* Scrim over the grid/rain layers so the hero reads as a solid
+              dark panel instead of a washed-out, see-through backdrop —
+              lightened from /55 to /45 for a slightly brighter overall feel. */}
+          <div className="absolute inset-0 bg-void-950/45" />
+        </div>
 
         {/* Positioned relative to this full-width section (not the centered
             max-w-7xl content column below) so it actually sits against the
