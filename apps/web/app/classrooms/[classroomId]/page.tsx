@@ -25,7 +25,7 @@ export default function ClassroomDetailPage() {
   const router = useRouter();
   const studentParam = searchParams.get("student") ?? undefined;
 
-  const { data: classroom, isLoading, mutate } = useClassroom(classroomId);
+  const { data: classroom, error: classroomError, isLoading, mutate } = useClassroom(classroomId);
   const { mutate: mutateRoster } = useClassroomRoster(classroomId);
   const { data: heatmap } = useClassroomHeatmap(classroomId, classroom?.isTeacher ? studentParam : undefined);
 
@@ -59,7 +59,19 @@ export default function ClassroomDetailPage() {
     return () => clearTimeout(timer);
   }, [toast]);
 
-  if (isLoading || !classroom) return <LoadingBlock label={t("states.loadingClassroom")} />;
+  if (isLoading) return <LoadingBlock label={t("states.loadingClassroom")} />;
+
+  if (classroomError || !classroom) {
+    return (
+      <div className="relative min-h-screen">
+        <PageGlow />
+        <NavBar />
+        <div className="relative mx-auto max-w-lg px-6 py-24">
+          <EmptyState title={t("classroomDetail.notFoundTitle")} description={t("classroomDetail.notFoundDescription")} />
+        </div>
+      </div>
+    );
+  }
 
   async function startSession() {
     setSessionError(null);
@@ -85,18 +97,6 @@ export default function ClassroomDetailPage() {
     } finally {
       setEnding(false);
     }
-  }
-
-  if (!classroom.isTeacher && !classroom.isEnrolled) {
-    return (
-      <div className="relative min-h-screen">
-        <PageGlow />
-        <NavBar />
-        <div className="relative mx-auto max-w-lg px-6 py-24">
-          <EmptyState title={t("classroomDetail.notFoundTitle")} description={t("classroomDetail.notFoundDescription")} />
-        </div>
-      </div>
-    );
   }
 
   const viewingStudent = classroom.isTeacher && !!studentParam;

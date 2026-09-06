@@ -245,6 +245,11 @@ const dict = {
     registeredOf: { en: "{count}/{capacity} registered", ja: "登録 {count}/{capacity} 名" },
   },
   eventDetail: {
+    notFoundTitle: { en: "Event not found", ja: "イベントが見つかりません" },
+    notFoundDescription: {
+      en: "This event doesn't exist, or you don't have access to it.",
+      ja: "このイベントは存在しないか、アクセス権がありません。",
+    },
     checkInWithQr: { en: "Check in with QR", ja: "QRでチェックイン" },
     registerToAttend: { en: "Register to attend", ja: "参加登録する" },
     registeredCount: { en: "{count} registered", ja: "登録 {count} 名" },
