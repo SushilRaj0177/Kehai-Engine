@@ -20,6 +20,7 @@ import { apiFetch, ApiError } from "@/lib/api";
 import { formatDateRange } from "@/lib/format";
 import { subscribeToEvent } from "@/lib/realtime";
 import type { EventStatus } from "@/lib/types";
+import { useLocale } from "@/lib/i18n";
 
 const TRANSITIONS: Record<EventStatus, EventStatus[]> = {
   DRAFT: ["PUBLISHED", "CANCELLED"],
@@ -30,6 +31,7 @@ const TRANSITIONS: Record<EventStatus, EventStatus[]> = {
 };
 
 export default function EventControlRoomPage() {
+  const { t, locale } = useLocale();
   const { slug, eventId } = useParams<{ slug: string; eventId: string }>();
   const { data: orgs } = useMyOrganizations();
   const org = orgs?.find((o) => o.slug === slug);
@@ -66,13 +68,13 @@ export default function EventControlRoomPage() {
       await apiFetch(`/api/events/${eventId}/status`, { method: "POST", body: JSON.stringify({ status: next }) });
       await mutate();
     } catch (err) {
-      setStatusError(err instanceof ApiError ? err.message : "Failed to update event status");
+      setStatusError(err instanceof ApiError ? err.message : t("eventControl.statusUpdateError"));
     } finally {
       setTransitioning(false);
     }
   }
 
-  if (isLoading || !event) return <LoadingBlock label="Loading event…" />;
+  if (isLoading || !event) return <LoadingBlock label={t("states.loadingEvent")} />;
 
   const attendance = liveCount?.attendance ?? analytics?.attendance ?? event._count.attendances;
   const registrations = liveCount?.registrations ?? analytics?.registrations ?? event._count.registrations;
@@ -88,15 +90,15 @@ export default function EventControlRoomPage() {
         <div className="relative flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="mb-3 flex items-center gap-2.5">
-              <Badge status={event.status}>{event.status}</Badge>
+              <Badge status={event.status}>{t(`badge.status.${event.status}`)}</Badge>
               <span className={`flex items-center gap-1.5 text-xs ${liveConnected ? "text-emerald-400" : "text-white/30"}`}>
                 <span className={`h-1.5 w-1.5 rounded-full ${liveConnected ? "bg-emerald-400 animate-pulseGlow" : "bg-white/30"}`} />
-                {liveConnected ? "live" : "polling"}
+                {liveConnected ? t("eventControl.live") : t("eventControl.polling")}
               </span>
             </div>
             <h1 className="font-display text-3xl font-black text-white md:text-4xl">{event.name}</h1>
             <p className="mt-2 text-base text-white/45">
-              {formatDateRange(event.startsAt, event.endsAt)} · {event.venue}
+              {formatDateRange(event.startsAt, event.endsAt, locale)} · {event.venue}
             </p>
           </div>
 
@@ -109,7 +111,7 @@ export default function EventControlRoomPage() {
                 loading={transitioning}
                 onClick={() => transition(next)}
               >
-                {labelFor(next)}
+                {labelFor(next, t)}
               </Button>
             ))}
             {org && <ExportButtons eventId={event.id} />}
@@ -118,23 +120,23 @@ export default function EventControlRoomPage() {
         {statusError && <ErrorBlock message={statusError} className="relative mt-3" />}
 
         <div className="relative mt-12 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <StatTile label="Registrations" value={registrations} />
-          <StatTile label="Attendance" value={attendance} accent="shu" />
-          <StatTile label="Attendance rate" value={`${Math.round(rate * 100)}%`} accent="cyan" ring={rate} />
-          <StatTile label="No-show rate" value={`${Math.round((analytics?.noShowRate ?? (1 - rate)) * 100)}%`} />
+          <StatTile label={t("eventControl.statRegistrations")} value={registrations} />
+          <StatTile label={t("eventControl.statAttendance")} value={attendance} accent="shu" />
+          <StatTile label={t("eventControl.statAttendanceRate")} value={`${Math.round(rate * 100)}%`} accent="cyan" ring={rate} />
+          <StatTile label={t("eventControl.statNoShowRate")} value={`${Math.round((analytics?.noShowRate ?? (1 - rate)) * 100)}%`} />
         </div>
 
         <div className="relative mt-14 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
           <div className="space-y-6">
             <Card>
-              <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">Arrival timeline</CardHeader>
+              <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">{t("eventControl.arrivalTimeline")}</CardHeader>
               <CardBody>
                 {analytics ? <ArrivalTimelineChart data={analytics.arrivalTimeline} /> : <LoadingBlock />}
               </CardBody>
             </Card>
 
             <Card>
-              <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">Attendees</CardHeader>
+              <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">{t("eventControl.attendees")}</CardHeader>
               <CardBody>
                 <AttendeeTable eventId={event.id} />
               </CardBody>
@@ -155,16 +157,16 @@ export default function EventControlRoomPage() {
   );
 }
 
-function labelFor(status: EventStatus): string {
+function labelFor(status: EventStatus, t: (path: string) => string): string {
   switch (status) {
     case "PUBLISHED":
-      return "Publish";
+      return t("eventControl.transitionPublish");
     case "ACTIVE":
-      return "Go live";
+      return t("eventControl.transitionGoLive");
     case "COMPLETED":
-      return "Mark completed";
+      return t("eventControl.transitionMarkCompleted");
     case "CANCELLED":
-      return "Cancel";
+      return t("eventControl.transitionCancel");
     default:
       return status;
   }

@@ -12,8 +12,10 @@ import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
 import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api";
+import { useLocale } from "@/lib/i18n";
 
 export default function LoginPage() {
+  const { t } = useLocale();
   const { login } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -29,7 +31,7 @@ export default function LoginPage() {
       await login(email, password);
       router.push("/dashboard");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong");
+      setError(err instanceof ApiError ? err.message : t("auth.genericError"));
     } finally {
       setLoading(false);
     }
@@ -48,33 +50,33 @@ export default function LoginPage() {
             overlap. */}
         <KanjiMark glyph="入" className="absolute -right-6 top-0 text-[7rem] sm:-right-10 sm:text-[12rem]" />
 
-        <span className="relative z-20 text-xs font-semibold uppercase tracking-widest text-shu-400">Welcome back</span>
-        <h1 className="relative z-20 mt-3 font-display text-4xl font-black text-white md:text-5xl">Sign in</h1>
-        <p className="relative z-20 mt-3 text-lg text-white/50">Access your organizer console or attendee account.</p>
+        <span className="relative z-20 text-xs font-semibold uppercase tracking-widest text-shu-400">{t("auth.loginKicker")}</span>
+        <h1 className="relative z-20 mt-3 font-display text-4xl font-black text-white md:text-5xl">{t("auth.loginTitle")}</h1>
+        <p className="relative z-20 mt-3 text-lg text-white/50">{t("auth.loginSubtitle")}</p>
 
         <Card className="relative z-20 mt-12">
           <CardBody>
             <form onSubmit={handleSubmit} className="space-y-6">
               {error && <ErrorBlock message={error} />}
               <div>
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t("auth.emailLabel")}</Label>
                 <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
               <div>
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">{t("auth.passwordLabel")}</Label>
                 <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
               </div>
               <Button type="submit" size="lg" className="w-full" loading={loading}>
-                Sign in
+                {t("auth.signInButton")}
               </Button>
             </form>
           </CardBody>
         </Card>
 
         <p className="relative z-20 mt-8 text-center text-base text-white/45">
-          No account?{" "}
+          {t("auth.noAccount")}{" "}
           <Link href="/register" className="font-medium text-shu-400 hover:text-shu-300">
-            Create one
+            {t("auth.createOne")}
           </Link>
         </p>
       </div>

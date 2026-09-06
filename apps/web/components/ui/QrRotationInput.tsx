@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/cn";
+import { useLocale } from "@/lib/i18n";
 
 type Unit = "s" | "m" | "h";
 
 const UNIT_SECONDS: Record<Unit, number> = { s: 1, m: 60, h: 3600 };
-const UNIT_LABEL: Record<Unit, string> = { s: "sec", m: "min", h: "hr" };
+const UNIT_KEY: Record<Unit, "unitSec" | "unitMin" | "unitHr"> = { s: "unitSec", m: "unitMin", h: "unitHr" };
 
 // Named presets spanning the realistic range organizers actually want —
 // a fast-refresh 30s window for high-security check-ins, up through
@@ -41,6 +42,7 @@ export function QrRotationInput({
   max?: number;
   disabled?: boolean;
 }) {
+  const { t } = useLocale();
   const [unit, setUnit] = useState<Unit>(() => bestUnitFor(value));
   const displayValue = useMemo(() => Math.max(1, Math.round(value / UNIT_SECONDS[unit])), [value, unit]);
 
@@ -78,7 +80,7 @@ export function QrRotationInput({
       </div>
 
       <div className="flex items-center gap-2">
-        <span className="text-xs uppercase tracking-wider text-white/35">Custom</span>
+        <span className="text-xs uppercase tracking-wider text-white/35">{t("qrRotation.customLabel")}</span>
         <input
           type="number"
           disabled={disabled}
@@ -88,7 +90,7 @@ export function QrRotationInput({
           className="w-20 border-0 border-b border-white/15 bg-transparent px-1 py-1 text-sm text-white outline-none focus:border-shu-400/60 disabled:opacity-40"
         />
         <div className="flex overflow-hidden rounded-full border border-white/10">
-          {(Object.keys(UNIT_LABEL) as Unit[]).map((u) => (
+          {(Object.keys(UNIT_KEY) as Unit[]).map((u) => (
             <button
               key={u}
               type="button"
@@ -99,7 +101,7 @@ export function QrRotationInput({
                 unit === u ? "bg-white/10 text-white" : "text-white/40 hover:text-white/70"
               )}
             >
-              {UNIT_LABEL[u]}
+              {t(`qrRotation.${UNIT_KEY[u]}`)}
             </button>
           ))}
         </div>

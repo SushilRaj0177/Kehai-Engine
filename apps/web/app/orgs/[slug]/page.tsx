@@ -12,8 +12,10 @@ import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
 import { useMyOrganizations, useOrgEvents, useOrgOverview } from "@/lib/hooks";
 import { formatDateRange } from "@/lib/format";
+import { useLocale } from "@/lib/i18n";
 
 export default function OrgPage() {
+  const { t, locale } = useLocale();
   const { slug } = useParams<{ slug: string }>();
   const { data: orgs, isLoading: orgsLoading } = useMyOrganizations();
   const org = orgs?.find((o) => o.slug === slug);
@@ -28,7 +30,7 @@ export default function OrgPage() {
         <PageGlow />
         <NavBar />
         <div className="relative mx-auto max-w-lg px-6 py-24">
-          <EmptyState title="Organization not found" description="You may not be a member, or it doesn't exist." />
+          <EmptyState title={t("orgDetail.notFoundTitle")} description={t("orgDetail.notFoundDescription")} />
         </div>
       </div>
     );
@@ -46,31 +48,31 @@ export default function OrgPage() {
             <p className="mt-2 text-base text-white/40">/{org.slug}</p>
           </div>
           <Link href={`/orgs/${org.slug}/events/new`}>
-            <Button size="lg">New event</Button>
+            <Button size="lg">{t("orgDetail.newEvent")}</Button>
           </Link>
         </div>
 
         {overview && (
           <div className="relative mt-14 grid grid-cols-2 gap-8 sm:grid-cols-4">
-            <MiniStat label="Events" value={overview.totalEvents} />
-            <MiniStat label="Registrations" value={overview.totalRegistrations} />
-            <MiniStat label="Attendance" value={overview.totalAttendance} />
-            <MiniStat label="Avg. attendance rate" value={`${Math.round((overview.averageAttendanceRate ?? 0) * 100)}%`} />
+            <MiniStat label={t("orgDetail.statEvents")} value={overview.totalEvents} />
+            <MiniStat label={t("orgDetail.statRegistrations")} value={overview.totalRegistrations} />
+            <MiniStat label={t("orgDetail.statAttendance")} value={overview.totalAttendance} />
+            <MiniStat label={t("orgDetail.statAvgRate")} value={`${Math.round((overview.averageAttendanceRate ?? 0) * 100)}%`} />
           </div>
         )}
 
         <div className="relative mt-16">
-          <h2 className="mb-6 font-display text-xl font-bold text-white/70">Events</h2>
+          <h2 className="mb-6 font-display text-xl font-bold text-white/70">{t("orgDetail.eventsHeading")}</h2>
           {eventsLoading ? (
             <LoadingBlock />
           ) : !events?.length ? (
             <EmptyState
               glyph="催"
-              title="No events yet"
-              description="Create your first event — set the venue, geofence, and publish when ready."
+              title={t("orgDetail.emptyTitle")}
+              description={t("orgDetail.emptyDescription")}
               action={
                 <Link href={`/orgs/${org.slug}/events/new`}>
-                  <Button>Create an event</Button>
+                  <Button>{t("orgDetail.createEvent")}</Button>
                 </Link>
               }
             />
@@ -83,13 +85,13 @@ export default function OrgPage() {
                       <CardBody className="relative z-10 py-6">
                         <div className="flex items-start justify-between gap-2">
                           <h3 className="font-display text-base font-bold leading-snug text-white">{event.name}</h3>
-                          <Badge status={event.status}>{event.status}</Badge>
+                          <Badge status={event.status}>{t(`badge.status.${event.status}`)}</Badge>
                         </div>
-                        <p className="mt-2 text-sm text-white/40">{formatDateRange(event.startsAt, event.endsAt)}</p>
+                        <p className="mt-2 text-sm text-white/40">{formatDateRange(event.startsAt, event.endsAt, locale)}</p>
                         <p className="mt-1 text-sm text-white/35">{event.venue}</p>
                         <div className="mt-5 flex items-center gap-4 border-t border-white/[0.06] pt-4 text-sm text-white/50">
-                          <span>{event._count.registrations} registered</span>
-                          <span>{event._count.attendances} attended</span>
+                          <span>{t("orgDetail.registeredCount", { count: event._count.registrations })}</span>
+                          <span>{t("orgDetail.attendedCount", { count: event._count.attendances })}</span>
                         </div>
                       </CardBody>
                     </Card>

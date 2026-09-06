@@ -1,12 +1,14 @@
-export function formatDateRange(startsAt: string, endsAt: string): string {
+export function formatDateRange(startsAt: string, endsAt: string, locale: "en" | "ja" = "en"): string {
   const start = new Date(startsAt);
   const end = new Date(endsAt);
-  const dateFmt = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" });
-  const timeFmt = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" });
+  const intlLocale = locale === "ja" ? "ja-JP" : "en-US";
+  const dateFmt = new Intl.DateTimeFormat(intlLocale, { month: locale === "ja" ? "long" : "short", day: "numeric", year: "numeric" });
+  const timeFmt = new Intl.DateTimeFormat(intlLocale, { hour: "numeric", minute: "2-digit" });
   const sameDay = start.toDateString() === end.toDateString();
+  const dash = locale === "ja" ? "〜" : "–";
   return sameDay
-    ? `${dateFmt.format(start)} · ${timeFmt.format(start)} – ${timeFmt.format(end)}`
-    : `${dateFmt.format(start)} – ${dateFmt.format(end)}`;
+    ? `${dateFmt.format(start)} · ${timeFmt.format(start)} ${dash} ${timeFmt.format(end)}`
+    : `${dateFmt.format(start)} ${dash} ${dateFmt.format(end)}`;
 }
 
 export function formatRelativeMinutes(minutes: number): string {
