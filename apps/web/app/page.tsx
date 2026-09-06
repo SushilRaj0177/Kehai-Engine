@@ -10,6 +10,7 @@ import { KatakanaRain } from "@/components/ui/KatakanaRain";
 import { Reveal } from "@/components/ui/Reveal";
 import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { StarField } from "@/components/ui/StarField";
+import { PillarGlyph } from "@/components/ui/PillarGlyph";
 import { useLocale } from "@/lib/i18n";
 
 // Base (static) transform per glow blob — scroll-driven parallax offset
@@ -20,6 +21,36 @@ const GLOW_PARALLAX_SPEED = [0.12, 0.22, 0.18, 0.28, 0.25];
 export default function LandingPage() {
   const { t, locale, pillars, steps } = useLocale();
   const glowRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const flowOlRef = useRef<HTMLOListElement>(null);
+  const flowLineRef = useRef<HTMLDivElement>(null);
+  const flowLastIconRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    function adjust() {
+      const ol = flowOlRef.current;
+      const line = flowLineRef.current;
+      const icon = flowLastIconRef.current;
+      if (!ol || !line) return;
+      // Desktop's step descriptions are short enough that the line's
+      // static bottom-8 (32px above the ol's own bottom edge) roughly ends
+      // near the last icon — leave that alone. On mobile the same text
+      // wraps across more lines, pushing the ol's total height up without
+      // moving the last icon (it stays near the top of its own <li>), so
+      // the fixed 32px offset way overshoots. Below sm, measure where that
+      // icon actually is and pin the line to its center instead.
+      if (!window.matchMedia("(max-width: 639px)").matches || !icon) {
+        line.style.bottom = "";
+        return;
+      }
+      const olRect = ol.getBoundingClientRect();
+      const iconRect = icon.getBoundingClientRect();
+      const iconCenterY = iconRect.top + iconRect.height / 2 - olRect.top;
+      line.style.bottom = `${ol.offsetHeight - iconCenterY}px`;
+    }
+    adjust();
+    window.addEventListener("resize", adjust);
+    return () => window.removeEventListener("resize", adjust);
+  }, [locale]);
 
   useEffect(() => {
     let raf = 0;
@@ -150,7 +181,14 @@ export default function LandingPage() {
         <KanjiMark glyph="気配" prominent className="absolute -right-6 top-2 text-[13rem] md:text-[19rem]" />
         <VerticalCaption text="出席・検証・洞察" className="absolute right-10 top-14 hidden lg:block" />
 
-        <div className="relative mx-auto flex max-w-7xl flex-col items-start px-6 py-16 md:py-20">
+        {/* z-20 — above KanjiMark's own hardcoded z-10. On desktop the glyph
+            sits far enough right of this max-w-7xl column that the two
+            never actually overlap, so this has no visible effect there;
+            on mobile the glyph is wide enough to sit directly behind the
+            full-width heading, and without this the glyph (painted above,
+            since z-index beats DOM order once either side sets one) tinted
+            individual letters wherever its strokes crossed the text. */}
+        <div className="relative z-20 mx-auto flex max-w-7xl flex-col items-start px-6 py-16 md:py-20">
           <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-shu-500/30 bg-shu-500/10 px-3 py-1 text-xs font-medium uppercase tracking-widest text-shu-400">
             <span className="h-1.5 w-1.5 rounded-full bg-shu-400 animate-pulseGlow" />
             {t("hero.badge")}
@@ -209,9 +247,7 @@ export default function LandingPage() {
           {pillars.map((p, i) => (
             <Reveal key={p.glyph} delayMs={i * 80}>
               <div className="group grid gap-4 py-10 sm:grid-cols-[auto_1fr] sm:items-center sm:gap-10">
-                <span className="cursor-default font-display text-6xl font-black leading-none text-white/[0.08] transition-all duration-500 group-hover:text-shu-400/90 group-hover:[text-shadow:0_0_50px_rgba(255,45,85,0.85),0_0_100px_rgba(255,45,85,0.4)] sm:text-7xl">
-                  {p.glyph}
-                </span>
+                <PillarGlyph glyph={p.glyph} />
                 <div>
                   <h3 className="font-display text-xl font-bold text-white sm:text-2xl">{p.title[locale]}</h3>
                   <p className="mt-2 max-w-xl text-base leading-relaxed text-white/60">{p.body[locale]}</p>
@@ -235,11 +271,19 @@ export default function LandingPage() {
             <p className="mt-4 text-lg text-white/60">{t("flow.subtitle")}</p>
           </Reveal>
 
-          <ol className="relative">
+          <ol ref={flowOlRef} className="relative">
             {/* Gradient spine (shu -> kehai) instead of a flat gray line,
                 plus a small glowing pulse that travels its full length on
-                a loop — signal-traveling-down-a-wire, not a static rule. */}
+                a loop — signal-traveling-down-a-wire, not a static rule.
+                bottom-8/top-8 assume roughly desktop-length step text; on a
+                narrow phone the descriptions wrap across more lines, so the
+                last step's icon ends up much higher relative to the ol's
+                total height than this fixed 32px assumes, and the line ran
+                on well past icon 5. The effect below re-measures where the
+                last icon actually sits and overrides `bottom` inline —
+                mobile only, see the effect for how desktop is left as-is. */}
             <div
+              ref={flowLineRef}
               aria-hidden
               className="absolute bottom-8 left-[27px] top-8 w-px overflow-hidden sm:left-[35px]"
               style={{ background: "linear-gradient(to bottom, rgba(255,45,85,0.5), rgba(34,226,245,0.5))" }}
@@ -249,7 +293,10 @@ export default function LandingPage() {
             {steps.map((step, i) => (
               <Reveal key={step.en} delayMs={i * 90}>
                 <li className="group relative flex items-start gap-6 py-8 sm:gap-9">
-                  <span className="relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-void-950 ring-1 ring-white/10 transition-all duration-300 group-hover:scale-110 group-hover:ring-shu-400/50 sm:h-[70px] sm:w-[70px]">
+                  <span
+                    ref={i === steps.length - 1 ? flowLastIconRef : undefined}
+                    className="relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-void-950 ring-1 ring-white/10 transition-all duration-300 group-hover:scale-110 group-hover:ring-shu-400/50 sm:h-[70px] sm:w-[70px]"
+                  >
                     <span
                       className="font-display text-3xl font-black leading-none sm:text-4xl"
                       style={{

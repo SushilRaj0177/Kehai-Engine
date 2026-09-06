@@ -288,6 +288,18 @@ body {
   border-radius: 999px;
 }
 
+/* CustomCursor's ring: the component's own effect no-ops on touch devices
+   and reduced motion (never runs the rAF loop that positions/fades it), but
+   the div itself was still rendered with no transform ever applied, which
+   left it permanently stuck at its default top-left (0,0) position — a
+   visible glowing dot glued to the corner on every phone. Hiding it here
+   covers exactly the same conditions the component's effect bails out on. */
+@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .cursor-ring {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .kanji-breathe,
   .rain-column,
