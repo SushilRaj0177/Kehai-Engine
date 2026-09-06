@@ -2,7 +2,14 @@ import { Router } from "express";
 import { asyncHandler } from "../middleware/error.js";
 import { authRateLimit } from "../middleware/rateLimit.js";
 import { requireAuth } from "../middleware/auth.js";
-import { loginSchema, registerSchema, googleAuthSchema, refreshSchema } from "../validators/auth.js";
+import {
+  loginSchema,
+  registerSchema,
+  googleAuthSchema,
+  refreshSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+} from "../validators/auth.js";
 import * as authService from "../services/auth.service.js";
 import { prisma } from "../lib/prisma.js";
 
@@ -54,6 +61,28 @@ authRouter.post(
     const input = refreshSchema.parse(req.body);
     await authService.logout(input.refreshToken);
     res.status(204).end();
+  })
+);
+
+authRouter.post(
+  "/forgot-password",
+  authRateLimit,
+  asyncHandler(async (req, res) => {
+    const input = forgotPasswordSchema.parse(req.body);
+    await authService.requestPasswordReset(input.email);
+    // Always 200, regardless of whether the email matched an account —
+    // see requestPasswordReset's own comment on why.
+    res.status(200).json({ status: "ok" });
+  })
+);
+
+authRouter.post(
+  "/reset-password",
+  authRateLimit,
+  asyncHandler(async (req, res) => {
+    const input = resetPasswordSchema.parse(req.body);
+    await authService.resetPassword(input.token, input.password);
+    res.status(200).json({ status: "ok" });
   })
 );
 

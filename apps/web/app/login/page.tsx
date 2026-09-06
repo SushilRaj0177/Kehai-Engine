@@ -63,7 +63,12 @@ export default function LoginPage() {
                 <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
               <div>
-                <Label htmlFor="password">{t("auth.passwordLabel")}</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">{t("auth.passwordLabel")}</Label>
+                  <Link href="/forgot-password" className="text-sm font-medium text-kehai-400 hover:text-kehai-300">
+                    {t("auth.forgotPassword")}
+                  </Link>
+                </div>
                 <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
               </div>
               <Button type="submit" size="lg" className="w-full" loading={loading}>
