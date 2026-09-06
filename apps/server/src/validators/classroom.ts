@@ -44,6 +44,15 @@ export const joinClassroomSchema = z.object({
     .refine((s) => s.length === 6, { message: "Join code must be exactly 6 characters" }),
 });
 
+export const createSessionSchema = z.object({
+  label: z.string().trim().max(60).optional(),
+});
+
+export const updateSessionSchema = z.object({
+  label: z.string().trim().max(60).optional(),
+  qrRotationSeconds: z.coerce.number().int().min(5).max(86400).optional(),
+});
+
 export const classCheckInSchema = z.object({
   qrToken: z.string().min(10),
   latitude: z.coerce.number().min(-90).max(90).optional(),
