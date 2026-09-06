@@ -33,24 +33,24 @@ const dict = {
     statFabricated: { en: "fabricated metrics", ja: "捏造された指標" },
   },
   pillars: {
-    kicker: { en: "Not an attendance form", ja: "単なる出席フォームではない" },
+    kicker: { en: "Real event intelligence", ja: "本物のイベントインテリジェンス" },
     title: { en: "Every layer is built to be genuinely correct.", ja: "すべての層が、真に正確であるように作られている。" },
     subtitle: {
-      en: "Not merely demo-shaped — check-in, dashboard, analytics, AI.",
-      ja: "デモ用ではない — チェックイン、ダッシュボード、分析、AI。",
+      en: "Genuinely built — check-in, dashboard, analytics, AI.",
+      ja: "本格実装 — チェックイン、ダッシュボード、分析、AI。",
     },
     items: [
       {
         glyph: "検",
         title: { en: "Verified presence", ja: "検証された存在" },
         body: {
-          en: "Rotating, signed QR tokens plus GPS-accuracy-aware geofencing — not a static code and a naive radius check.",
-          ja: "署名付きで自動更新されるQRトークンと、GPS精度を考慮したジオフェンス。固定コードと単純な半径判定ではない。",
+          en: "Rotating, signed QR tokens plus GPS-accuracy-aware geofencing deliver genuinely verifiable presence.",
+          ja: "署名付きで自動更新されるQRトークンと、GPS精度を考慮したジオフェンスで、確実な存在証明を実現する。",
         },
       },
       {
         glyph: "生",
-        title: { en: "Live, not eventually", ja: "「いつか」ではなく、今" },
+        title: { en: "Live, right now", ja: "常にリアルタイム" },
         body: {
           en: "Socket-based dashboards update the moment someone checks in — attendee count, rate, and timeline redraw instantly.",
           ja: "チェックインの瞬間にダッシュボードが更新される。参加人数、割合、タイムラインが即座に描き直される。",
@@ -60,8 +60,8 @@ const dict = {
         glyph: "知",
         title: { en: "Grounded intelligence", ja: "根拠に基づく知性" },
         body: {
-          en: "Exact statistics computed deterministically; AI is used only to interpret and explain them — never to guess numbers.",
-          ja: "統計は決定論的に正確に計算される。AIはそれを解釈し説明するためだけに使われ、数値を推測することはない。",
+          en: "Exact statistics computed deterministically, with AI dedicated purely to interpreting and explaining them.",
+          ja: "統計は決定論的に正確に計算され、AIはそれを解釈し説明する役割に徹する。",
         },
       },
       {
