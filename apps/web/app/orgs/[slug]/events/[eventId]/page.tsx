@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { LoadingBlock, ErrorBlock, EmptyState } from "@/components/ui/States";
+import { LiveIndicator } from "@/components/ui/LiveIndicator";
 import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
 import { LiveQrPanel } from "@/components/LiveQrPanel";
@@ -103,10 +104,7 @@ export default function EventControlRoomPage() {
           <div>
             <div className="mb-3 flex items-center gap-2.5">
               <Badge status={event.status}>{t(`badge.status.${event.status}`)}</Badge>
-              <span className={`flex items-center gap-1.5 text-xs ${liveConnected ? "text-emerald-400" : "text-white/30"}`}>
-                <span className={`h-1.5 w-1.5 rounded-full ${liveConnected ? "bg-emerald-400 animate-pulseGlow" : "bg-white/30"}`} />
-                {liveConnected ? t("eventControl.live") : t("eventControl.polling")}
-              </span>
+              <LiveIndicator connected={liveConnected} />
             </div>
             <h1 className="font-display text-3xl font-black text-white md:text-4xl">{event.name}</h1>
             <p className="mt-2 text-base text-white/45">
@@ -197,9 +195,9 @@ function StatTile({
   ring?: number;
 }) {
   return (
-    <div className="flex items-center gap-4 rounded-2xl border border-white/[0.09] bg-white/[0.04] px-4 py-4 backdrop-blur-xl">
+    <div className="flex min-w-0 items-center gap-4 rounded-2xl border border-white/[0.09] bg-white/[0.04] px-4 py-4 backdrop-blur-xl">
       {ring !== undefined && <ProgressRing value={ring} size={48} stroke={4} color={accent === "shu" ? "#ff2d55" : "#5ff4ff"} />}
-      <div>
+      <div className="min-w-0">
         <div
           className={`font-display text-3xl font-bold md:text-4xl ${
             accent === "shu" ? "text-shu-400" : accent === "cyan" ? "text-kehai-400" : "text-white"
