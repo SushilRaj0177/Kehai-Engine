@@ -12,6 +12,7 @@ const dict = {
     myEvents: { en: "My Events", ja: "マイイベント" },
     console: { en: "Organizer Console", ja: "主催者コンソール" },
     signIn: { en: "Sign in", ja: "ログイン" },
+    signOut: { en: "Sign out", ja: "ログアウト" },
     getStarted: { en: "Get started", ja: "はじめる" },
   },
   hero: {
@@ -87,6 +88,23 @@ const dict = {
       { en: "Dashboard updates live — count, rate, and arrival timeline redraw instantly.", ja: "ダッシュボードがリアルタイムに更新される — 人数、割合、到着タイムラインが即座に変わる。" },
       { en: "AI layer explains anomalies and answers questions grounded in exact data.", ja: "AI層が異常を説明し、正確なデータに基づいて質問に答える。" },
     ],
+  },
+  footer: {
+    tagline: {
+      en: "気配 (kehai) — a sign that someone is present, before it's seen. Attendance you can verify, analytics you can trust.",
+      ja: "気配 — 見える前に、誰かがそこにいる気配。証明できる出席、信頼できる分析。",
+    },
+    platform: { en: "Platform", ja: "プラットフォーム" },
+    project: { en: "Project", ja: "プロジェクト" },
+    discoverEvents: { en: "Discover events", ja: "イベントを探す" },
+    organizerConsole: { en: "Organizer console", ja: "主催者コンソール" },
+    signIn: { en: "Sign in", ja: "ログイン" },
+    // Kept as-is by design: "Source" and bug-report links point at GitHub,
+    // which Japanese-language product sites conventionally leave in
+    // English rather than translating the platform's own name/UI.
+    source: { en: "Source", ja: "Source" },
+    reportIssue: { en: "Report an issue", ja: "Report an issue" },
+    copyright: { en: "Kehai Engine", ja: "気配エンジン" },
   },
 } as const;
 

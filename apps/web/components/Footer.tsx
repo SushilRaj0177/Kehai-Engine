@@ -1,26 +1,31 @@
+"use client";
+
 import Link from "next/link";
-
-const LINK_GROUPS: { heading: string; links: { label: string; href: string; external?: boolean }[] }[] = [
-  {
-    heading: "Platform",
-    links: [
-      { label: "Discover events", href: "/events" },
-      { label: "Organizer console", href: "/dashboard" },
-      { label: "Sign in", href: "/login" },
-    ],
-  },
-  {
-    heading: "Project",
-    links: [
-      { label: "Source", href: "https://github.com/SushilRaj0177/Kehai-Engine", external: true },
-      { label: "Report an issue", href: "https://github.com/SushilRaj0177/Kehai-Engine/issues", external: true },
-    ],
-  },
-];
-
-const MARQUEE_ITEM = "気配 KEHAI ENGINE — 出席・検証・洞察 —";
+import { useLocale } from "@/lib/i18n";
 
 export function Footer() {
+  const { t, locale } = useLocale();
+
+  const linkGroups: { heading: string; links: { label: string; href: string; external?: boolean }[] }[] = [
+    {
+      heading: t("footer.platform"),
+      links: [
+        { label: t("footer.discoverEvents"), href: "/events" },
+        { label: t("footer.organizerConsole"), href: "/dashboard" },
+        { label: t("footer.signIn"), href: "/login" },
+      ],
+    },
+    {
+      heading: t("footer.project"),
+      links: [
+        { label: t("footer.source"), href: "https://github.com/SushilRaj0177/Kehai-Engine", external: true },
+        { label: t("footer.reportIssue"), href: "https://github.com/SushilRaj0177/Kehai-Engine/issues", external: true },
+      ],
+    },
+  ];
+
+  const marqueeItem = locale === "ja" ? "気配 KEHAI ENGINE — 出席・検証・洞察 —" : "気配 KEHAI ENGINE — presence, verified —";
+
   return (
     <footer className="relative overflow-hidden bg-void-900/60">
       <span
@@ -41,13 +46,12 @@ export function Footer() {
                 KEHAI <span className="font-normal text-white/40">ENGINE</span>
               </span>
             </div>
-            <p className="mt-5 max-w-xs text-base leading-relaxed text-white/50">
-              気配 (kehai) — a sign that someone is present, before it&apos;s seen. Attendance you can
-              verify, analytics you can trust.
+            <p className={`mt-5 max-w-xs font-display text-base text-white/50 ${locale === "ja" ? "leading-loose" : "leading-relaxed"}`}>
+              {t("footer.tagline")}
             </p>
           </div>
 
-          {LINK_GROUPS.map((group) => (
+          {linkGroups.map((group) => (
             <div key={group.heading}>
               <h3 className="text-xs font-semibold uppercase tracking-widest text-white/40">{group.heading}</h3>
               <ul className="mt-5 space-y-3.5">
@@ -57,7 +61,7 @@ export function Footer() {
                       href={link.href}
                       target={link.external ? "_blank" : undefined}
                       rel={link.external ? "noopener noreferrer" : undefined}
-                      className="group relative inline-block text-base text-white/60 transition-colors hover:text-white"
+                      className="group relative inline-block font-display text-base text-white/60 transition-colors hover:text-white"
                     >
                       {link.label}
                       <span className="absolute inset-x-0 -bottom-0.5 h-px origin-left scale-x-0 bg-gradient-to-r from-shu-400 to-kehai-400 transition-transform duration-300 group-hover:scale-x-100" />
@@ -70,27 +74,26 @@ export function Footer() {
         </div>
 
         <div className="relative mt-16 flex flex-col-reverse items-start gap-4 text-xs text-white/30 sm:flex-row sm:items-center sm:justify-between">
-          <span className="flex items-center gap-2">
+          <span className="flex items-center gap-2 font-display">
             <span className="relative flex h-1.5 w-1.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/60" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
             </span>
-            © {new Date().getFullYear()} Kehai Engine
+            © {new Date().getFullYear()} {t("footer.copyright")}
           </span>
         </div>
       </div>
 
       {/* Slow marquee strip — brand phrase drifting continuously, edge to
           edge; content is duplicated so the loop is seamless (same trick
-          as KatakanaRain: translate exactly -50% of the doubled width). */}
+          as KatakanaRain: translate exactly -50% of the doubled width).
+          font-display, not font-mono — the mono face has no CJK glyphs, so
+          気配/出席 etc. were silently falling back to a thin, barely-visible
+          system CJK font here. */}
       <div aria-hidden className="relative overflow-hidden border-t border-white/[0.06] py-4">
-        <div className="marquee-track flex w-max whitespace-nowrap font-mono text-xs tracking-[0.3em] text-white/20">
-          <span className="px-4">
-            {Array.from({ length: 8 }, () => MARQUEE_ITEM).join(" ")}
-          </span>
-          <span className="px-4">
-            {Array.from({ length: 8 }, () => MARQUEE_ITEM).join(" ")}
-          </span>
+        <div className="marquee-track flex w-max whitespace-nowrap font-display text-xs font-medium tracking-[0.3em] text-white/20">
+          <span className="px-4">{Array.from({ length: 8 }, () => marqueeItem).join(" ")}</span>
+          <span className="px-4">{Array.from({ length: 8 }, () => marqueeItem).join(" ")}</span>
         </div>
       </div>
     </footer>

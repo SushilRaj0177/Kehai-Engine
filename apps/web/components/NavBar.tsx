@@ -68,7 +68,7 @@ export function NavBar() {
                   router.push("/");
                 }}
               >
-                Sign out
+                {t("nav.signOut")}
               </Button>
             </>
           ) : (
@@ -99,18 +99,22 @@ function LocaleSwitch({ locale, onToggle }: { locale: "en" | "ja"; onToggle: () 
       onClick={onToggle}
       aria-label="Toggle language"
       aria-pressed={isJa}
-      className="relative mr-1 h-8 w-[86px] shrink-0 rounded-full border border-white/10 bg-white/[0.04] transition-colors hover:border-white/20"
+      className="relative mr-1 h-9 w-[104px] shrink-0 rounded-full border border-white/10 bg-white/[0.04] transition-colors hover:border-white/20"
     >
       {/* sliding thumb — real physical motion, not a color-swap toggle */}
       <span
         aria-hidden
-        className={`absolute inset-y-[3px] left-[3px] w-10 rounded-full bg-gradient-to-br from-shu-500 to-shu-600 shadow-[0_0_12px_rgba(255,45,85,0.5)] transition-transform duration-300 ease-out ${
-          isJa ? "translate-x-[38px]" : "translate-x-0"
+        className={`absolute inset-y-[3px] left-[3px] w-12 rounded-full bg-gradient-to-br from-shu-500 to-shu-600 shadow-[0_0_12px_rgba(255,45,85,0.5)] transition-transform duration-300 ease-out ${
+          isJa ? "translate-x-[44px]" : "translate-x-0"
         }`}
       />
-      <span className="relative flex h-full items-center justify-between px-2.5 text-[11px] font-bold tracking-wide">
+      {/* z-10 makes sure these labels always paint above the thumb — the
+          Japanese glyph specifically needs font-display (Noto Sans JP);
+          without it, it silently falls back to a thin system CJK font
+          under font-bold and reads as nearly invisible at this size. */}
+      <span className="relative z-10 flex h-full items-center justify-between px-3 text-xs font-bold tracking-wide">
         <span className={isJa ? "text-white/35" : "text-white"}>EN</span>
-        <span className={isJa ? "text-white" : "text-white/35"}>日</span>
+        <span className={`font-display text-sm ${isJa ? "text-white" : "text-white/35"}`}>日</span>
       </span>
     </button>
   );
