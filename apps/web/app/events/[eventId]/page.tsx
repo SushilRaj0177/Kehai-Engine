@@ -8,7 +8,7 @@ import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { LoadingBlock, ErrorBlock } from "@/components/ui/States";
+import { LoadingBlock, ErrorBlock, EmptyState } from "@/components/ui/States";
 import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
 import { useAuth } from "@/lib/auth-context";
@@ -24,11 +24,23 @@ export default function EventDetailPage() {
   const { eventId } = useParams<{ eventId: string }>();
   const { user } = useAuth();
   const router = useRouter();
-  const { data: event, isLoading, mutate } = useEvent(eventId);
+  const { data: event, error: eventError, isLoading, mutate } = useEvent(eventId);
   const [error, setError] = useState<string | null>(null);
   const [registering, setRegistering] = useState(false);
 
-  if (isLoading || !event) return <LoadingBlock label={t("states.loadingEvent")} />;
+  if (isLoading) return <LoadingBlock label={t("states.loadingEvent")} />;
+
+  if (eventError || !event) {
+    return (
+      <div className="relative min-h-screen">
+        <PageGlow />
+        <NavBar />
+        <div className="relative mx-auto max-w-lg px-6 py-24">
+          <EmptyState title={t("eventDetail.notFoundTitle")} description={t("eventDetail.notFoundDescription")} />
+        </div>
+      </div>
+    );
+  }
 
   async function register() {
     if (!user) {

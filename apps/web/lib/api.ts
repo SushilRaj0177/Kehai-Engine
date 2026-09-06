@@ -47,6 +47,18 @@ export function clearTokens() {
 
 let refreshPromise: Promise<string | null> | null = null;
 
+// Refresh tokens are single-use and rotate on every refresh — the server
+// invalidates the old one the moment it issues a new pair. With multiple
+// tabs open on the same origin (sharing this one localStorage entry), two
+// tabs can both notice an expired access token and race to refresh at
+// once: whichever hits the server first rotates the token and wins, and
+// the other tab's refresh legitimately fails because *its* copy was just
+// invalidated by the winner — not because the session is actually dead.
+// Blindly clearing tokens on that failure would wipe out the perfectly
+// valid pair the winning tab just wrote, logging the user out for no
+// reason. So a failure only clears the session if the refresh token on
+// file is still the same one we just tried — if it already changed,
+// another tab won the race and the session is fine.
 async function refreshAccessToken(): Promise<string | null> {
   const { refreshToken } = getStoredTokens();
   if (!refreshToken) return null;
@@ -59,7 +71,7 @@ async function refreshAccessToken(): Promise<string | null> {
     })
       .then(async (res) => {
         if (!res.ok) {
-          clearTokens();
+          if (getStoredTokens().refreshToken === refreshToken) clearTokens();
           return null;
         }
         const data = await res.json();
@@ -87,8 +99,12 @@ export async function apiFetch<T>(
   let res = await fetch(`${resolvedApiBase}${path}`, { ...init, headers });
 
   if (res.status === 401 && !skipAuth) {
-    const newToken = await refreshAccessToken();
-    if (newToken) {
+    // If our own refresh attempt fails because another tab already won a
+    // rotation race (see refreshAccessToken above), storage may still hold
+    // a perfectly valid token that tab just wrote — use it instead of
+    // treating this request as unauthenticated.
+    const newToken = (await refreshAccessToken()) ?? getStoredTokens().accessToken;
+    if (newToken && newToken !== accessToken) {
       headers.set("Authorization", `Bearer ${newToken}`);
       res = await fetch(`${resolvedApiBase}${path}`, { ...init, headers });
     }
