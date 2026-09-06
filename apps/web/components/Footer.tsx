@@ -45,7 +45,7 @@ export function Footer() {
           much gentler crop off just the left edge) is unaffected. */}
       <span
         aria-hidden
-        className="pointer-events-none absolute -right-4 top-0 select-none font-display text-[6rem] font-black leading-none text-white/[0.045] sm:-left-10 sm:right-auto sm:text-[14rem] sm:text-white/[0.025]"
+        className="pointer-events-none absolute -left-4 top-0 select-none font-display text-[6rem] font-black leading-none text-white/[0.025] sm:-left-10 sm:text-[14rem]"
       >
         気配
       </span>
