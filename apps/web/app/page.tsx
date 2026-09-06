@@ -14,10 +14,10 @@ export default function LandingPage() {
   const { t, locale, pillars, steps } = useLocale();
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
+    <ClickRippleLayer className="relative min-h-screen overflow-hidden">
       <NavBar />
 
-      <ClickRippleLayer className="relative overflow-hidden">
+      <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-void-950" />
         <div className="absolute inset-0 bg-grid opacity-40" />
         <KatakanaRain columns={18} className="opacity-90" />
@@ -68,7 +68,7 @@ export default function LandingPage() {
             <Stat value="0" label={t("hero.statFabricated")} />
           </div>
         </div>
-      </ClickRippleLayer>
+      </section>
 
       <section className="relative mx-auto max-w-5xl px-6 py-28 md:py-36">
         <Reveal variant="curtain" className="mb-16 max-w-2xl">
@@ -124,7 +124,7 @@ export default function LandingPage() {
       </section>
 
       <Footer />
-    </div>
+    </ClickRippleLayer>
   );
 }
 

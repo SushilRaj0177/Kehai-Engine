@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
+import { TiltCard } from "@/components/ui/TiltCard";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState, LoadingBlock } from "@/components/ui/States";
 import { KanjiMark } from "@/components/ui/KanjiMark";
@@ -74,20 +75,22 @@ export default function OrgPage() {
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {events.map((event) => (
                 <Link key={event.id} href={`/orgs/${org.slug}/events/${event.id}`}>
-                  <Card className="h-full transition-colors hover:border-shu-500/30">
-                    <CardBody className="py-6">
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-display text-base font-bold leading-snug text-white">{event.name}</h3>
-                        <Badge status={event.status}>{event.status}</Badge>
-                      </div>
-                      <p className="mt-2 text-sm text-white/40">{formatDateRange(event.startsAt, event.endsAt)}</p>
-                      <p className="mt-1 text-sm text-white/35">{event.venue}</p>
-                      <div className="mt-5 flex items-center gap-4 border-t border-white/[0.06] pt-4 text-sm text-white/50">
-                        <span>{event._count.registrations} registered</span>
-                        <span>{event._count.attendances} attended</span>
-                      </div>
-                    </CardBody>
-                  </Card>
+                  <TiltCard className="h-full rounded-2xl">
+                    <Card className="h-full transition-colors hover:border-shu-500/30">
+                      <CardBody className="relative z-10 py-6">
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="font-display text-base font-bold leading-snug text-white">{event.name}</h3>
+                          <Badge status={event.status}>{event.status}</Badge>
+                        </div>
+                        <p className="mt-2 text-sm text-white/40">{formatDateRange(event.startsAt, event.endsAt)}</p>
+                        <p className="mt-1 text-sm text-white/35">{event.venue}</p>
+                        <div className="mt-5 flex items-center gap-4 border-t border-white/[0.06] pt-4 text-sm text-white/50">
+                          <span>{event._count.registrations} registered</span>
+                          <span>{event._count.attendances} attended</span>
+                        </div>
+                      </CardBody>
+                    </Card>
+                  </TiltCard>
                 </Link>
               ))}
             </div>

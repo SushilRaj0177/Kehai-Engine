@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { NavBar } from "@/components/NavBar";
 import { Card, CardBody } from "@/components/ui/Card";
+import { TiltCard } from "@/components/ui/TiltCard";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState, LoadingBlock } from "@/components/ui/States";
 import { KanjiMark } from "@/components/ui/KanjiMark";
@@ -32,22 +33,24 @@ export default function DiscoverEventsPage() {
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {events.map((event) => (
                 <Link key={event.id} href={`/events/${event.id}`}>
-                  <Card className="h-full transition-colors hover:border-shu-500/30">
-                    <CardBody className="py-6">
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-display text-base font-bold leading-snug text-white">{event.name}</h3>
-                        <Badge status={event.status}>{event.status}</Badge>
-                      </div>
-                      <p className="mt-2 text-sm text-white/40">{event.organization?.name}</p>
-                      <p className="mt-3 text-sm text-white/50">{formatDateRange(event.startsAt, event.endsAt)}</p>
-                      <p className="mt-1 text-sm text-white/35">{event.venue}</p>
-                      {event.capacity && (
-                        <p className="mt-3 text-sm text-white/40">
-                          {event._count.registrations}/{event.capacity} registered
-                        </p>
-                      )}
-                    </CardBody>
-                  </Card>
+                  <TiltCard className="h-full rounded-2xl">
+                    <Card className="h-full transition-colors hover:border-shu-500/30">
+                      <CardBody className="relative z-10 py-6">
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="font-display text-base font-bold leading-snug text-white">{event.name}</h3>
+                          <Badge status={event.status}>{event.status}</Badge>
+                        </div>
+                        <p className="mt-2 text-sm text-white/40">{event.organization?.name}</p>
+                        <p className="mt-3 text-sm text-white/50">{formatDateRange(event.startsAt, event.endsAt)}</p>
+                        <p className="mt-1 text-sm text-white/35">{event.venue}</p>
+                        {event.capacity && (
+                          <p className="mt-3 text-sm text-white/40">
+                            {event._count.registrations}/{event.capacity} registered
+                          </p>
+                        )}
+                      </CardBody>
+                    </Card>
+                  </TiltCard>
                 </Link>
               ))}
             </div>

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
+import { TiltCard } from "@/components/ui/TiltCard";
 import { Input, Label } from "@/components/ui/Input";
 import { EmptyState, ErrorBlock, LoadingBlock } from "@/components/ui/States";
 import { KanjiMark } from "@/components/ui/KanjiMark";
@@ -73,17 +74,19 @@ export default function DashboardPage() {
             <div className="grid gap-5 sm:grid-cols-2">
               {orgs.map((org) => (
                 <Link key={org.id} href={`/orgs/${org.slug}`}>
-                  <Card className="h-full transition-colors hover:border-shu-500/30">
-                    <CardBody className="py-6">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-display text-lg font-bold text-white">{org.name}</h3>
-                        <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-white/50">
-                          {org.role}
-                        </span>
-                      </div>
-                      <p className="mt-1.5 text-sm text-white/35">/{org.slug}</p>
-                    </CardBody>
-                  </Card>
+                  <TiltCard className="h-full rounded-2xl">
+                    <Card className="h-full transition-colors hover:border-shu-500/30">
+                      <CardBody className="relative z-10 py-6">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-display text-lg font-bold text-white">{org.name}</h3>
+                          <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-white/50">
+                            {org.role}
+                          </span>
+                        </div>
+                        <p className="mt-1.5 text-sm text-white/35">/{org.slug}</p>
+                      </CardBody>
+                    </Card>
+                  </TiltCard>
                 </Link>
               ))}
             </div>
