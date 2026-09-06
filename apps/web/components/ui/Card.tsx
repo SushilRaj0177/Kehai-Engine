@@ -5,12 +5,13 @@ export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       className={cn(
-        // Softer, thinner border and a touch more radius so panels read as
-        // gently separated surfaces rather than boxed containers; the old
-        // border-white/10 + tight padding is exactly the "enclosed" feeling
-        // that was called out — this opens each panel up without losing
-        // the panel entirely (data-dense areas like tables still need one).
-        "rounded-2xl border border-white/[0.07] bg-void-800/50 backdrop-blur-sm",
+        // Real glassmorphism — genuinely translucent (not just a dark flat
+        // fill with a hairline) with visible blur, a soft ambient shadow
+        // standing in for depth, and a border that actually brightens on
+        // hover instead of staying a near-invisible 7% line always.
+        "rounded-2xl border border-white/[0.09] bg-white/[0.04] backdrop-blur-xl transition-colors",
+        "shadow-[0_8px_32px_-8px_rgba(0,0,0,0.5),inset_0_1px_0_0_rgba(255,255,255,0.06)]",
+        "hover:border-white/[0.16]",
         className
       )}
       {...props}

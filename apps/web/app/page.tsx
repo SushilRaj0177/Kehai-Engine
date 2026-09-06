@@ -8,6 +8,7 @@ import { KanjiMark, VerticalCaption } from "@/components/ui/KanjiMark";
 import { KatakanaRain } from "@/components/ui/KatakanaRain";
 import { Reveal } from "@/components/ui/Reveal";
 import { ClickRippleLayer } from "@/components/ui/ClickRipple";
+import { StarField } from "@/components/ui/StarField";
 import { useLocale } from "@/lib/i18n";
 
 export default function LandingPage() {
@@ -18,15 +19,24 @@ export default function LandingPage() {
       <NavBar />
 
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-void-950" />
+        <div className="absolute inset-0 bg-void-900" />
         <div className="absolute inset-0 bg-grid opacity-40" />
+        <StarField count={50} />
         <KatakanaRain columns={18} className="opacity-90" />
         {/* Scrim over the grid/rain layers so the hero reads as a solid
-            dark panel instead of a washed-out, see-through backdrop. */}
-        <div className="absolute inset-0 bg-void-950/55" />
+            dark panel instead of a washed-out, see-through backdrop —
+            lightened from /55 to /45 for a slightly brighter overall feel. */}
+        <div className="absolute inset-0 bg-void-950/45" />
+        {/* Soft diffuse ambient light instead of one hard-edged blob —
+            two overlapping glows (shu + kehai) reading closer to a real
+            light source than a flat colored circle. */}
         <div
           aria-hidden
-          className="absolute left-1/2 top-0 h-[560px] w-[900px] -translate-x-1/2 -translate-y-1/3 rounded-full bg-shu-500/[0.09] blur-[140px]"
+          className="absolute left-1/2 top-0 h-[620px] w-[1000px] -translate-x-1/2 -translate-y-1/3 rounded-full bg-shu-500/[0.12] blur-[160px]"
+        />
+        <div
+          aria-hidden
+          className="absolute right-0 top-1/3 h-[400px] w-[500px] translate-x-1/4 rounded-full bg-kehai-500/[0.08] blur-[130px]"
         />
 
         {/* Positioned relative to this full-width section (not the centered
@@ -44,7 +54,7 @@ export default function LandingPage() {
 
           <h1
             className={`max-w-3xl font-display text-5xl font-black tracking-tight text-white md:text-7xl ${
-              locale === "ja" ? "leading-[1.25]" : "leading-[1.05]"
+              locale === "ja" ? "leading-[1.45]" : "leading-[1.05]"
             }`}
           >
             {t("hero.titleLine1")} <span className="text-glow text-shu-400">{t("hero.titleVerify")}</span>.
@@ -71,7 +81,7 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          <div className="mt-12 grid w-full grid-cols-2 gap-8 sm:grid-cols-4">
+          <div className="mt-12 grid w-full grid-cols-2 gap-3 sm:grid-cols-4">
             <Stat value="±5m" label={t("hero.statGeofence")} />
             <Stat value="20s" label={t("hero.statRotation")} />
             <Stat value="4" label={t("hero.statLayers")} />
@@ -84,7 +94,7 @@ export default function LandingPage() {
         <Reveal variant="curtain" className="mb-16 max-w-2xl">
           <span className="text-xs font-semibold uppercase tracking-widest text-shu-400">{t("pillars.kicker")}</span>
           <h2 className={`mt-3 font-display text-4xl font-bold text-white md:text-5xl ${
-              locale === "ja" ? "leading-snug" : "leading-tight"
+              locale === "ja" ? "leading-[1.65]" : "leading-tight"
             }`}>
             {t("pillars.title")}
           </h2>
@@ -114,7 +124,7 @@ export default function LandingPage() {
           <Reveal className="mb-16 max-w-2xl">
             <span className="text-xs font-semibold uppercase tracking-widest text-kehai-400">{t("flow.kicker")}</span>
             <h2 className={`mt-3 font-display text-4xl font-bold text-white md:text-5xl ${
-              locale === "ja" ? "leading-snug" : "leading-tight"
+              locale === "ja" ? "leading-[1.65]" : "leading-tight"
             }`}>
               {t("flow.title")}
             </h2>
@@ -166,7 +176,7 @@ export default function LandingPage() {
 
 function Stat({ value, label }: { value: string; label: string }) {
   return (
-    <div>
+    <div className="rounded-2xl border border-white/[0.09] bg-white/[0.04] px-4 py-4 backdrop-blur-xl transition-colors hover:border-white/[0.18]">
       <div className="font-display text-3xl font-bold text-white md:text-4xl">{value}</div>
       <div className="mt-1.5 text-xs uppercase tracking-wider text-white/40">{label}</div>
     </div>
