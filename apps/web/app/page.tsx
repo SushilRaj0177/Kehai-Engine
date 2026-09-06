@@ -108,14 +108,36 @@ export default function LandingPage() {
           </Reveal>
 
           <ol className="relative">
-            <div aria-hidden className="absolute bottom-8 left-[27px] top-8 w-px bg-white/10 sm:left-[35px]" />
+            {/* Gradient spine (shu -> kehai) instead of a flat gray line,
+                plus a small glowing pulse that travels its full length on
+                a loop — signal-traveling-down-a-wire, not a static rule. */}
+            <div
+              aria-hidden
+              className="absolute bottom-8 left-[27px] top-8 w-px overflow-hidden sm:left-[35px]"
+              style={{ background: "linear-gradient(to bottom, rgba(255,45,85,0.5), rgba(34,226,245,0.5))" }}
+            >
+              <span className="flow-pulse" />
+            </div>
             {steps.map((step, i) => (
               <Reveal key={step.en} delayMs={i * 90}>
-                <li className="relative flex items-start gap-6 py-6 sm:gap-9">
-                  <span className="relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-void-950 font-display text-2xl font-black text-white/25 sm:h-[70px] sm:w-[70px] sm:text-3xl">
-                    {i + 1}
+                <li className="group relative flex items-start gap-6 py-8 sm:gap-9">
+                  <span className="relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-void-950 ring-1 ring-white/10 transition-all duration-300 group-hover:scale-110 group-hover:ring-shu-400/50 sm:h-[70px] sm:w-[70px]">
+                    <span
+                      className="font-display text-3xl font-black leading-none sm:text-4xl"
+                      style={{
+                        backgroundImage: `linear-gradient(135deg, rgba(255,92,115,1), rgba(95,244,255,${0.5 + i * 0.1}))`,
+                        backgroundClip: "text",
+                        WebkitBackgroundClip: "text",
+                        color: "transparent",
+                        filter: "drop-shadow(0 0 14px rgba(255,45,85,0.35))",
+                      }}
+                    >
+                      {i + 1}
+                    </span>
                   </span>
-                  <span className="mt-3 text-lg leading-relaxed text-white/75 sm:mt-5 sm:text-xl">{step[locale]}</span>
+                  <span className="mt-3 text-lg leading-relaxed text-white/75 transition-colors duration-300 group-hover:text-white sm:mt-5 sm:text-xl">
+                    {step[locale]}
+                  </span>
                 </li>
               </Reveal>
             ))}
