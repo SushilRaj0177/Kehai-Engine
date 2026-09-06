@@ -15,10 +15,12 @@ import { useAuth } from "@/lib/auth-context";
 import { useEvent } from "@/lib/hooks";
 import { apiFetch, ApiError } from "@/lib/api";
 import { formatDateRange } from "@/lib/format";
+import { useLocale } from "@/lib/i18n";
 
 const EventMap = dynamic(() => import("@/components/EventMap").then((m) => m.EventMap), { ssr: false });
 
 export default function EventDetailPage() {
+  const { t, locale } = useLocale();
   const { eventId } = useParams<{ eventId: string }>();
   const { user } = useAuth();
   const router = useRouter();
@@ -26,7 +28,7 @@ export default function EventDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [registering, setRegistering] = useState(false);
 
-  if (isLoading || !event) return <LoadingBlock label="Loading event…" />;
+  if (isLoading || !event) return <LoadingBlock label={t("states.loadingEvent")} />;
 
   async function register() {
     if (!user) {
@@ -39,7 +41,7 @@ export default function EventDetailPage() {
       await apiFetch(`/api/events/${eventId}/register`, { method: "POST" });
       await mutate();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Registration failed");
+      setError(err instanceof ApiError ? err.message : t("eventDetail.registrationFailed"));
     } finally {
       setRegistering(false);
     }
@@ -55,14 +57,14 @@ export default function EventDetailPage() {
         <KanjiMark glyph="詳細" className="absolute -right-6 top-0 text-[5rem] sm:text-[9rem]" />
 
         <div className="relative z-20 flex items-center gap-2.5">
-          <Badge status={event.status}>{event.status}</Badge>
+          <Badge status={event.status}>{t(`badge.status.${event.status}`)}</Badge>
           <span className="text-sm text-white/40">{event.organization?.name}</span>
         </div>
         <h1 className="relative z-20 mt-4 font-display text-4xl font-black leading-tight text-white md:text-5xl">
           {event.name}
         </h1>
         <p className="relative z-20 mt-3 text-lg text-white/50">
-          {formatDateRange(event.startsAt, event.endsAt)} · {event.venue}
+          {formatDateRange(event.startsAt, event.endsAt, locale)} · {event.venue}
         </p>
 
         {event.description && <p className="relative z-20 mt-5 text-base leading-relaxed text-white/60">{event.description}</p>}
@@ -71,26 +73,29 @@ export default function EventDetailPage() {
 
         <div className="relative z-20 mt-8 flex flex-wrap items-center gap-4">
           {event.hasAttended ? (
-            <Badge status="COMPLETED">Attendance confirmed</Badge>
+            <Badge status="COMPLETED">{t("badge.attendanceConfirmed")}</Badge>
           ) : event.isRegistered ? (
             isOpen ? (
               <Link href={`/attend/${event.id}`}>
                 <Button variant="cyan" size="lg">
-                  Check in with QR
+                  {t("eventDetail.checkInWithQr")}
                 </Button>
               </Link>
             ) : (
-              <Badge>Registered</Badge>
+              <Badge>{t("badge.registered")}</Badge>
             )
           ) : isOpen ? (
             <Button size="lg" onClick={register} loading={registering}>
-              Register to attend
+              {t("eventDetail.registerToAttend")}
             </Button>
           ) : (
-            <Badge>Registration closed</Badge>
+            <Badge>{t("badge.registrationClosed")}</Badge>
           )}
           <span className="text-sm text-white/35">
-            {event._count.registrations} registered{event.capacity ? ` / ${event.capacity} capacity` : ""} · {event._count.attendances} attended
+            {event.capacity
+              ? t("eventDetail.registeredWithCapacity", { count: event._count.registrations, capacity: event.capacity })
+              : t("eventDetail.registeredCount", { count: event._count.registrations })}{" "}
+            · {t("eventDetail.attendedCount", { count: event._count.attendances })}
           </span>
         </div>
 
@@ -98,7 +103,7 @@ export default function EventDetailPage() {
           <CardBody className="py-6">
             <EventMap latitude={event.latitude} longitude={event.longitude} radiusM={event.geofenceRadiusM} />
             <p className="mt-4 text-sm text-white/35">
-              You must be within ~{event.geofenceRadiusM}m of this location (plus your device&apos;s GPS margin) to check in.
+              {t("eventDetail.geofenceNote", { radius: event.geofenceRadiusM })}
             </p>
           </CardBody>
         </Card>

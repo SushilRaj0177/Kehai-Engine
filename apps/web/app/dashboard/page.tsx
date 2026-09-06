@@ -14,13 +14,15 @@ import { PageGlow } from "@/components/ui/PageGlow";
 import { useAuth } from "@/lib/auth-context";
 import { useMyOrganizations } from "@/lib/hooks";
 import { apiFetch, ApiError } from "@/lib/api";
+import { useLocale } from "@/lib/i18n";
 
 export default function DashboardPage() {
+  const { t } = useLocale();
   const { user, loading: authLoading } = useAuth();
   const { data: orgs, isLoading, mutate } = useMyOrganizations();
   const [showCreate, setShowCreate] = useState(false);
 
-  if (authLoading) return <LoadingBlock label="Checking session…" />;
+  if (authLoading) return <LoadingBlock label={t("states.checkingSession")} />;
 
   if (!user) {
     return (
@@ -28,9 +30,9 @@ export default function DashboardPage() {
         <PageGlow />
         <NavBar />
         <div className="relative mx-auto max-w-lg px-6 py-24 text-center">
-          <p className="text-white/60">Sign in to access your organizer console.</p>
+          <p className="text-white/60">{t("dashboard.signInPrompt")}</p>
           <Link href="/login">
-            <Button className="mt-4">Sign in</Button>
+            <Button className="mt-4">{t("common.signIn")}</Button>
           </Link>
         </div>
       </div>
@@ -45,10 +47,10 @@ export default function DashboardPage() {
         <KanjiMark glyph="組織" className="absolute -right-4 top-0 text-[6rem] sm:text-[10rem]" />
         <div className="relative flex flex-wrap items-end justify-between gap-4">
           <div>
-            <span className="text-xs font-semibold uppercase tracking-widest text-shu-400">Organizer console</span>
-            <h1 className="mt-3 font-display text-4xl font-black text-white md:text-5xl">Your organizations</h1>
+            <span className="text-xs font-semibold uppercase tracking-widest text-shu-400">{t("dashboard.kicker")}</span>
+            <h1 className="mt-3 font-display text-4xl font-black text-white md:text-5xl">{t("dashboard.title")}</h1>
             <p className="mt-3 max-w-xl text-lg text-white/50">
-              Every event, attendee, and check-in lives under an organization.
+              {t("dashboard.subtitle")}
             </p>
           </div>
           <div className="flex items-center gap-5">
@@ -56,12 +58,12 @@ export default function DashboardPage() {
               <div className="hidden text-right sm:block">
                 <div className="font-display text-3xl font-bold text-white">{orgs.length}</div>
                 <div className="text-xs uppercase tracking-wider text-white/40">
-                  {orgs.length === 1 ? "organization" : "organizations"}
+                  {t("dashboard.orgUnit")}
                 </div>
               </div>
             )}
             <Button size="lg" onClick={() => setShowCreate((s) => !s)}>
-              {showCreate ? "Cancel" : "New organization"}
+              {showCreate ? t("common.cancel") : t("dashboard.newOrganization")}
             </Button>
           </div>
         </div>
@@ -81,9 +83,9 @@ export default function DashboardPage() {
           ) : !orgs?.length ? (
             <EmptyState
               glyph="組"
-              title="No organizations yet"
-              description="Create one to start publishing events, generating check-in QR codes, and tracking live attendance."
-              action={<Button onClick={() => setShowCreate(true)}>Create your first organization</Button>}
+              title={t("dashboard.emptyTitle")}
+              description={t("dashboard.emptyDescription")}
+              action={<Button onClick={() => setShowCreate(true)}>{t("dashboard.emptyAction")}</Button>}
             />
           ) : (
             <div className="grid gap-5 sm:grid-cols-2">
@@ -120,6 +122,7 @@ export default function DashboardPage() {
 }
 
 function CreateOrgForm({ onCreated }: { onCreated: () => void }) {
+  const { t } = useLocale();
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -134,7 +137,7 @@ function CreateOrgForm({ onCreated }: { onCreated: () => void }) {
       onCreated();
       router.push(`/orgs/${org.slug}`);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to create organization");
+      setError(err instanceof ApiError ? err.message : t("dashboard.createOrgError"));
     } finally {
       setLoading(false);
     }
@@ -145,11 +148,11 @@ function CreateOrgForm({ onCreated }: { onCreated: () => void }) {
       <CardBody>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="flex-1">
-            <Label htmlFor="org-name">Organization name</Label>
-            <Input id="org-name" required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. SRM NSCC" />
+            <Label htmlFor="org-name">{t("dashboard.orgNameLabel")}</Label>
+            <Input id="org-name" required value={name} onChange={(e) => setName(e.target.value)} placeholder={t("dashboard.orgNamePlaceholder")} />
           </div>
           <Button type="submit" loading={loading}>
-            Create
+            {t("common.create")}
           </Button>
         </form>
         {error && <ErrorBlock message={error} className="mt-3" />}

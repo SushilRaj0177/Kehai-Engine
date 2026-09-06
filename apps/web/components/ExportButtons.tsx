@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { getApiBase, getAccessToken } from "@/lib/api";
 import { Button } from "./ui/Button";
+import { useLocale } from "@/lib/i18n";
 
 export function ExportButtons({ eventId }: { eventId: string }) {
+  const { t } = useLocale();
   const [downloading, setDownloading] = useState<"csv" | "xlsx" | null>(null);
 
   async function download(format: "csv" | "xlsx") {
@@ -31,10 +33,10 @@ export function ExportButtons({ eventId }: { eventId: string }) {
   return (
     <div className="flex gap-2">
       <Button variant="secondary" size="sm" loading={downloading === "csv"} onClick={() => download("csv")}>
-        Export CSV
+        {t("exportButtons.csv")}
       </Button>
       <Button variant="secondary" size="sm" loading={downloading === "xlsx"} onClick={() => download("xlsx")}>
-        Export Excel
+        {t("exportButtons.excel")}
       </Button>
     </div>
   );

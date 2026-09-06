@@ -10,8 +10,10 @@ import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
 import { usePublicEvents } from "@/lib/hooks";
 import { formatDateRange } from "@/lib/format";
+import { useLocale } from "@/lib/i18n";
 
 export default function DiscoverEventsPage() {
+  const { t, locale } = useLocale();
   const { data: events, isLoading } = usePublicEvents();
 
   return (
@@ -20,17 +22,17 @@ export default function DiscoverEventsPage() {
       <NavBar />
       <div className="relative mx-auto max-w-6xl px-6 py-20">
         <KanjiMark glyph="催事" className="absolute -right-6 top-0 text-[6rem] sm:text-[10rem]" />
-        <span className="relative text-xs font-semibold uppercase tracking-widest text-shu-400">Live right now</span>
-        <h1 className="relative mt-3 font-display text-4xl font-black text-white md:text-5xl">Discover events</h1>
+        <span className="relative text-xs font-semibold uppercase tracking-widest text-shu-400">{t("eventDiscover.kicker")}</span>
+        <h1 className="relative mt-3 font-display text-4xl font-black text-white md:text-5xl">{t("eventDiscover.title")}</h1>
         <p className="relative mt-3 text-lg text-white/50">
-          Published and currently active events across all organizations.
+          {t("eventDiscover.subtitle")}
         </p>
 
         <div className="relative mt-14">
           {isLoading ? (
             <LoadingBlock />
           ) : !events?.length ? (
-            <EmptyState glyph="無" title="No events published yet" description="Check back soon, or ask an organizer to publish one." />
+            <EmptyState glyph="無" title={t("eventDiscover.emptyTitle")} description={t("eventDiscover.emptyDescription")} />
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {events.map((event) => (
@@ -40,14 +42,14 @@ export default function DiscoverEventsPage() {
                       <CardBody className="relative z-10 py-6">
                         <div className="flex items-start justify-between gap-2">
                           <h3 className="font-display text-base font-bold leading-snug text-white">{event.name}</h3>
-                          <Badge status={event.status}>{event.status}</Badge>
+                          <Badge status={event.status}>{t(`badge.status.${event.status}`)}</Badge>
                         </div>
                         <p className="mt-2 text-sm text-white/40">{event.organization?.name}</p>
-                        <p className="mt-3 text-sm text-white/50">{formatDateRange(event.startsAt, event.endsAt)}</p>
+                        <p className="mt-3 text-sm text-white/50">{formatDateRange(event.startsAt, event.endsAt, locale)}</p>
                         <p className="mt-1 text-sm text-white/35">{event.venue}</p>
                         {event.capacity && (
                           <p className="mt-3 text-sm text-white/40">
-                            {event._count.registrations}/{event.capacity} registered
+                            {t("eventDiscover.registeredOf", { count: event._count.registrations, capacity: event.capacity })}
                           </p>
                         )}
                       </CardBody>

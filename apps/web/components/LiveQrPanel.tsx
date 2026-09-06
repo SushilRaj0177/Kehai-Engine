@@ -5,6 +5,7 @@ import { apiFetch, ApiError } from "@/lib/api";
 import { Card, CardBody, CardHeader } from "./ui/Card";
 import { Button } from "./ui/Button";
 import { QrRotationInput } from "./ui/QrRotationInput";
+import { useLocale } from "@/lib/i18n";
 
 interface QrResponse {
   dataUrl: string;
@@ -13,6 +14,7 @@ interface QrResponse {
 }
 
 export function LiveQrPanel({ eventId, active, editable = false }: { eventId: string; active: boolean; editable?: boolean }) {
+  const { t } = useLocale();
   const [qr, setQr] = useState<QrResponse | null>(null);
   const [countdown, setCountdown] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -27,9 +29,9 @@ export function LiveQrPanel({ eventId, active, editable = false }: { eventId: st
       setError(null);
       setCountdown(data.rotationSeconds);
     } catch (err: any) {
-      setError(err?.message ?? "Could not load QR code");
+      setError(err?.message ?? t("qrPanel.qrLoadError"));
     }
-  }, [eventId]);
+  }, [eventId, t]);
 
   useEffect(() => {
     if (!active) return;
@@ -68,7 +70,7 @@ export function LiveQrPanel({ eventId, active, editable = false }: { eventId: st
       });
       await fetchQr();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not update rotation interval");
+      setError(err instanceof ApiError ? err.message : t("qrPanel.rotationUpdateError"));
     } finally {
       setSavingRotation(false);
     }
@@ -78,7 +80,7 @@ export function LiveQrPanel({ eventId, active, editable = false }: { eventId: st
     return (
       <Card>
         <CardBody className="py-10 text-center text-sm text-white/40">
-          Publish or activate this event to generate its check-in QR code.
+          {t("qrPanel.inactiveHint")}
         </CardBody>
       </Card>
     );
@@ -87,8 +89,8 @@ export function LiveQrPanel({ eventId, active, editable = false }: { eventId: st
   return (
     <Card className="overflow-hidden">
       <CardHeader className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-white/40">
-        <span>Check-in QR</span>
-        {qr && <span className="font-mono text-shu-400">refreshing in {countdown}s</span>}
+        <span>{t("qrPanel.heading")}</span>
+        {qr && <span className="font-mono text-shu-400">{t("qrPanel.refreshingIn", { seconds: countdown })}</span>}
       </CardHeader>
       <CardBody className="flex flex-col items-center gap-4 py-6">
         {error ? (
@@ -96,32 +98,31 @@ export function LiveQrPanel({ eventId, active, editable = false }: { eventId: st
         ) : qr ? (
           <div className="relative rounded-xl border-4 border-white bg-white p-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={qr.dataUrl} alt="Event check-in QR code" width={260} height={260} />
+            <img src={qr.dataUrl} alt={t("qrPanel.altText")} width={260} height={260} />
           </div>
         ) : (
           <div className="h-64 w-64 animate-pulse rounded-xl bg-white/5" />
         )}
         <p className="max-w-xs text-center text-[11px] leading-relaxed text-white/35">
-          This code rotates automatically. A screenshot of it goes stale within one rotation window, and every
-          scan is still checked against the venue geofence server-side.
+          {t("qrPanel.rotationNote")}
         </p>
         <div className="flex gap-2">
           <Button variant="ghost" size="sm" onClick={fetchQr}>
-            Refresh now
+            {t("qrPanel.refreshNow")}
           </Button>
           {editable && (
             <Button variant="ghost" size="sm" onClick={() => setShowSettings((s) => !s)}>
-              {showSettings ? "Close" : "Change rotation"}
+              {showSettings ? t("qrPanel.closeSettings") : t("qrPanel.changeRotation")}
             </Button>
           )}
         </div>
 
         {editable && showSettings && qr && (
           <div className="w-full border-t border-white/10 pt-4">
-            <p className="mb-2 text-[11px] uppercase tracking-wider text-white/35">Rotation interval</p>
+            <p className="mb-2 text-[11px] uppercase tracking-wider text-white/35">{t("qrPanel.rotationIntervalLabel")}</p>
             <QrRotationInput value={qr.rotationSeconds} onChange={changeRotation} disabled={savingRotation} />
             <p className="mt-2 text-[11px] text-white/35">
-              Takes effect on the next refresh — safe to change any time, even while the event is live.
+              {t("qrPanel.rotationTakesEffect")}
             </p>
           </div>
         )}

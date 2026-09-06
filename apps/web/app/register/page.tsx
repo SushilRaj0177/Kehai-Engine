@@ -12,8 +12,10 @@ import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
 import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api";
+import { useLocale } from "@/lib/i18n";
 
 export default function RegisterPage() {
+  const { t } = useLocale();
   const { register } = useAuth();
   const router = useRouter();
   const [name, setName] = useState("");
@@ -30,7 +32,7 @@ export default function RegisterPage() {
       await register(name, email, password);
       router.push("/dashboard");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong");
+      setError(err instanceof ApiError ? err.message : t("auth.genericError"));
     } finally {
       setLoading(false);
     }
@@ -43,10 +45,10 @@ export default function RegisterPage() {
       <div className="relative mx-auto flex min-h-[calc(100vh-160px)] max-w-xl flex-col justify-center px-6 py-16">
         <KanjiMark glyph="始" className="absolute -right-6 top-0 text-[7rem] sm:-right-10 sm:text-[12rem]" />
 
-        <span className="relative z-20 text-xs font-semibold uppercase tracking-widest text-shu-400">Get started</span>
-        <h1 className="relative z-20 mt-3 font-display text-4xl font-black text-white md:text-5xl">Create your account</h1>
+        <span className="relative z-20 text-xs font-semibold uppercase tracking-widest text-shu-400">{t("auth.registerKicker")}</span>
+        <h1 className="relative z-20 mt-3 font-display text-4xl font-black text-white md:text-5xl">{t("auth.registerTitle")}</h1>
         <p className="relative z-20 mt-3 text-lg text-white/50">
-          Start an organization or register for events as an attendee.
+          {t("auth.registerSubtitle")}
         </p>
 
         <Card className="relative z-20 mt-12">
@@ -54,15 +56,15 @@ export default function RegisterPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               {error && <ErrorBlock message={error} />}
               <div>
-                <Label htmlFor="name">Full name</Label>
+                <Label htmlFor="name">{t("auth.fullNameLabel")}</Label>
                 <Input id="name" required value={name} onChange={(e) => setName(e.target.value)} />
               </div>
               <div>
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t("auth.emailLabel")}</Label>
                 <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
               <div>
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">{t("auth.passwordLabel")}</Label>
                 <Input
                   id="password"
                   type="password"
@@ -71,19 +73,19 @@ export default function RegisterPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
-                <p className="mt-2 text-sm text-white/35">At least 8 characters.</p>
+                <p className="mt-2 text-sm text-white/35">{t("auth.passwordHint")}</p>
               </div>
               <Button type="submit" size="lg" className="w-full" loading={loading}>
-                Create account
+                {t("auth.createAccountButton")}
               </Button>
             </form>
           </CardBody>
         </Card>
 
         <p className="relative z-20 mt-8 text-center text-base text-white/45">
-          Already have an account?{" "}
+          {t("auth.haveAccount")}{" "}
           <Link href="/login" className="font-medium text-shu-400 hover:text-shu-300">
-            Sign in
+            {t("auth.signInButton")}
           </Link>
         </p>
       </div>

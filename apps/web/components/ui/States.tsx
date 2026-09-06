@@ -1,10 +1,14 @@
-import { cn } from "@/lib/cn";
+"use client";
 
-export function LoadingBlock({ label = "Loading…", className }: { label?: string; className?: string }) {
+import { cn } from "@/lib/cn";
+import { useLocale } from "@/lib/i18n";
+
+export function LoadingBlock({ label, className }: { label?: string; className?: string }) {
+  const { t } = useLocale();
   return (
     <div className={cn("flex items-center justify-center gap-3 py-16 text-white/40", className)}>
       <span className="h-4 w-4 animate-spin rounded-full border-2 border-shu-500/70 border-t-transparent" />
-      <span className="text-sm font-mono tracking-wide">{label}</span>
+      <span className="text-sm font-mono tracking-wide">{label ?? t("common.loading")}</span>
     </div>
   );
 }

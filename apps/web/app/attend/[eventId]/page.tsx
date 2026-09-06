@@ -12,10 +12,12 @@ import { QrScanner } from "@/components/QrScanner";
 import { useAuth } from "@/lib/auth-context";
 import { useEvent } from "@/lib/hooks";
 import { apiFetch, ApiError } from "@/lib/api";
+import { useLocale } from "@/lib/i18n";
 
 type Step = "scan" | "locate" | "confirm" | "done" | "error";
 
 export default function AttendPage() {
+  const { t } = useLocale();
   const { eventId } = useParams<{ eventId: string }>();
   const search = useSearchParams();
   const router = useRouter();
@@ -51,14 +53,14 @@ export default function AttendPage() {
       setToken(t);
       setStep("locate");
     } catch {
-      setError("That QR code doesn't look like a valid Kehai Engine check-in code.");
+      setError(t("attend.invalidQr"));
     }
   }
 
   function requestLocation() {
     setError(null);
     if (!navigator.geolocation) {
-      setError("Geolocation is not available on this device/browser.");
+      setError(t("attend.geoUnavailable"));
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -66,7 +68,7 @@ export default function AttendPage() {
         setPosition(pos);
         setStep("confirm");
       },
-      (err) => setError(`Location error: ${err.message}`),
+      (err) => setError(t("attend.locationError", { message: err.message })),
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
     );
   }
@@ -95,7 +97,7 @@ export default function AttendPage() {
           setResult({ distanceMeters: d.distanceMeters, confidence: "n/a" });
         }
       } else {
-        setError("Check-in failed.");
+        setError(t("attend.checkInFailed"));
       }
       setStep("error");
     } finally {
@@ -111,23 +113,23 @@ export default function AttendPage() {
       <NavBar />
       <div className="relative mx-auto max-w-lg px-6 py-16 text-center">
         <KanjiMark glyph="確認" className="absolute -right-4 top-0 text-[4rem] sm:text-[7rem]" />
-        <h1 className="relative z-20 font-display text-2xl font-black text-white md:text-3xl">{event?.name ?? "Check in"}</h1>
-        <p className="relative z-20 mt-2 text-base text-white/45">Verify your presence with QR + location.</p>
+        <h1 className="relative z-20 font-display text-2xl font-black text-white md:text-3xl">{event?.name ?? t("attend.defaultTitle")}</h1>
+        <p className="relative z-20 mt-2 text-base text-white/45">{t("attend.subheading")}</p>
 
         <div className="relative z-20 mt-10">
           {step === "scan" && (
             <div className="space-y-4">
               <QrScanner onDecoded={handleDecoded} />
-              <p className="text-xs text-white/35">Point your camera at the organizer&apos;s check-in QR display.</p>
+              <p className="text-xs text-white/35">{t("attend.scanHint")}</p>
             </div>
           )}
 
           {step === "locate" && (
             <Card>
               <CardBody className="py-10">
-                <p className="mb-4 text-sm text-white/60">QR verified. Now share your location to confirm you&apos;re at the venue.</p>
+                <p className="mb-4 text-sm text-white/60">{t("attend.locateHint")}</p>
                 <Button onClick={requestLocation} variant="cyan">
-                  Share my location
+                  {t("attend.shareLocation")}
                 </Button>
               </CardBody>
             </Card>
@@ -137,10 +139,10 @@ export default function AttendPage() {
             <Card>
               <CardBody className="space-y-4 py-8">
                 <p className="text-sm text-white/60">
-                  Location captured (±{Math.round(position.coords.accuracy)}m accuracy). Confirm check-in?
+                  {t("attend.confirmHint", { accuracy: Math.round(position.coords.accuracy) })}
                 </p>
                 <Button onClick={submitCheckIn} loading={submitting} size="lg" className="w-full">
-                  Confirm attendance
+                  {t("attend.confirmAttendance")}
                 </Button>
               </CardBody>
             </Card>
@@ -152,9 +154,9 @@ export default function AttendPage() {
                 <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/15 text-2xl text-emerald-400">
                   ✓
                 </div>
-                <p className="font-display text-lg font-semibold text-white">Attendance confirmed</p>
+                <p className="font-display text-lg font-semibold text-white">{t("attend.attendanceConfirmed")}</p>
                 <p className="mt-2 text-sm text-white/50">
-                  You were {Math.round(result.distanceMeters)}m from the venue ({result.confidence} location confidence).
+                  {t("attend.distanceFromVenue", { distance: Math.round(result.distanceMeters), confidence: result.confidence })}
                 </p>
               </CardBody>
             </Card>
@@ -165,7 +167,7 @@ export default function AttendPage() {
               {error && <ErrorBlock message={error} />}
               {result && (
                 <p className="text-sm text-white/50">
-                  You appear to be {Math.round(result.distanceMeters)}m from the venue — move closer and try again.
+                  {t("attend.distanceTooFar", { distance: Math.round(result.distanceMeters) })}
                 </p>
               )}
               <Button
@@ -175,7 +177,7 @@ export default function AttendPage() {
                   setError(null);
                 }}
               >
-                Try again
+                {t("common.tryAgain")}
               </Button>
             </div>
           )}

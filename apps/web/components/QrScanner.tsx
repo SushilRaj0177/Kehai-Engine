@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import jsQR from "jsqr";
+import { useLocale } from "@/lib/i18n";
 
 export function QrScanner({ onDecoded }: { onDecoded: (data: string) => void }) {
+  const { t } = useLocale();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +29,7 @@ export function QrScanner({ onDecoded }: { onDecoded: (data: string) => void }) 
           tick();
         }
       } catch {
-        setError("Camera access denied or unavailable. You can also open the check-in link directly.");
+        setError(t("attend.cameraError"));
       }
     }
 

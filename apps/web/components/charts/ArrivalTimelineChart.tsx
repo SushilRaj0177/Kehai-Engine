@@ -1,10 +1,13 @@
 "use client";
 
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
+import { useLocale } from "@/lib/i18n";
 
 export function ArrivalTimelineChart({ data }: { data: { minuteOffset: number; count: number }[] }) {
+  const { t } = useLocale();
+
   if (data.length === 0) {
-    return <div className="flex h-52 items-center justify-center text-sm text-white/30">No check-ins recorded yet.</div>;
+    return <div className="flex h-52 items-center justify-center text-sm text-white/30">{t("chart.empty")}</div>;
   }
 
   return (
@@ -25,11 +28,11 @@ export function ArrivalTimelineChart({ data }: { data: { minuteOffset: number; c
           tickLine={false}
         />
         <YAxis stroke="rgba(255,255,255,0.3)" fontSize={11} allowDecimals={false} tickLine={false} axisLine={false} width={28} />
-        <ReferenceLine x={0} stroke="rgba(34,226,245,0.5)" strokeDasharray="4 4" label={{ value: "start", fill: "#22e2f5", fontSize: 10, position: "top" }} />
+        <ReferenceLine x={0} stroke="rgba(34,226,245,0.5)" strokeDasharray="4 4" label={{ value: t("chart.start"), fill: "#22e2f5", fontSize: 10, position: "top" }} />
         <Tooltip
           contentStyle={{ background: "#0f141c", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, fontSize: 12 }}
-          labelFormatter={(v) => `${v > 0 ? "+" : ""}${v} min from start`}
-          formatter={(value: number) => [`${value} check-ins`, ""]}
+          labelFormatter={(v) => t("chart.minutesFromStart", { signed: `${v > 0 ? "+" : ""}${v}` })}
+          formatter={(value: number) => [t("chart.checkins", { count: value }), ""]}
         />
         <Area type="monotone" dataKey="count" stroke="#ff2d55" strokeWidth={2} fill="url(#arrivalFill)" />
       </AreaChart>
