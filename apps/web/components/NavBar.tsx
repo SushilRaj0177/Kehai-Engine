@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useLocale } from "@/lib/i18n";
 import { Button } from "./ui/Button";
@@ -11,6 +12,7 @@ export function NavBar() {
   const { t, locale, toggle } = useLocale();
   const pathname = usePathname();
   const router = useRouter();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const primaryOrg = memberships[0]?.organization;
 
@@ -81,8 +83,7 @@ export function NavBar() {
               {/* Hidden below sm — logo + locale toggle + both auth buttons
                   don't fit a narrow phone width, so "Get started" (the
                   actual conversion action) stays and this secondary one
-                  drops; sign-in is still reachable from that page. Desktop
-                  unaffected. */}
+                  drops. Reachable instead through the "..." menu below. */}
               <Link href="/login" className="hidden sm:block">
                 <Button variant="ghost" size="sm">
                   {t("nav.signIn")}
@@ -95,9 +96,64 @@ export function NavBar() {
               </Link>
             </>
           )}
+
+          {/* Compact "more" menu, mobile only — Discover/My Events/Console
+              are already hidden below md (no room for full nav links), and
+              Sign in is hidden below sm too, so on a phone none of that was
+              reachable from the navbar at all. This surfaces all of it in a
+              dropdown instead of trying to cram it into the bar itself.
+              Desktop (sm and up) never renders this button at all. */}
+          <button
+            type="button"
+            aria-label="Menu"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((v) => !v)}
+            className="ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/70 sm:hidden"
+          >
+            <span className="flex flex-col items-center gap-[3px]">
+              <span className="h-[1.5px] w-4 rounded-full bg-current" />
+              <span className="h-[1.5px] w-4 rounded-full bg-current" />
+              <span className="h-[1.5px] w-4 rounded-full bg-current" />
+            </span>
+          </button>
         </div>
       </div>
+
+      {menuOpen && (
+        <div className="mx-auto mt-2 max-w-6xl rounded-2xl border border-white/[0.08] bg-void-950/95 p-2 backdrop-blur-2xl sm:hidden">
+          <MobileMenuLink href="/events" onNavigate={() => setMenuOpen(false)}>
+            {t("nav.discover")}
+          </MobileMenuLink>
+          {user && (
+            <MobileMenuLink href="/my-events" onNavigate={() => setMenuOpen(false)}>
+              {t("nav.myEvents")}
+            </MobileMenuLink>
+          )}
+          {user && (
+            <MobileMenuLink href={primaryOrg ? `/orgs/${primaryOrg.slug}` : "/dashboard"} onNavigate={() => setMenuOpen(false)}>
+              {t("nav.console")}
+            </MobileMenuLink>
+          )}
+          {!user && (
+            <MobileMenuLink href="/login" onNavigate={() => setMenuOpen(false)}>
+              {t("nav.signIn")}
+            </MobileMenuLink>
+          )}
+        </div>
+      )}
     </header>
+  );
+}
+
+function MobileMenuLink({ href, onNavigate, children }: { href: string; onNavigate: () => void; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      onClick={onNavigate}
+      className="block rounded-xl px-4 py-3 text-sm font-semibold text-white/70 transition-colors hover:bg-white/[0.06] hover:text-white"
+    >
+      {children}
+    </Link>
   );
 }
 
