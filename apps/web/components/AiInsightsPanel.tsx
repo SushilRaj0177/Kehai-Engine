@@ -124,14 +124,15 @@ function AskAiBox({ orgId }: { orgId: string }) {
     <Card>
       <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">{t("aiInsights.askHeading")}</CardHeader>
       <CardBody>
-        <form onSubmit={ask} className="flex gap-2">
+        <form onSubmit={ask} className="flex flex-col gap-2 sm:flex-row">
           <Input
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             placeholder={t("aiInsights.askPlaceholder")}
             underline={false}
+            className="min-w-0 flex-1"
           />
-          <Button type="submit" loading={loading} size="md">
+          <Button type="submit" loading={loading} size="md" className="w-full sm:w-auto">
             {t("aiInsights.askButton")}
           </Button>
         </form>
