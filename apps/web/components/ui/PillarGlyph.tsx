@@ -1,55 +1,26 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { forwardRef } from "react";
 
 /**
  * The big pillar glyph (検/生/知/組) lights up on desktop via plain CSS
  * :hover (gated behind `@media (hover: hover)` below so a tap-triggered
  * synthetic hover on a touch device can never light it up that way — an
  * earlier version relied on `group-hover:` unguarded, and mobile browsers
- * happily fire a lingering :hover state from a plain tap, which is exactly
- * why it was "lighting up only by tap/touch" instead of by scroll).
+ * happily fire a lingering :hover state from a plain tap).
  *
- * On touch devices it lights up instead as it crosses the vertical center
- * of the viewport, computed directly from getBoundingClientRect on scroll
- * — not IntersectionObserver's rootMargin trick, which is unreliable on
- * mobile browsers whose viewport height changes as the address bar
- * shows/hides. Touch detection uses maxTouchPoints/ontouchstart rather than
- * a `hover`/`pointer` media query, since some mobile browsers report those
- * ambiguously.
+ * On touch devices, which glyph is lit is decided by the parent (see
+ * `useClosestPillar` in page.tsx) rather than each glyph independently
+ * deciding it's "close enough" to center — independent per-glyph thresholds
+ * meant two adjacent glyphs could both fall within range at once and light
+ * up together, since the pillar rows sit closer together than twice that
+ * threshold. Picking a single closest-to-center winner across the whole
+ * list guarantees only one is ever active.
  */
-export function PillarGlyph({ glyph }: { glyph: string }) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const [active, setActive] = useState(false);
-
-  useEffect(() => {
-    const isTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
-    if (!isTouch) return;
-    const el = ref.current;
-    if (!el) return;
-
-    let raf = 0;
-    function check() {
-      raf = 0;
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      const center = rect.top + rect.height / 2;
-      setActive(Math.abs(center - window.innerHeight / 2) < window.innerHeight * 0.32);
-    }
-    function onScroll() {
-      if (raf) return;
-      raf = requestAnimationFrame(check);
-    }
-    check();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-      if (raf) cancelAnimationFrame(raf);
-    };
-  }, []);
-
+export const PillarGlyph = forwardRef<HTMLSpanElement, { glyph: string; active: boolean }>(function PillarGlyph(
+  { glyph, active },
+  ref
+) {
   return (
     <span
       ref={ref}
@@ -60,4 +31,4 @@ export function PillarGlyph({ glyph }: { glyph: string }) {
       {glyph}
     </span>
   );
-}
+});
