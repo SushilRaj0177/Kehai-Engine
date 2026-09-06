@@ -27,7 +27,10 @@ export function Footer() {
   const marqueeItem = locale === "ja" ? "気配 KEHAI ENGINE — 出席・検証・洞察 —" : "気配 KEHAI ENGINE — presence, verified —";
 
   return (
-    <footer className="relative overflow-hidden bg-void-900/60">
+    // Matches the flow section's own bg-void-900/40 immediately above it —
+    // this was bg-void-900/60, and that opacity mismatch created a visible
+    // seam exactly at the boundary between the two sections.
+    <footer className="relative overflow-hidden bg-void-900/40">
       <span
         aria-hidden
         className="pointer-events-none absolute -left-10 -top-16 select-none font-display text-[14rem] font-black leading-none text-white/[0.025]"

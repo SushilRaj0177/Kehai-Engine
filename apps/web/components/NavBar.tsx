@@ -21,7 +21,7 @@ export function NavBar() {
     // the page instead of a wall cutting across it.
     <header className="sticky top-4 z-40 px-4">
       <div
-        className="mx-auto flex h-[64px] max-w-6xl items-center justify-between rounded-full border border-white/[0.08] bg-white/[0.05] px-3 pl-6 backdrop-blur-2xl"
+        className="mx-auto flex h-[64px] max-w-6xl items-center justify-between rounded-full border border-white/[0.08] bg-white/[0.05] px-2 pl-4 backdrop-blur-2xl sm:px-3 sm:pl-6"
         style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.03), 0 12px 40px -12px rgba(0,0,0,0.6), 0 0 60px -20px rgba(255,45,85,0.18)" }}
       >
         <Link href="/" className="group flex items-center gap-2.5">
@@ -30,8 +30,13 @@ export function NavBar() {
           </span>
           <span className="font-display text-[15px] font-bold tracking-tight text-white">
             KEHAI
-            <span className="mx-2 inline-block h-3 w-px bg-white/15 align-middle" />
-            <span className="font-normal tracking-[0.2em] text-white/40">ENGINE</span>
+            {/* Hidden below sm — on a narrow phone this pill has to also fit
+                the locale toggle and CTA buttons, and "| ENGINE" was the
+                first thing squeezed into overlap; the kanji + KEHAI wordmark
+                alone still reads fine as the brand mark. Desktop (sm and up)
+                is untouched. */}
+            <span className="mx-2 hidden h-3 w-px bg-white/15 align-middle sm:inline-block" />
+            <span className="hidden font-normal tracking-[0.2em] text-white/40 sm:inline">ENGINE</span>
           </span>
         </Link>
 
@@ -54,7 +59,7 @@ export function NavBar() {
           )}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <LocaleSwitch locale={locale} onToggle={toggle} />
 
           {user ? (
@@ -73,7 +78,12 @@ export function NavBar() {
             </>
           ) : (
             <>
-              <Link href="/login">
+              {/* Hidden below sm — logo + locale toggle + both auth buttons
+                  don't fit a narrow phone width, so "Get started" (the
+                  actual conversion action) stays and this secondary one
+                  drops; sign-in is still reachable from that page. Desktop
+                  unaffected. */}
+              <Link href="/login" className="hidden sm:block">
                 <Button variant="ghost" size="sm">
                   {t("nav.signIn")}
                 </Button>
@@ -99,13 +109,18 @@ function LocaleSwitch({ locale, onToggle }: { locale: "en" | "ja"; onToggle: () 
       onClick={onToggle}
       aria-label="Toggle language"
       aria-pressed={isJa}
-      className="relative mr-1 h-9 w-[132px] shrink-0 rounded-full border border-white/10 bg-white/[0.04] transition-colors hover:border-white/20"
+      className="relative mr-1 h-9 w-[92px] shrink-0 rounded-full border border-white/10 bg-white/[0.04] transition-colors hover:border-white/20 sm:w-[132px]"
     >
-      {/* sliding thumb — real physical motion, not a color-swap toggle */}
+      {/* sliding thumb — real physical motion, not a color-swap toggle.
+          Narrower track+thumb on mobile (92/44px vs 132/64px desktop) so
+          this fits next to the CTA buttons on a narrow phone; the travel
+          distance (translate-x) is scaled to match each track's own math
+          (track - thumb - 2*inset), so the thumb still lands flush against
+          the right edge at either size. Desktop values unchanged. */}
       <span
         aria-hidden
-        className={`absolute inset-y-[3px] left-[3px] w-16 rounded-full bg-gradient-to-br from-shu-500 to-shu-600 shadow-[0_0_12px_rgba(255,45,85,0.5)] transition-transform duration-300 ease-out ${
-          isJa ? "translate-x-[62px]" : "translate-x-0"
+        className={`absolute inset-y-[3px] left-[3px] w-11 rounded-full bg-gradient-to-br from-shu-500 to-shu-600 shadow-[0_0_12px_rgba(255,45,85,0.5)] transition-transform duration-300 ease-out sm:w-16 ${
+          isJa ? "translate-x-[42px] sm:translate-x-[62px]" : "translate-x-0"
         }`}
       />
       {/* z-10 makes sure these labels always paint above the thumb — the
@@ -114,9 +129,9 @@ function LocaleSwitch({ locale, onToggle }: { locale: "en" | "ja"; onToggle: () 
           under font-bold and reads as nearly invisible at this size.
           日本語 ("nihongo" = "the Japanese language") — not 日 alone,
           which just means "day/sun" and is ambiguous as a language label. */}
-      <span className="relative z-10 flex h-full items-center justify-between px-3 text-xs font-bold tracking-wide">
+      <span className="relative z-10 flex h-full items-center justify-between px-2.5 text-xs font-bold tracking-wide sm:px-3">
         <span className={isJa ? "text-white/35" : "text-white"}>EN</span>
-        <span className={`font-display text-sm ${isJa ? "text-white" : "text-white/35"}`}>日本語</span>
+        <span className={`font-display text-xs sm:text-sm ${isJa ? "text-white" : "text-white/35"}`}>日本語</span>
       </span>
     </button>
   );

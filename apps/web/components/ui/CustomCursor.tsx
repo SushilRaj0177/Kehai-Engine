@@ -58,7 +58,7 @@ export function CustomCursor() {
     <div
       ref={ringRef}
       aria-hidden
-      className="pointer-events-none fixed left-0 top-0 z-[100] h-6 w-6 rounded-full mix-blend-screen"
+      className="cursor-ring pointer-events-none fixed left-0 top-0 z-[100] h-6 w-6 rounded-full mix-blend-screen"
       style={{
         background: "radial-gradient(circle, rgba(255,45,85,0.9), rgba(34,226,245,0.5) 60%, transparent 75%)",
         transition: "opacity 200ms ease",
