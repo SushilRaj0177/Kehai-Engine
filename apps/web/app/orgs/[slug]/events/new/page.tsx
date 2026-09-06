@@ -9,6 +9,7 @@ import { Input, Label, Textarea } from "@/components/ui/Input";
 import { QrRotationInput } from "@/components/ui/QrRotationInput";
 import { ErrorBlock, LoadingBlock } from "@/components/ui/States";
 import { KanjiMark } from "@/components/ui/KanjiMark";
+import { PageGlow } from "@/components/ui/PageGlow";
 import { useMyOrganizations } from "@/lib/hooks";
 import { apiFetch, ApiError } from "@/lib/api";
 import { toLocalDatetimeInputValue } from "@/lib/format";
@@ -88,17 +89,18 @@ export default function NewEventPage() {
   if (isLoading) return <LoadingBlock />;
 
   return (
-    <div className="min-h-screen">
+    <div className="relative min-h-screen">
+      <PageGlow />
       <NavBar />
       <div className="relative mx-auto max-w-3xl px-6 py-20">
-        <KanjiMark glyph="新" className="absolute -right-4 top-0 text-[9rem]" />
-        <span className="relative text-xs font-semibold uppercase tracking-widest text-shu-400">Create</span>
-        <h1 className="relative mt-3 font-display text-4xl font-black text-white md:text-5xl">New event</h1>
-        <p className="relative mt-3 text-lg text-white/50">
+        <KanjiMark glyph="新" className="absolute -right-4 top-0 text-[5rem] sm:text-[9rem]" />
+        <span className="relative z-20 text-xs font-semibold uppercase tracking-widest text-shu-400">Create</span>
+        <h1 className="relative z-20 mt-3 font-display text-4xl font-black text-white md:text-5xl">New event</h1>
+        <p className="relative z-20 mt-3 text-lg text-white/50">
           Set the venue geofence carefully — this is what verifies real attendance.
         </p>
 
-        <form onSubmit={handleSubmit} className="relative mt-12 space-y-6">
+        <form onSubmit={handleSubmit} className="relative z-20 mt-12 space-y-6">
           {error && <ErrorBlock message={error} />}
 
           <Card>
@@ -116,7 +118,7 @@ export default function NewEventPage() {
                 <Label htmlFor="venue">Venue name</Label>
                 <Input id="venue" required value={form.venue} onChange={(e) => set("venue", e.target.value)} placeholder="e.g. Tech Park Auditorium" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="startsAt">Starts</Label>
                   <Input id="startsAt" type="datetime-local" required value={form.startsAt} onChange={(e) => set("startsAt", e.target.value)} />
@@ -141,7 +143,7 @@ export default function NewEventPage() {
               </button>
             </CardHeader>
             <CardBody className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="lat">Latitude</Label>
                   <Input id="lat" required value={form.latitude} onChange={(e) => set("latitude", e.target.value)} />

@@ -10,6 +10,7 @@ import { Card, CardBody } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { LoadingBlock, ErrorBlock } from "@/components/ui/States";
 import { KanjiMark } from "@/components/ui/KanjiMark";
+import { PageGlow } from "@/components/ui/PageGlow";
 import { useAuth } from "@/lib/auth-context";
 import { useEvent } from "@/lib/hooks";
 import { apiFetch, ApiError } from "@/lib/api";
@@ -47,27 +48,28 @@ export default function EventDetailPage() {
   const isOpen = event.status === "PUBLISHED" || event.status === "ACTIVE";
 
   return (
-    <div className="min-h-screen">
+    <div className="relative min-h-screen">
+      <PageGlow />
       <NavBar />
       <div className="relative mx-auto max-w-3xl px-6 py-20">
-        <KanjiMark glyph="詳細" className="absolute -right-6 top-0 text-[9rem]" />
+        <KanjiMark glyph="詳細" className="absolute -right-6 top-0 text-[5rem] sm:text-[9rem]" />
 
-        <div className="relative flex items-center gap-2.5">
+        <div className="relative z-20 flex items-center gap-2.5">
           <Badge status={event.status}>{event.status}</Badge>
           <span className="text-sm text-white/40">{event.organization?.name}</span>
         </div>
-        <h1 className="relative mt-4 font-display text-4xl font-black leading-tight text-white md:text-5xl">
+        <h1 className="relative z-20 mt-4 font-display text-4xl font-black leading-tight text-white md:text-5xl">
           {event.name}
         </h1>
-        <p className="relative mt-3 text-lg text-white/50">
+        <p className="relative z-20 mt-3 text-lg text-white/50">
           {formatDateRange(event.startsAt, event.endsAt)} · {event.venue}
         </p>
 
-        {event.description && <p className="relative mt-5 text-base leading-relaxed text-white/60">{event.description}</p>}
+        {event.description && <p className="relative z-20 mt-5 text-base leading-relaxed text-white/60">{event.description}</p>}
 
-        {error && <ErrorBlock message={error} className="relative mt-5" />}
+        {error && <ErrorBlock message={error} className="relative z-20 mt-5" />}
 
-        <div className="relative mt-8 flex flex-wrap items-center gap-4">
+        <div className="relative z-20 mt-8 flex flex-wrap items-center gap-4">
           {event.hasAttended ? (
             <Badge status="COMPLETED">Attendance confirmed</Badge>
           ) : event.isRegistered ? (
@@ -92,7 +94,7 @@ export default function EventDetailPage() {
           </span>
         </div>
 
-        <Card className="relative mt-10">
+        <Card className="relative z-20 mt-10">
           <CardBody className="py-6">
             <EventMap latitude={event.latitude} longitude={event.longitude} radiusM={event.geofenceRadiusM} />
             <p className="mt-4 text-sm text-white/35">
