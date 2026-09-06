@@ -25,7 +25,13 @@ export function AttendeeTable({ eventId }: { eventId: string }) {
   return (
     <div>
       <div className="mb-3 flex flex-wrap gap-2">
-        <Input placeholder="Search name or email…" value={q} onChange={(e) => setQ(e.target.value)} className="max-w-xs" />
+        <Input
+          placeholder="Search name or email…"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          className="max-w-xs"
+          underline={false}
+        />
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value as any)}
@@ -42,7 +48,7 @@ export function AttendeeTable({ eventId }: { eventId: string }) {
       ) : !data?.length ? (
         <p className="py-8 text-center text-sm text-white/35">No registrants match.</p>
       ) : (
-        <div className="scroll-thin max-h-96 overflow-auto rounded-lg border border-white/8">
+        <div className="scroll-thin max-h-96 overflow-auto rounded-lg">
           <table className="w-full text-left text-sm">
             <thead className="sticky top-0 bg-void-900/95 text-[11px] uppercase tracking-wider text-white/40">
               <tr>
