@@ -52,6 +52,11 @@ export function NavBar() {
             </NavLink>
           )}
           {user && (
+            <NavLink href="/classrooms" active={!!pathname?.startsWith("/classrooms")}>
+              {t("nav.classrooms")}
+            </NavLink>
+          )}
+          {user && (
             <NavLink
               href={primaryOrg ? `/orgs/${primaryOrg.slug}` : "/dashboard"}
               active={!!pathname?.startsWith("/orgs") || pathname === "/dashboard"}
@@ -127,6 +132,11 @@ export function NavBar() {
           {user && (
             <MobileMenuLink href="/my-events" onNavigate={() => setMenuOpen(false)}>
               {t("nav.myEvents")}
+            </MobileMenuLink>
+          )}
+          {user && (
+            <MobileMenuLink href="/classrooms" onNavigate={() => setMenuOpen(false)}>
+              {t("nav.classrooms")}
             </MobileMenuLink>
           )}
           {user && (

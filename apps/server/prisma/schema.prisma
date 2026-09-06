@@ -22,33 +22,37 @@ enum AuthProvider {
 }
 
 model User {
-  id            String       @id @default(cuid())
-  email         String       @unique
-  name          String
-  passwordHash  String? // null when provider is GOOGLE-only
-  provider      AuthProvider @default(PASSWORD)
-  googleSub     String?      @unique
-  avatarUrl     String?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  id           String       @id @default(cuid())
+  email        String       @unique
+  name         String
+  passwordHash String? // null when provider is GOOGLE-only
+  provider     AuthProvider @default(PASSWORD)
+  googleSub    String?      @unique
+  avatarUrl    String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
-  memberships     Membership[]
-  registrations   Registration[]
-  attendances     AttendanceRecord[]
-  auditLogs       AuditLog[]
-  refreshTokens   RefreshToken[]
-  createdEvents   Event[]            @relation("EventCreatedBy")
+  memberships   Membership[]
+  registrations Registration[]
+  attendances   AttendanceRecord[]
+  auditLogs     AuditLog[]
+  refreshTokens RefreshToken[]
+  createdEvents Event[]            @relation("EventCreatedBy")
+
+  taughtClassrooms Classroom[]       @relation("ClassroomTeacher")
+  enrollments      Enrollment[]      @relation("StudentEnrollments")
+  classAttendances ClassAttendance[] @relation("StudentClassAttendance")
 
   @@index([email])
 }
 
 model RefreshToken {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  tokenHash String   @unique
+  tokenHash String    @unique
   expiresAt DateTime
   revokedAt DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -109,7 +113,7 @@ enum EventStatus {
 }
 
 model Event {
-  id             String      @id @default(cuid())
+  id             String @id @default(cuid())
   organizationId String
   createdById    String
 
@@ -132,17 +136,17 @@ model Event {
   capacity Int? // null = unlimited
 
   // Geofence
-  latitude       Float
-  longitude      Float
-  geofenceRadiusM Int @default(100)
+  latitude        Float
+  longitude       Float
+  geofenceRadiusM Int   @default(100)
 
   // QR lifecycle
-  qrSecret    String // per-event signing secret for rotating QR tokens
-  qrRotationSeconds Int @default(20)
-  qrRevoked   Boolean @default(false)
+  qrSecret          String // per-event signing secret for rotating QR tokens
+  qrRotationSeconds Int     @default(20)
+  qrRevoked         Boolean @default(false)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   cancelledAt DateTime?
 
   organization  Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -181,19 +185,19 @@ enum AttendanceMethod {
 }
 
 model AttendanceRecord {
-  id             String           @id @default(cuid())
+  id             String  @id @default(cuid())
   eventId        String
   userId         String
-  registrationId String?          @unique
+  registrationId String? @unique
 
   method AttendanceMethod @default(QR_GEO)
 
   // Location snapshot at check-in (not retained beyond privacy window at the
   // app layer — see PRIVACY.md). Coarsened to ~5 decimal places (~1.1m).
-  latitude          Float
-  longitude         Float
-  accuracyMeters    Float?
-  distanceMeters    Float
+  latitude           Float
+  longitude          Float
+  accuracyMeters     Float?
+  distanceMeters     Float
   locationConfidence String // "high" | "medium" | "low" — derived from GPS accuracy
 
   qrTokenJti String // jti of the QR token consumed, for replay auditing
@@ -202,12 +206,111 @@ model AttendanceRecord {
 
   overriddenById String? // organizer who manually marked attendance, if any
 
-  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event        Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   registration Registration? @relation(fields: [registrationId], references: [id])
 
   @@unique([eventId, userId])
   @@index([eventId, checkedInAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Classrooms — a second, parallel feature: teacher-run classes tracking
+// attendance across a semester of recurring class days, joined by a short
+// human-readable code instead of an org invite. Geofence is optional here
+// (see Classroom.latitude) since indoor GPS is often unreliable and a
+// once-a-semester precise geofence requirement would be brittle for a
+// class that meets every day.
+// ─────────────────────────────────────────────────────────────────────────
+
+model Classroom {
+  id            String  @id @default(cuid())
+  teacherId     String
+  name          String
+  courseCode    String?
+  semesterLabel String?
+  joinCode      String  @unique
+
+  // Geofence is OPTIONAL for classrooms (nullable) — indoor GPS is often
+  // unreliable, and unlike one-off events, requiring precise geofencing
+  // for every single class day would be brittle. If latitude/longitude
+  // are null, check-in skips the geofence check entirely and relies on
+  // the rotating signed QR alone.
+  latitude        Float?
+  longitude       Float?
+  geofenceRadiusM Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  teacher     User           @relation("ClassroomTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+  enrollments Enrollment[]
+  sessions    ClassSession[]
+
+  @@index([teacherId])
+}
+
+model Enrollment {
+  id          String   @id @default(cuid())
+  classroomId String
+  studentId   String
+  createdAt   DateTime @default(now())
+
+  classroom Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  student   User      @relation("StudentEnrollments", fields: [studentId], references: [id], onDelete: Cascade)
+
+  attendances ClassAttendance[]
+
+  @@unique([classroomId, studentId])
+  @@index([classroomId])
+  @@index([studentId])
+}
+
+enum ClassSessionStatus {
+  OPEN
+  CLOSED
+}
+
+model ClassSession {
+  id          String             @id @default(cuid())
+  classroomId String
+  date        DateTime // calendar day, stored at UTC midnight — one session per classroom per day
+  status      ClassSessionStatus @default(OPEN)
+
+  qrSecret          String
+  qrRotationSeconds Int    @default(20)
+
+  openedAt DateTime  @default(now())
+  closedAt DateTime?
+
+  classroom   Classroom         @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  attendances ClassAttendance[]
+
+  @@unique([classroomId, date])
+  @@index([classroomId, date])
+}
+
+model ClassAttendance {
+  id           String @id @default(cuid())
+  sessionId    String
+  enrollmentId String
+  studentId    String
+
+  latitude           Float?
+  longitude          Float?
+  accuracyMeters     Float?
+  distanceMeters     Float?
+  locationConfidence String?
+  qrTokenJti         String
+
+  checkedInAt DateTime @default(now())
+
+  session    ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  enrollment Enrollment   @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  student    User         @relation("StudentClassAttendance", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, studentId])
+  @@index([sessionId])
 }
 
 // ─────────────────────────────────────────────────────────────────────────

@@ -81,3 +81,38 @@ export function requireOrgRole(minRole: OrgRole) {
     next();
   };
 }
+
+/**
+ * Loads the classroom derived from :classroomId (or from :sessionId, for
+ * routes nested under a class session) and enforces that the caller is that
+ * classroom's teacher. Always re-checks against the database — never trusts
+ * client-supplied claims.
+ */
+export function requireClassroomTeacher() {
+  return async (req: Request, _res: Response, next: NextFunction) => {
+    if (!req.user) throw HttpError.unauthorized();
+
+    let classroomId = req.params.classroomId;
+    if (!classroomId && req.params.sessionId) {
+      const session = await prisma.classSession.findUnique({
+        where: { id: req.params.sessionId },
+        select: { classroomId: true },
+      });
+      if (!session) throw HttpError.notFound("Session not found");
+      classroomId = session.classroomId;
+    }
+    if (!classroomId) throw HttpError.badRequest("Classroom context required");
+
+    const classroom = await prisma.classroom.findUnique({
+      where: { id: classroomId },
+      select: { teacherId: true },
+    });
+    if (!classroom) throw HttpError.notFound("Classroom not found");
+    if (classroom.teacherId !== req.user.id) {
+      throw HttpError.forbidden("Only this classroom's teacher can do that");
+    }
+
+    (req as any).classroomId = classroomId;
+    next();
+  };
+}
