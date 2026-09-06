@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { KanjiMark, VerticalCaption } from "@/components/ui/KanjiMark";
 import { KatakanaRain } from "@/components/ui/KatakanaRain";
 import { Reveal } from "@/components/ui/Reveal";
+import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { useLocale } from "@/lib/i18n";
 
 export default function LandingPage() {
@@ -16,15 +17,13 @@ export default function LandingPage() {
     <div className="relative min-h-screen overflow-hidden">
       <NavBar />
 
-      <section className="relative overflow-hidden">
+      <ClickRippleLayer className="relative overflow-hidden">
         <div className="absolute inset-0 bg-void-950" />
         <div className="absolute inset-0 bg-grid opacity-40" />
         <KatakanaRain columns={18} className="opacity-90" />
         {/* Scrim over the grid/rain layers so the hero reads as a solid
-            dark panel instead of a washed-out, see-through backdrop —
-            sits below the scan-beam/glow so those stay fully vivid. */}
+            dark panel instead of a washed-out, see-through backdrop. */}
         <div className="absolute inset-0 bg-void-950/55" />
-        <div className="scan-beam" />
         <div
           aria-hidden
           className="absolute left-1/2 top-0 h-[560px] w-[900px] -translate-x-1/2 -translate-y-1/3 rounded-full bg-shu-500/[0.09] blur-[140px]"
@@ -69,10 +68,10 @@ export default function LandingPage() {
             <Stat value="0" label={t("hero.statFabricated")} />
           </div>
         </div>
-      </section>
+      </ClickRippleLayer>
 
       <section className="relative mx-auto max-w-5xl px-6 py-28 md:py-36">
-        <Reveal className="mb-16 max-w-2xl">
+        <Reveal variant="curtain" className="mb-16 max-w-2xl">
           <span className="text-xs font-semibold uppercase tracking-widest text-shu-400">{t("pillars.kicker")}</span>
           <h2 className="mt-3 font-display text-4xl font-bold leading-tight text-white md:text-5xl">
             {t("pillars.title")}

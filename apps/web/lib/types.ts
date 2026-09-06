@@ -28,6 +28,13 @@ export interface EventSummary {
   hasAttended?: boolean;
 }
 
+export interface MyRegistration {
+  event: EventSummary;
+  registeredAt: string;
+  attended: boolean;
+  checkedInAt: string | null;
+}
+
 export interface AttendeeRow {
   registrationId: string;
   user: { id: string; name: string; email: string; avatarUrl?: string | null };

@@ -26,6 +26,35 @@ eventRouter.get(
   })
 );
 
+// Must be registered before "/:eventId" — otherwise Express would match
+// "mine" as an :eventId param and this route would never be reached.
+eventRouter.get(
+  "/mine",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const registrations = await prisma.registration.findMany({
+      where: { userId: req.user!.id },
+      include: {
+        event: { include: { organization: { select: { id: true, name: true, slug: true } } } },
+        attendance: true,
+      },
+      orderBy: { event: { startsAt: "desc" } },
+    });
+
+    res.json(
+      registrations.map((r) => {
+        const { qrSecret, ...safeEvent } = r.event;
+        return {
+          event: safeEvent,
+          registeredAt: r.createdAt,
+          attended: !!r.attendance,
+          checkedInAt: r.attendance?.checkedInAt ?? null,
+        };
+      })
+    );
+  })
+);
+
 eventRouter.get(
   "/:eventId",
   optionalAuth,

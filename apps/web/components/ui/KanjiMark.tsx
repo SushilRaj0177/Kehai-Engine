@@ -44,8 +44,8 @@ export function KanjiMark({
           // opacity (animated by kanji-breathe), not from a low-alpha text
           // color — stacking both used to multiply out to ~0.5% actual
           // opacity, which read as "not there" against any busy background.
-          "--kanji-min": prominent ? 0.14 : 0.05,
-          "--kanji-max": prominent ? 0.22 : 0.1,
+          "--kanji-min": prominent ? 0.16 : 0.06,
+          "--kanji-max": prominent ? 0.25 : 0.12,
           opacity: animate ? undefined : prominent ? 0.18 : 0.07,
         } as React.CSSProperties
       }

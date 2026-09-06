@@ -15,7 +15,10 @@ export const createEventSchema = z
     latitude: z.coerce.number().min(-90).max(90),
     longitude: z.coerce.number().min(-180).max(180),
     geofenceRadiusM: z.coerce.number().int().min(10).max(5000).default(100),
-    qrRotationSeconds: z.coerce.number().int().min(5).max(300).default(20),
+    // Widened from an original 300s (5 min) cap: organizers reasonably want
+    // anywhere from a fast 30s rotation up to multi-hour windows for long,
+    // low-risk events — 86400s (24h) covers that without an arbitrary wall.
+    qrRotationSeconds: z.coerce.number().int().min(5).max(86400).default(20),
   })
   .refine((d) => d.endsAt > d.startsAt, {
     message: "endsAt must be after startsAt",

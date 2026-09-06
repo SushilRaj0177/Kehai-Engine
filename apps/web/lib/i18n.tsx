@@ -9,6 +9,7 @@ const STORAGE_KEY = "kehai.locale";
 const dict = {
   nav: {
     discover: { en: "Discover", ja: "探す" },
+    myEvents: { en: "My Events", ja: "マイイベント" },
     console: { en: "Organizer Console", ja: "主催者コンソール" },
     signIn: { en: "Sign in", ja: "ログイン" },
     getStarted: { en: "Get started", ja: "はじめる" },
