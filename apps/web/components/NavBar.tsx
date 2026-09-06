@@ -51,11 +51,9 @@ export function NavBar() {
               {t("nav.myEvents")}
             </NavLink>
           )}
-          {user && (
-            <NavLink href="/classrooms" active={!!pathname?.startsWith("/classrooms")}>
-              {t("nav.classrooms")}
-            </NavLink>
-          )}
+          <NavLink href="/classrooms" active={!!pathname?.startsWith("/classrooms")}>
+            {t("nav.classrooms")}
+          </NavLink>
           {user && (
             <NavLink
               href={primaryOrg ? `/orgs/${primaryOrg.slug}` : "/dashboard"}
@@ -125,7 +123,7 @@ export function NavBar() {
       </div>
 
       {menuOpen && (
-        <div className="mx-auto mt-2 max-w-6xl rounded-2xl border border-white/[0.08] bg-void-950/95 p-2 backdrop-blur-2xl sm:hidden">
+        <div className="mx-auto mt-2 max-w-6xl rounded-2xl border border-white/[0.08] bg-white/[0.06] p-2 backdrop-blur-2xl sm:hidden">
           <MobileMenuLink href="/events" onNavigate={() => setMenuOpen(false)}>
             {t("nav.discover")}
           </MobileMenuLink>
@@ -134,11 +132,9 @@ export function NavBar() {
               {t("nav.myEvents")}
             </MobileMenuLink>
           )}
-          {user && (
-            <MobileMenuLink href="/classrooms" onNavigate={() => setMenuOpen(false)}>
-              {t("nav.classrooms")}
-            </MobileMenuLink>
-          )}
+          <MobileMenuLink href="/classrooms" onNavigate={() => setMenuOpen(false)}>
+            {t("nav.classrooms")}
+          </MobileMenuLink>
           {user && (
             <MobileMenuLink href={primaryOrg ? `/orgs/${primaryOrg.slug}` : "/dashboard"} onNavigate={() => setMenuOpen(false)}>
               {t("nav.console")}

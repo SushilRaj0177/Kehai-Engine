@@ -71,7 +71,13 @@ export function AttendanceHeatmap({ data, className }: { data: HeatmapResponse; 
 
   return (
     <div className={cn("space-y-4", className)}>
-      <div className="flex flex-wrap items-stretch gap-3">
+      {/* A grid rather than a wrapping flex row: flex-basis-0 flex-1 items
+          each carrying their own min-width can end up overflowing their
+          container instead of wrapping once several of them compete for
+          space on a narrow screen (verified failing at 320px), where a
+          grid's evenly-split tracks always fit by construction regardless
+          of viewport width. */}
+      <div className={cn("grid gap-3", data.scope === "student" ? "grid-cols-2 sm:grid-cols-3" : "grid-cols-2")}>
         {data.scope === "student" ? (
           <>
             <StatTile label={t("heatmap.statCurrentStreak")} value={data.currentStreak} accent="shu" flame />
@@ -155,18 +161,18 @@ function StatTile({
   flame?: boolean;
 }) {
   return (
-    <div className="flex min-w-[7rem] flex-1 items-center gap-2 rounded-2xl border border-white/[0.09] bg-white/[0.04] px-4 py-3 backdrop-blur-xl">
-      {flame && <span className="text-lg text-shu-400">🔥</span>}
-      <div>
+    <div className="flex min-w-0 items-center gap-2 rounded-2xl border border-white/[0.09] bg-white/[0.04] px-4 py-3 backdrop-blur-xl">
+      {flame && <span className="shrink-0 text-lg text-shu-400">🔥</span>}
+      <div className="min-w-0">
         <div
           className={cn(
-            "font-display text-2xl font-bold",
+            "truncate font-display text-2xl font-bold",
             accent === "shu" ? "text-shu-400" : accent === "cyan" ? "text-kehai-400" : "text-white"
           )}
         >
           {value}
         </div>
-        <div className="mt-0.5 text-[10px] uppercase tracking-wider text-white/40">{label}</div>
+        <div className="mt-0.5 truncate text-[10px] uppercase tracking-wider text-white/40">{label}</div>
       </div>
     </div>
   );

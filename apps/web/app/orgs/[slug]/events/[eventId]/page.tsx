@@ -136,7 +136,7 @@ export default function EventControlRoomPage() {
           <StatTile label={t("eventControl.statNoShowRate")} value={`${Math.round((analytics?.noShowRate ?? (1 - rate)) * 100)}%`} />
         </div>
 
-        <div className="relative mt-14 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+        <div className="relative mt-14 grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
           <div className="space-y-6">
             <Card>
               <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">{t("eventControl.arrivalTimeline")}</CardHeader>
@@ -196,7 +196,15 @@ function StatTile({
 }) {
   return (
     <div className="flex min-w-0 items-center gap-4 rounded-2xl border border-white/[0.09] bg-white/[0.04] px-4 py-4 backdrop-blur-xl">
-      {ring !== undefined && <ProgressRing value={ring} size={48} stroke={4} color={accent === "shu" ? "#ff2d55" : "#5ff4ff"} />}
+      {ring !== undefined && (
+        // The ring eats into a narrow mobile tile's width just enough to
+        // force the label onto two cramped lines while its sibling tile
+        // sits flush on one — the colored percentage already carries the
+        // same information, so the ring is a desktop-only flourish here.
+        <span className="hidden shrink-0 sm:block">
+          <ProgressRing value={ring} size={48} stroke={4} color={accent === "shu" ? "#ff2d55" : "#5ff4ff"} />
+        </span>
+      )}
       <div className="min-w-0">
         <div
           className={`font-display text-3xl font-bold md:text-4xl ${

@@ -112,7 +112,7 @@ export default function ClassroomDetailPage() {
         </div>
 
         {classroom.isTeacher ? (
-          <div className="relative z-20 mt-12 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+          <div className="relative z-20 mt-12 grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
             <div className="space-y-6">
               <Card>
                 <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">
