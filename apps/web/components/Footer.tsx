@@ -31,9 +31,21 @@ export function Footer() {
     // this was bg-void-900/60, and that opacity mismatch created a visible
     // seam exactly at the boundary between the two sections.
     <footer className="relative overflow-hidden bg-void-900/40">
+      {/* text-[14rem] (224px) unconditionally meant this two-character
+          watermark was ~450px wide — wider than the entire mobile viewport
+          — and the footer's own overflow-hidden was chopping it off hard
+          mid-stroke, which read as a cropping rectangle rather than an
+          intentional edge bleed. Shrinking it below sm keeps the same
+          bleed-off-the-corner look at a size that actually fits.
+          The vertical offset was also the negative -top-16/-top-6, which
+          pushed the character's own top edge above the footer's box and
+          let the footer's overflow-hidden hard-clip it — a flat cut
+          straight through the glyph, on both mobile and desktop. top-0
+          keeps the full character intact; the left bleed (an intentional,
+          much gentler crop off just the left edge) is unaffected. */}
       <span
         aria-hidden
-        className="pointer-events-none absolute -left-10 -top-16 select-none font-display text-[14rem] font-black leading-none text-white/[0.025]"
+        className="pointer-events-none absolute -left-4 top-0 select-none font-display text-[6rem] font-black leading-none text-white/[0.025] sm:-left-10 sm:text-[14rem]"
       >
         気配
       </span>

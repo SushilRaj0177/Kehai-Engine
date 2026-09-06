@@ -170,8 +170,13 @@ export default function LandingPage() {
           <div className="absolute inset-0 bg-grid opacity-40" />
           {/* Scrim over the grid/rain layers so the hero reads as a solid
               dark panel instead of a washed-out, see-through backdrop —
-              lightened from /55 to /45 for a slightly brighter overall feel. */}
-          <div className="absolute inset-0 bg-void-950/45" />
+              lightened from /55 to /45 for a slightly brighter overall feel.
+              Darker on mobile (/65) than desktop (/45): the heading/body
+              text sit much closer to the top of a mobile viewport, right
+              where the fade-in above is still ramping up, so the backdrop
+              behind them was busier/lighter than on desktop and the text
+              read as lower-contrast even at full white opacity. */}
+          <div className="absolute inset-0 bg-void-950/65 sm:bg-void-950/45" />
         </div>
 
         {/* Positioned relative to this full-width section (not the centered
@@ -195,7 +200,7 @@ export default function LandingPage() {
           </span>
 
           <h1
-            className={`max-w-3xl font-display text-5xl font-black tracking-tight text-white md:text-7xl ${
+            className={`max-w-3xl font-display text-5xl font-black tracking-tight text-white [text-shadow:0_2px_24px_rgba(0,0,0,0.75)] sm:[text-shadow:none] md:text-7xl ${
               locale === "ja" ? "leading-[1.45]" : "leading-[1.05]"
             }`}
           >
@@ -205,7 +210,7 @@ export default function LandingPage() {
           </h1>
 
           <p
-            className={`mt-6 max-w-xl text-lg text-white/65 md:text-xl ${
+            className={`mt-6 max-w-xl text-lg text-white/85 sm:text-white/65 md:text-xl ${
               locale === "ja" ? "leading-loose" : "leading-relaxed"
             }`}
           >
