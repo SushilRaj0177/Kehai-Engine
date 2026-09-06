@@ -31,7 +31,11 @@ const config: Config = {
         },
       },
       fontFamily: {
-        display: ["var(--font-jp)", "var(--font-sans)", "sans-serif"],
+        // Space Grotesk carries Latin glyphs; Noto Sans JP is only reached
+        // for characters Space Grotesk doesn't cover (kanji/katakana), via
+        // ordinary per-character font-family fallback — not a rewrite of
+        // the Japanese type, just no longer the *default* voice for Latin.
+        display: ["var(--font-display-latin)", "var(--font-jp)", "var(--font-sans)", "sans-serif"],
         sans: ["var(--font-sans)", "sans-serif"],
         mono: ["var(--font-mono)", "monospace"],
       },
