@@ -94,6 +94,18 @@ body {
   animation: kanji-breathe 7s ease-in-out infinite;
 }
 
+/* Hero glyph only, mobile only: a touch more opacity than KanjiMark's own
+   "prominent" tier. Overriding the inline custom properties KanjiMark sets
+   needs !important — a plain stylesheet rule can't out-specificity an
+   inline style otherwise. Scoped to this one class so nothing else using
+   `prominent` is affected, and only below sm so desktop is untouched. */
+@media (max-width: 639px) {
+  .hero-kanji-mobile {
+    --kanji-min: 0.24 !important;
+    --kanji-max: 0.36 !important;
+  }
+}
+
 /* katakana/kanji "digital rain" column — each column is one element with a
    tall repeating background-image-free text track scrolled via
    background-position-less transform; see KatakanaRain.tsx for markup */
