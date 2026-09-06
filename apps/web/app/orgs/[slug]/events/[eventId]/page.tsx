@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/Badge";
 import { LoadingBlock, ErrorBlock } from "@/components/ui/States";
 import { KanjiMark } from "@/components/ui/KanjiMark";
 import { LiveQrPanel } from "@/components/LiveQrPanel";
+import { ProgressRing } from "@/components/ui/ProgressRing";
 import { ArrivalTimelineChart } from "@/components/charts/ArrivalTimelineChart";
 import { AttendeeTable } from "@/components/AttendeeTable";
 import { AiInsightsPanel } from "@/components/AiInsightsPanel";
@@ -114,10 +115,10 @@ export default function EventControlRoomPage() {
         </div>
         {statusError && <ErrorBlock message={statusError} className="relative mt-3" />}
 
-        <div className="relative mt-12 grid grid-cols-2 gap-8 sm:grid-cols-4">
+        <div className="relative mt-12 grid grid-cols-2 gap-4 sm:grid-cols-4">
           <StatTile label="Registrations" value={registrations} />
           <StatTile label="Attendance" value={attendance} accent="shu" />
-          <StatTile label="Attendance rate" value={`${Math.round(rate * 100)}%`} accent="cyan" />
+          <StatTile label="Attendance rate" value={`${Math.round(rate * 100)}%`} accent="cyan" ring={rate} />
           <StatTile label="No-show rate" value={`${Math.round((analytics?.noShowRate ?? (1 - rate)) * 100)}%`} />
         </div>
 
@@ -167,17 +168,31 @@ function labelFor(status: EventStatus): string {
   }
 }
 
-function StatTile({ label, value, accent }: { label: string; value: React.ReactNode; accent?: "shu" | "cyan" }) {
+function StatTile({
+  label,
+  value,
+  accent,
+  ring,
+}: {
+  label: string;
+  value: React.ReactNode;
+  accent?: "shu" | "cyan";
+  /** 0-1 — renders a small glowing progress ring next to the number */
+  ring?: number;
+}) {
   return (
-    <div>
-      <div
-        className={`font-display text-3xl font-bold md:text-4xl ${
-          accent === "shu" ? "text-shu-400" : accent === "cyan" ? "text-kehai-400" : "text-white"
-        }`}
-      >
-        {value}
+    <div className="flex items-center gap-4 rounded-2xl border border-white/[0.09] bg-white/[0.04] px-4 py-4 backdrop-blur-xl">
+      {ring !== undefined && <ProgressRing value={ring} size={48} stroke={4} color={accent === "shu" ? "#ff2d55" : "#5ff4ff"} />}
+      <div>
+        <div
+          className={`font-display text-3xl font-bold md:text-4xl ${
+            accent === "shu" ? "text-shu-400" : accent === "cyan" ? "text-kehai-400" : "text-white"
+          }`}
+        >
+          {value}
+        </div>
+        <div className="mt-1 text-[11px] uppercase tracking-wider text-white/40">{label}</div>
       </div>
-      <div className="mt-1 text-[11px] uppercase tracking-wider text-white/40">{label}</div>
     </div>
   );
 }

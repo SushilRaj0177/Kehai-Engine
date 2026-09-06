@@ -21,8 +21,8 @@ export function NavBar() {
     // the page instead of a wall cutting across it.
     <header className="sticky top-4 z-40 px-4">
       <div
-        className="mx-auto flex h-[64px] max-w-6xl items-center justify-between rounded-full border border-white/[0.08] bg-void-950/70 px-3 pl-6 backdrop-blur-2xl"
-        style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.02), 0 12px 40px -12px rgba(0,0,0,0.6), 0 0 60px -20px rgba(255,45,85,0.18)" }}
+        className="mx-auto flex h-[64px] max-w-6xl items-center justify-between rounded-full border border-white/[0.08] bg-white/[0.05] px-3 pl-6 backdrop-blur-2xl"
+        style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.03), 0 12px 40px -12px rgba(0,0,0,0.6), 0 0 60px -20px rgba(255,45,85,0.18)" }}
       >
         <Link href="/" className="group flex items-center gap-2.5">
           <span className="font-display text-2xl font-black leading-none text-shu-400 transition-[text-shadow] duration-300 group-hover:[text-shadow:0_0_22px_rgba(255,45,85,0.65)]">
@@ -124,16 +124,11 @@ function NavLink({ href, active, children }: { href: string; active?: boolean; c
   return (
     <Link
       href={href}
-      className={`group relative px-3.5 py-2 text-sm font-medium transition-colors ${
-        active ? "text-white" : "text-white/50 hover:text-white/85"
+      className={`group relative rounded-full px-4 py-2 text-sm font-semibold tracking-wide transition-all duration-200 ${
+        active ? "bg-white/[0.08] text-white" : "text-white/55 hover:bg-white/[0.06] hover:text-white"
       }`}
     >
       {children}
-      <span
-        className={`absolute inset-x-3.5 -bottom-0.5 h-px origin-left scale-x-0 bg-gradient-to-r from-shu-400 to-kehai-400 transition-transform duration-300 group-hover:scale-x-100 ${
-          active ? "scale-x-100" : ""
-        }`}
-      />
     </Link>
   );
 }

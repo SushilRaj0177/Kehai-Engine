@@ -64,7 +64,7 @@ export function KatakanaRain({ columns = 16, className = "" }: { columns?: numbe
           return (
             <div key={c} className="relative h-full flex-1 overflow-hidden">
               <div
-                className="rain-column absolute inset-x-0 top-0 flex flex-col items-center font-mono text-[11px] leading-[2.1] text-kehai-400/[0.19]"
+                className="rain-column absolute inset-x-0 top-0 flex flex-col items-center font-mono text-[11px] leading-[2.1] text-kehai-400/[0.24]"
                 style={{ animationDuration: `${duration}s`, animationDelay: `${delay}s` }}
               >
                 {[...chars, ...chars].map((ch, i) => (

@@ -16,16 +16,16 @@ const dict = {
     getStarted: { en: "Get started", ja: "はじめる" },
   },
   hero: {
-    badge: { en: "Attendance & event intelligence platform", ja: "出席・イベント インテリジェンス プラットフォーム" },
+    badge: { en: "Attendance & event intelligence platform", ja: "出席・イベントインテリジェンス・プラットフォーム" },
     titleLine1: { en: "Presence you can", ja: "証明できる" },
     titleVerify: { en: "verify", ja: "存在" },
     titleLine2: { en: "Insight you can", ja: "信頼できる" },
     titleTrust: { en: "trust", ja: "洞察" },
     body: {
       en: "Kehai Engine turns QR check-ins into geospatially verified attendance records, real-time organizer dashboards, and AI-grounded event analytics — for university clubs, hackathons, conferences, and companies that outgrew spreadsheets.",
-      ja: "気配エンジンは、QRチェックインを地理的に検証された出席記録、リアルタイムの主催者ダッシュボード、そしてAIによるイベント分析へと変換します。大学のサークル、ハッカソン、カンファレンス、そしてスプレッドシートを卒業した企業のために。",
+      ja: "気配エンジンは、QRチェックインを地理的に検証された出席記録、リアルタイムの主催者ダッシュボード、そしてAIによるイベント分析へと変換します。大学のサークル、ハッカソン、カンファレンス、そしてスプレッドシートでは限界を迎えた企業のために。",
     },
-    ctaPrimary: { en: "Start an organization", ja: "組織を始める" },
+    ctaPrimary: { en: "Start an organization", ja: "組織を作る" },
     ctaSecondary: { en: "Browse live events", ja: "開催中のイベントを見る" },
     statGeofence: { en: "geofence precision floor", ja: "ジオフェンス精度の下限" },
     statRotation: { en: "default QR rotation", ja: "既定のQR更新間隔" },
@@ -50,7 +50,7 @@ const dict = {
       },
       {
         glyph: "生",
-        title: { en: "Live, not eventually", ja: "即時に、いずれではなく" },
+        title: { en: "Live, not eventually", ja: "「いつか」ではなく、今" },
         body: {
           en: "Socket-based dashboards update the moment someone checks in — attendee count, rate, and timeline redraw instantly.",
           ja: "チェックインの瞬間にダッシュボードが更新される。参加人数、割合、タイムラインが即座に描き直される。",
@@ -76,7 +76,7 @@ const dict = {
   },
   flow: {
     kicker: { en: "The flow", ja: "フロー" },
-    title: { en: "Raw check-ins become decisions.", ja: "生のチェックインが意思決定になる。" },
+    title: { en: "Raw check-ins become decisions.", ja: "生のチェックインを、意思決定に変える。" },
     subtitle: {
       en: "Attendance → information → insight → recommendation → action.",
       ja: "出席 → 情報 → 洞察 → 提案 → 行動。",

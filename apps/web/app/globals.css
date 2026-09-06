@@ -217,6 +217,26 @@ body {
   animation: flow-pulse 3.2s ease-in-out infinite;
 }
 
+/* Faint twinkling dots — see StarField.tsx */
+@keyframes star-twinkle {
+  0%,
+  100% {
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+.star-dot {
+  animation: star-twinkle ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .star-dot {
+    animation: none !important;
+    opacity: 0.3;
+  }
+}
+
 /* Footer marquee — two identical copies back to back, translated exactly
    -50% (one copy's width) for a seamless loop, same technique as the
    hero's rain columns. */

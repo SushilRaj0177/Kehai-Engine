@@ -23,7 +23,7 @@ const variants: Record<Variant, string> = {
   primary: "bg-shu-500 text-white border border-shu-400/40 shadow-glow before:bg-white/25",
   cyan: "bg-kehai-500 text-void-950 border border-kehai-400/40 shadow-glow-cyan before:bg-white/30",
   secondary: "bg-void-700 text-white border border-white/10 before:bg-white/10",
-  ghost: "bg-transparent text-white/80 border border-white/10 before:bg-white/10",
+  ghost: "bg-white/[0.04] text-white/85 border border-white/25 hover:border-white/40 before:bg-white/10",
   danger: "bg-red-950 text-red-200 border border-red-500/40 before:bg-red-400/20",
 };
 
