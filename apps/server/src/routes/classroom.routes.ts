@@ -7,11 +7,12 @@ import {
   createClassroomSchema,
   updateClassroomSchema,
   joinClassroomSchema,
+  createSessionSchema,
+  updateSessionSchema,
   classCheckInSchema,
 } from "../validators/classroom.js";
 import * as classroomService from "../services/classroom.service.js";
 import { env } from "../config/env.js";
-import { z } from "zod";
 
 export const classroomRouter = Router();
 
@@ -105,46 +106,66 @@ classroomRouter.get(
   })
 );
 
-classroomRouter.post(
-  "/:classroomId/sessions/today",
+classroomRouter.get(
+  "/:classroomId/sessions",
   requireAuth,
   requireClassroomTeacher(),
   asyncHandler(async (req, res) => {
-    const session = await classroomService.openTodaySession(req.params.classroomId);
+    res.json(await classroomService.listSessions(req.params.classroomId));
+  })
+);
+
+classroomRouter.post(
+  "/:classroomId/sessions",
+  requireAuth,
+  requireClassroomTeacher(),
+  asyncHandler(async (req, res) => {
+    const { label } = createSessionSchema.parse(req.body);
+    const session = await classroomService.createSession(req.params.classroomId, label);
     res.status(201).json(session);
   })
 );
 
-classroomRouter.post(
-  "/:classroomId/sessions/current/close",
+classroomRouter.patch(
+  "/:classroomId/sessions/:sessionId",
   requireAuth,
   requireClassroomTeacher(),
   asyncHandler(async (req, res) => {
-    res.json(await classroomService.closeTodaySession(req.params.classroomId));
+    const input = updateSessionSchema.parse(req.body);
+    res.json(await classroomService.updateSession(req.params.classroomId, req.params.sessionId, input));
+  })
+);
+
+classroomRouter.post(
+  "/:classroomId/sessions/:sessionId/close",
+  requireAuth,
+  requireClassroomTeacher(),
+  asyncHandler(async (req, res) => {
+    res.json(await classroomService.closeSession(req.params.classroomId, req.params.sessionId));
+  })
+);
+
+classroomRouter.post(
+  "/:classroomId/sessions/:sessionId/reopen",
+  requireAuth,
+  requireClassroomTeacher(),
+  asyncHandler(async (req, res) => {
+    res.json(await classroomService.reopenSession(req.params.classroomId, req.params.sessionId));
   })
 );
 
 classroomRouter.get(
-  "/:classroomId/sessions/current/qr",
+  "/:classroomId/sessions/:sessionId/qr",
   requireAuth,
   requireClassroomTeacher(),
   asyncHandler(async (req, res) => {
-    const { token, expiresAt, rotationSeconds } = await classroomService.issueSessionQr(req.params.classroomId);
+    const { token, expiresAt, rotationSeconds } = await classroomService.issueSessionQr(
+      req.params.classroomId,
+      req.params.sessionId
+    );
     const deepLink = `${env.WEB_ORIGIN}/classrooms/${req.params.classroomId}/checkin?t=${encodeURIComponent(token)}`;
     const dataUrl = await QRCode.toDataURL(deepLink, { margin: 1, width: 480, color: { dark: "#0a0e14", light: "#ffffff" } });
     res.json({ dataUrl, expiresAt, rotationSeconds });
-  })
-);
-
-const rotationSchema = z.object({ qrRotationSeconds: z.coerce.number().int().min(5).max(86400) });
-
-classroomRouter.patch(
-  "/:classroomId/sessions/current",
-  requireAuth,
-  requireClassroomTeacher(),
-  asyncHandler(async (req, res) => {
-    const { qrRotationSeconds } = rotationSchema.parse(req.body);
-    res.json(await classroomService.changeSessionRotation(req.params.classroomId, qrRotationSeconds));
   })
 );
 

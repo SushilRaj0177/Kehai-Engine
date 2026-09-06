@@ -1,8 +1,9 @@
 import crypto from "node:crypto";
+import jwt from "jsonwebtoken";
 import { prisma } from "../lib/prisma.js";
 import { HttpError } from "../lib/http-error.js";
 import { generateJoinCode } from "../utils/joinCode.js";
-import { verifyClassQrToken, issueClassQrToken } from "../utils/classQrToken.js";
+import { verifyClassQrToken, issueClassQrToken, type ClassQrTokenPayload } from "../utils/classQrToken.js";
 import { checkGeofence } from "../utils/geo.js";
 import { computeStreaks, type StreakDay } from "../utils/streaks.js";
 import { emitClassroomJoin, emitClassAttendanceUpdate } from "../realtime/socket.js";
@@ -182,9 +183,9 @@ export async function getClassroomDetail(classroomId: string, userId: string) {
     throw HttpError.forbidden("You don't have access to this classroom");
   }
 
-  const today = todayUtcMidnight();
-  const todaySession = await prisma.classSession.findUnique({
-    where: { classroomId_date: { classroomId, date: today } },
+  const openSession = await prisma.classSession.findFirst({
+    where: { classroomId, status: "OPEN" },
+    orderBy: { openedAt: "desc" },
   });
 
   const [studentCount, sessionCount] = await Promise.all([
@@ -205,10 +206,9 @@ export async function getClassroomDetail(classroomId: string, userId: string) {
     isEnrolled,
     studentCount,
     sessionCount,
-    openSession:
-      todaySession && todaySession.status === "OPEN"
-        ? { id: todaySession.id, date: todaySession.date, status: todaySession.status }
-        : null,
+    openSession: openSession
+      ? { id: openSession.id, label: openSession.label, date: openSession.date, status: openSession.status }
+      : null,
   };
 }
 
@@ -285,8 +285,16 @@ export async function getHeatmap(
   const rangeStart = sessions.length > 0 ? toUtcMidnight(sessions[0].date) : toUtcMidnight(classroom.createdAt);
   const rangeEnd = todayUtcMidnight();
 
-  // Map from date key -> session, for O(1) lookup while walking the range.
-  const sessionByDate = new Map(sessions.map((s) => [toDateKey(s.date), s]));
+  // A classroom can now have any number of sessions on the same calendar
+  // day (a lecture and a quiz, say), so each day buckets every session
+  // that fell on it rather than assuming exactly one.
+  const sessionsByDate = new Map<string, typeof sessions>();
+  for (const s of sessions) {
+    const key = toDateKey(s.date);
+    const bucket = sessionsByDate.get(key);
+    if (bucket) bucket.push(s);
+    else sessionsByDate.set(key, [s]);
+  }
 
   if (!resolvedStudentId) {
     // Teacher viewing class-wide scope.
@@ -304,11 +312,11 @@ export async function getHeatmap(
     const days: { date: string; level: 0 | 1 | 2 | 3 | 4 }[] = [];
     for (let d = new Date(rangeStart); d <= rangeEnd; d.setUTCDate(d.getUTCDate() + 1)) {
       const key = toDateKey(d);
-      const session = sessionByDate.get(key);
+      const daySessions = sessionsByDate.get(key);
       let level: 0 | 1 | 2 | 3 | 4 = 0;
-      if (session) {
-        const present = attendanceCounts.get(session.id) ?? 0;
-        const rate = totalEnrolled > 0 ? present / totalEnrolled : 0;
+      if (daySessions?.length) {
+        const present = daySessions.reduce((sum, s) => sum + (attendanceCounts.get(s.id) ?? 0), 0);
+        const rate = totalEnrolled > 0 ? present / (totalEnrolled * daySessions.length) : 0;
         if (rate > 0.75) level = 4;
         else if (rate > 0.5) level = 3;
         else if (rate > 0.25) level = 2;
@@ -338,16 +346,16 @@ export async function getHeatmap(
   const streakDays: StreakDay[] = [];
   for (let d = new Date(rangeStart); d <= rangeEnd; d.setUTCDate(d.getUTCDate() + 1)) {
     const key = toDateKey(d);
-    const session = sessionByDate.get(key);
+    const daySessions = sessionsByDate.get(key);
     let level: 0 | 1 | 2 | 3 | 4 = 0;
-    if (session) {
-      // Session happened and student attended -> level 4 (present). Session
-      // happened and student did not attend -> level 2, a distinct dim shade
-      // from "no class that day" (level 0) — a missed class reads
-      // differently from a day nothing was scheduled, which is worth
-      // preserving visually even though the spec allows collapsing both to 0.
-      const present = attendedSessionIds.has(session.id);
-      level = present ? 4 : 2;
+    if (daySessions?.length) {
+      // Attended every session that day -> 4 (fully present). Attended
+      // none -> 2, a distinct dim shade from "no class that day" (0).
+      // Attended some but not all -> 3, a partial-attendance shade that
+      // only matters now that a day can hold more than one session.
+      const attendedCount = daySessions.filter((s) => attendedSessionIds.has(s.id)).length;
+      const present = attendedCount > 0;
+      level = attendedCount === daySessions.length ? 4 : attendedCount > 0 ? 3 : 2;
       streakDays.push({ date: key, present });
     }
     days.push({ date: key, level });
@@ -365,35 +373,45 @@ export async function getHeatmap(
   };
 }
 
-export async function openTodaySession(classroomId: string) {
+// A classroom can hold any number of sessions — a lecture and a separate
+// quiz on the same day, several sessions across a week, whatever the
+// teacher needs — each independently nameable and restartable. To keep
+// the QR/check-in flow unambiguous, at most one session is OPEN at a
+// time per classroom: starting or reopening one auto-closes whichever
+// session was previously open, rather than requiring the teacher to
+// remember to close it first.
+async function closeAnyOpenSession(classroomId: string) {
+  await prisma.classSession.updateMany({
+    where: { classroomId, status: "OPEN" },
+    data: { status: "CLOSED", closedAt: new Date() },
+  });
+}
+
+export async function createSession(classroomId: string, label?: string) {
   const classroom = await prisma.classroom.findUnique({ where: { id: classroomId } });
   if (!classroom) throw HttpError.notFound("Classroom not found");
 
-  const today = todayUtcMidnight();
-  const existing = await prisma.classSession.findUnique({
-    where: { classroomId_date: { classroomId, date: today } },
-  });
-
-  if (existing) {
-    if (existing.status === "CLOSED") throw HttpError.conflict("Today's session is already closed");
-    return existing;
-  }
+  await closeAnyOpenSession(classroomId);
 
   return prisma.classSession.create({
     data: {
       classroomId,
-      date: today,
+      label: label || null,
+      date: todayUtcMidnight(),
       qrSecret: crypto.randomBytes(24).toString("hex"),
     },
   });
 }
 
-export async function closeTodaySession(classroomId: string) {
-  const today = todayUtcMidnight();
-  const session = await prisma.classSession.findUnique({
-    where: { classroomId_date: { classroomId, date: today } },
-  });
-  if (!session || session.status !== "OPEN") throw HttpError.notFound("No open session for today");
+async function getOwnedSession(classroomId: string, sessionId: string) {
+  const session = await prisma.classSession.findUnique({ where: { id: sessionId } });
+  if (!session || session.classroomId !== classroomId) throw HttpError.notFound("Session not found");
+  return session;
+}
+
+export async function closeSession(classroomId: string, sessionId: string) {
+  const session = await getOwnedSession(classroomId, sessionId);
+  if (session.status !== "OPEN") throw HttpError.conflict("Session is already closed");
 
   return prisma.classSession.update({
     where: { id: session.id },
@@ -401,31 +419,62 @@ export async function closeTodaySession(classroomId: string) {
   });
 }
 
-export async function issueSessionQr(classroomId: string) {
-  const today = todayUtcMidnight();
-  const session = await prisma.classSession.findUnique({
-    where: { classroomId_date: { classroomId, date: today } },
+export async function reopenSession(classroomId: string, sessionId: string) {
+  const session = await getOwnedSession(classroomId, sessionId);
+  if (session.status === "OPEN") return session;
+
+  await closeAnyOpenSession(classroomId);
+
+  return prisma.classSession.update({
+    where: { id: session.id },
+    data: { status: "OPEN", closedAt: null },
   });
-  if (!session || session.status !== "OPEN") {
-    throw HttpError.badRequest("No open session for today — start one first");
-  }
+}
+
+export async function listSessions(classroomId: string) {
+  const sessions = await prisma.classSession.findMany({
+    where: { classroomId },
+    orderBy: { openedAt: "desc" },
+  });
+  if (sessions.length === 0) return [];
+
+  const counts = await prisma.classAttendance.groupBy({
+    by: ["sessionId"],
+    where: { sessionId: { in: sessions.map((s) => s.id) } },
+    _count: { _all: true },
+  });
+  const presentCounts = new Map(counts.map((c) => [c.sessionId, c._count._all]));
+
+  return sessions.map((s) => ({
+    id: s.id,
+    label: s.label,
+    date: s.date,
+    status: s.status,
+    qrRotationSeconds: s.qrRotationSeconds,
+    openedAt: s.openedAt,
+    closedAt: s.closedAt,
+    presentCount: presentCounts.get(s.id) ?? 0,
+  }));
+}
+
+export async function updateSession(classroomId: string, sessionId: string, input: { label?: string; qrRotationSeconds?: number }) {
+  const session = await getOwnedSession(classroomId, sessionId);
+  return prisma.classSession.update({
+    where: { id: session.id },
+    data: {
+      ...(input.label !== undefined ? { label: input.label || null } : {}),
+      ...(input.qrRotationSeconds !== undefined ? { qrRotationSeconds: input.qrRotationSeconds } : {}),
+    },
+  });
+}
+
+export async function issueSessionQr(classroomId: string, sessionId: string) {
+  const session = await getOwnedSession(classroomId, sessionId);
+  if (session.status !== "OPEN") throw HttpError.badRequest("This session is closed — restart it first");
 
   const ttl = Math.max(session.qrRotationSeconds * 2, 30);
   const { token, jti, expiresAt } = issueClassQrToken(session.id, session.qrSecret, ttl);
   return { token, jti, expiresAt, rotationSeconds: session.qrRotationSeconds };
-}
-
-export async function changeSessionRotation(classroomId: string, seconds: number) {
-  const today = todayUtcMidnight();
-  const session = await prisma.classSession.findUnique({
-    where: { classroomId_date: { classroomId, date: today } },
-  });
-  if (!session || session.status !== "OPEN") throw HttpError.notFound("No open session for today");
-
-  return prisma.classSession.update({
-    where: { id: session.id },
-    data: { qrRotationSeconds: seconds },
-  });
 }
 
 export interface ClassCheckInInput {
@@ -444,11 +493,19 @@ export async function checkInToClassroom(classroomId: string, studentId: string,
   });
   if (!enrollment) throw HttpError.forbidden("You are not enrolled in this classroom");
 
-  const today = todayUtcMidnight();
-  const session = await prisma.classSession.findUnique({
-    where: { classroomId_date: { classroomId, date: today } },
-  });
-  if (!session || session.status !== "OPEN") {
+  // A classroom can have more than one session (open or otherwise) at any
+  // given time in its history, so which session this check-in belongs to
+  // comes from the QR token itself — decode (not yet verify) it to learn
+  // the sessionId, then verify the signature with that specific session's
+  // own secret. This also means check-in is inherently scoped to whichever
+  // session issued the code, with no day-based lookup involved at all.
+  const unverified = jwt.decode(input.qrToken) as (ClassQrTokenPayload & jwt.JwtPayload) | null;
+  if (!unverified?.sessionId) {
+    throw HttpError.badRequest("This QR code is invalid or has expired — ask your teacher to refresh it");
+  }
+
+  const session = await prisma.classSession.findUnique({ where: { id: unverified.sessionId } });
+  if (!session || session.classroomId !== classroomId || session.status !== "OPEN") {
     throw HttpError.badRequest("There is no open check-in session for this class right now");
   }
 
@@ -495,7 +552,7 @@ export async function checkInToClassroom(classroomId: string, studentId: string,
   const existing = await prisma.classAttendance.findUnique({
     where: { sessionId_studentId: { sessionId: session.id, studentId } },
   });
-  if (existing) throw HttpError.conflict("You have already checked in to today's class");
+  if (existing) throw HttpError.conflict("You have already checked in to this session");
 
   const attendance = await prisma.classAttendance.create({
     data: {
