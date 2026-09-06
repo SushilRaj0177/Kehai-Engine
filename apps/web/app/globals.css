@@ -186,6 +186,57 @@ body {
   animation: glyph-fly 850ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* Small glowing pulse traveling the length of the "flow" section's
+   gradient spine, looping — a signal moving down a wire, not a static
+   rule. Parent sets overflow:hidden so it clips cleanly top and bottom. */
+@keyframes flow-pulse {
+  0% {
+    top: -10%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+.flow-pulse {
+  position: absolute;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  transform: translateX(-50%);
+  background: #fff;
+  box-shadow: 0 0 12px 3px rgba(95, 244, 255, 0.8);
+  animation: flow-pulse 3.2s ease-in-out infinite;
+}
+
+/* Footer marquee — two identical copies back to back, translated exactly
+   -50% (one copy's width) for a seamless loop, same technique as the
+   hero's rain columns. */
+@keyframes marquee-scroll {
+  from {
+    transform: translateX(0%);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.marquee-track {
+  animation: marquee-scroll 40s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none !important;
+  }
+}
+
 /* Tilt card cursor-tracking highlight — see TiltCard.tsx, which sets
    --glow-x/--glow-y on mousemove. Sits above the card's own background,
    below its content. */
@@ -221,7 +272,8 @@ body {
   .kanji-breathe,
   .rain-column,
   .hero-flash,
-  .glyph-particle {
+  .glyph-particle,
+  .flow-pulse {
     animation: none !important;
   }
   .reveal,
