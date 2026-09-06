@@ -14,17 +14,25 @@ const fieldBase =
 const fieldRule =
   "pointer-events-none absolute inset-x-0 bottom-0 h-[2px] origin-center scale-x-0 bg-gradient-to-r from-shu-400 via-shu-500 to-kehai-400 transition-transform duration-300 ease-out peer-focus:scale-x-100";
 
-export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(function Input(
-  { className, ...props },
-  ref
-) {
-  return (
-    <div className="relative">
-      <input ref={ref} className={cn(fieldBase, className)} {...props} />
-      <span aria-hidden className={fieldRule} />
-    </div>
-  );
-});
+interface InputExtraProps {
+  /** Set false to drop the underline rule entirely — for compact, inline
+   * fields (a table search box, an inline "ask a question" bar) where the
+   * permanent gray baseline plus the focus rule read as a stray line/render
+   * glitch rather than a field. Form fields (login, event creation, etc.)
+   * keep it on by default. */
+  underline?: boolean;
+}
+
+export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement> & InputExtraProps>(
+  function Input({ className, underline = true, ...props }, ref) {
+    return (
+      <div className="relative">
+        <input ref={ref} className={cn(fieldBase, !underline && "border-b-0", className)} {...props} />
+        {underline && <span aria-hidden className={fieldRule} />}
+      </div>
+    );
+  }
+);
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement>>(function Textarea(
   { className, ...props },

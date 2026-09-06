@@ -16,7 +16,7 @@ import { ApiError } from "@/lib/api";
 export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
-  const [email, setEmail] = useState("organizer@kehai.dev");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -67,10 +67,6 @@ export default function LoginPage() {
               <Button type="submit" size="lg" className="w-full" loading={loading}>
                 Sign in
               </Button>
-              <p className="pt-2 text-center text-sm text-white/40">
-                Demo organizer: <code className="text-white/60">organizer@kehai.dev</code> /{" "}
-                <code className="text-white/60">Password123!</code>
-              </p>
             </form>
           </CardBody>
         </Card>

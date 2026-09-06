@@ -124,6 +124,7 @@ function AskAiBox({ orgId }: { orgId: string }) {
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             placeholder="e.g. Which event had the highest attendance rate?"
+            underline={false}
           />
           <Button type="submit" loading={loading} size="md">
             Ask
