@@ -232,7 +232,18 @@ export default function LandingPage() {
             max-w-7xl content column below) so it actually sits against the
             right edge of the viewport, not the right edge of a narrower
             centered container. */}
-        <KanjiMark glyph="気配" prominent className="absolute -right-6 top-2 text-[13rem] md:text-[19rem]" />
+        {/* Mobile gets its own (much smaller) size and a small opacity boost
+            — at the sm/md sizes below, two full-width characters were wide
+            enough that most of the glyph's visible bulk sat on the left
+            half of a narrow phone screen even anchored to the right edge,
+            reading as "on the left" rather than as a right-edge accent.
+            sm:/md: below are exactly the pre-existing values, so tablet
+            and desktop are byte-for-byte unchanged. */}
+        <KanjiMark
+          glyph="気配"
+          prominent
+          className="hero-kanji-mobile absolute -right-6 top-2 text-[7rem] sm:text-[13rem] md:text-[19rem]"
+        />
         <VerticalCaption text="出席・検証・洞察" className="absolute right-10 top-14 hidden lg:block" />
 
         {/* z-20 — above KanjiMark's own hardcoded z-10. On desktop the glyph
