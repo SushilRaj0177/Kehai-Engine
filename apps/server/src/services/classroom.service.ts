@@ -5,6 +5,7 @@ import { HttpError } from "../lib/http-error.js";
 import { generateJoinCode } from "../utils/joinCode.js";
 import { verifyClassQrToken, issueClassQrToken, type ClassQrTokenPayload } from "../utils/classQrToken.js";
 import { checkGeofence } from "../utils/geo.js";
+import { checkImpossibleTravel, isDuplicateLocation, hasZeroAccuracy, type FlagReason } from "../utils/fraud.js";
 import { computeStreaks, type StreakDay } from "../utils/streaks.js";
 import { emitClassroomJoin, emitClassAttendanceUpdate } from "../realtime/socket.js";
 
@@ -602,6 +603,53 @@ export async function checkInToClassroom(classroomId: string, studentId: string,
   });
   if (existing) throw HttpError.conflict("You have already checked in to this session");
 
+  // Same honest-flag-not-block approach as event check-in — see
+  // utils/fraud.ts. Only meaningful when a location was actually captured
+  // (a classroom with no geofence configured never asks for one).
+  const flagReasons: FlagReason[] = [];
+  const checkedInAt = new Date();
+
+  if (latitude != null && longitude != null) {
+    const currentLocation = { latitude, longitude };
+    if (hasZeroAccuracy(input.accuracyMeters)) flagReasons.push("zero_accuracy");
+
+    const [lastAttendance, recentSessionAttendances] = await Promise.all([
+      prisma.classAttendance.findFirst({
+        where: { studentId, NOT: { sessionId: session.id }, latitude: { not: null }, longitude: { not: null } },
+        orderBy: { checkedInAt: "desc" },
+        select: { latitude: true, longitude: true, checkedInAt: true },
+      }),
+      prisma.classAttendance.findMany({
+        where: {
+          sessionId: session.id,
+          checkedInAt: { gte: new Date(checkedInAt.getTime() - 5 * 60_000) },
+          latitude: { not: null },
+          longitude: { not: null },
+        },
+        select: { latitude: true, longitude: true, checkedInAt: true },
+      }),
+    ]);
+
+    if (
+      lastAttendance &&
+      checkImpossibleTravel(
+        { location: currentLocation, at: checkedInAt },
+        { location: { latitude: lastAttendance.latitude!, longitude: lastAttendance.longitude! }, at: lastAttendance.checkedInAt }
+      )
+    ) {
+      flagReasons.push("impossible_travel");
+    }
+
+    if (
+      isDuplicateLocation(
+        { location: currentLocation, at: checkedInAt },
+        recentSessionAttendances.map((a) => ({ location: { latitude: a.latitude!, longitude: a.longitude! }, at: a.checkedInAt }))
+      )
+    ) {
+      flagReasons.push("duplicate_location");
+    }
+  }
+
   const attendance = await prisma.classAttendance.create({
     data: {
       sessionId: session.id,
@@ -613,6 +661,9 @@ export async function checkInToClassroom(classroomId: string, studentId: string,
       distanceMeters,
       locationConfidence: confidence,
       qrTokenJti: qrPayload.jti,
+      checkedInAt,
+      flagged: flagReasons.length > 0,
+      flagReasons,
     },
   });
 

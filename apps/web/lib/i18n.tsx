@@ -106,6 +106,8 @@ const dict = {
     source: { en: "Source", ja: "Source" },
     reportIssue: { en: "Report an issue", ja: "Report an issue" },
     copyright: { en: "Kehai Engine", ja: "気配エンジン" },
+    legal: { en: "Legal", ja: "利用規約・プライバシー" },
+    privacyPolicy: { en: "Privacy & terms", ja: "プライバシーと利用規約" },
   },
   common: {
     signIn: { en: "Sign in", ja: "ログイン" },
@@ -226,11 +228,25 @@ const dict = {
     startsLabel: { en: "Starts", ja: "開始日時" },
     endsLabel: { en: "Ends", ja: "終了日時" },
     capacityLabel: { en: "Capacity (optional)", ja: "定員（任意）" },
-    geofenceHeading: { en: "Geofence", ja: "ジオフェンス" },
+    geofenceHeading: { en: "Venue location", ja: "会場の位置" },
     locating: { en: "Locating…", ja: "位置情報を取得中…" },
     useMyLocation: { en: "Use my current location", ja: "現在地を使用" },
+    locationSetHint: {
+      en: "Location captured. This is what attendees will be checked against when they scan the QR code.",
+      ja: "位置情報を取得しました。参加者がQRコードをスキャンする際、この位置と照合されます。",
+    },
+    locationNotSetHint: {
+      en: "Stand at the venue and tap the button above, or enter coordinates manually if you're setting this up ahead of time.",
+      ja: "会場に立って上のボタンをタップするか、事前に設定する場合は座標を手動で入力してください。",
+    },
+    enterManually: { en: "Enter coordinates manually", ja: "座標を手動で入力" },
     latitudeLabel: { en: "Latitude", ja: "緯度" },
     longitudeLabel: { en: "Longitude", ja: "経度" },
+    advancedSettings: { en: "Advanced settings", ja: "詳細設定" },
+    advancedSettingsHint: {
+      en: "Sensible defaults are already set — only open this if you need to change them.",
+      ja: "すでに適切な初期値が設定されています — 変更が必要な場合のみ開いてください。",
+    },
     radiusLabel: { en: "Geofence radius (meters)", ja: "ジオフェンス半径（メートル）" },
     radiusHelp: {
       en: "Attendees must be within this radius (widened slightly for their device's own GPS uncertainty) to check in.",
@@ -316,6 +332,14 @@ const dict = {
       ja: "会場から{distance}m離れているようです — 近づいてからもう一度お試しください。",
     },
     checkInFailed: { en: "Check-in failed.", ja: "チェックインに失敗しました。" },
+    reconnecting: {
+      en: "Connection trouble — retrying automatically ({attempt}/{max})…",
+      ja: "接続が不安定です — 自動的に再試行しています（{attempt}/{max}）…",
+    },
+    connectionFailed: {
+      en: "Couldn't reach the server after several tries. Your location is still saved — check your connection and try again.",
+      ja: "何度か試しましたがサーバーに接続できませんでした。位置情報は保持されています — 接続を確認してもう一度お試しください。",
+    },
     windowNotOpenTitle: { en: "Check-in hasn't opened yet", ja: "チェックインはまだ開始されていません" },
     windowNotOpenBody: {
       en: "This event shows as live, but check-in opens at {time}. Come back then — no action needed from you right now.",
@@ -395,6 +419,19 @@ const dict = {
     colStatus: { en: "Status", ja: "ステータス" },
     colCheckedIn: { en: "Checked in", ja: "チェックイン時刻" },
     colDistance: { en: "Distance", ja: "距離" },
+    flaggedTitle: { en: "Flagged for review", ja: "確認が必要としてマークされました" },
+    flagReason_impossible_travel: {
+      en: "Checked in somewhere they couldn't have physically reached in time since their last check-in",
+      ja: "前回のチェックインから物理的に到達不可能な速さで別の場所からチェックインしています",
+    },
+    flagReason_duplicate_location: {
+      en: "Checked in from the exact same spot as another attendee within minutes",
+      ja: "数分以内に他の参加者と全く同じ場所からチェックインしています",
+    },
+    flagReason_zero_accuracy: {
+      en: "Device reported implausibly exact GPS accuracy — sometimes seen with spoofed locations",
+      ja: "デバイスが不自然なほど正確なGPS精度を報告しています — 位置情報の偽装で見られることがあります",
+    },
   },
   aiInsights: {
     heading: { en: "AI Insights", ja: "AIインサイト" },
@@ -579,6 +616,14 @@ const dict = {
       ja: "教室から{distance}m離れているようです — 近づいてからもう一度お試しください。",
     },
     checkInFailed: { en: "Check-in failed.", ja: "チェックインに失敗しました。" },
+    reconnecting: {
+      en: "Connection trouble — retrying automatically ({attempt}/{max})…",
+      ja: "接続が不安定です — 自動的に再試行しています（{attempt}/{max}）…",
+    },
+    connectionFailed: {
+      en: "Couldn't reach the server after several tries. Your location is still saved — check your connection and try again.",
+      ja: "何度か試しましたがサーバーに接続できませんでした。位置情報は保持されています — 接続を確認してもう一度お試しください。",
+    },
     noOpenSession: { en: "There's no open session for this classroom right now.", ja: "現在、このクラスに開催中のセッションはありません。" },
   },
   heatmap: {
@@ -616,6 +661,55 @@ const dict = {
     colLastAttended: { en: "Last attended", ja: "最終出席" },
     viewHeatmap: { en: "View heatmap", ja: "ヒートマップを見る" },
     never: { en: "Never", ja: "なし" },
+  },
+  legal: {
+    kicker: { en: "Legal", ja: "法的情報" },
+    title: { en: "Privacy & terms", ja: "プライバシーと利用規約" },
+    subtitle: {
+      en: "What this app collects, why, and what you're agreeing to by using it. Plain language, no fine print games.",
+      ja: "このアプリが何を収集し、なぜ収集するのか、そして利用にあたって同意いただく内容です。難解な表現は使いません。",
+    },
+    aboutHeading: { en: "Who runs this", ja: "運営について" },
+    aboutBody: {
+      en: "Kehai Engine is an independent, solo-built project — not a company, with no support SLA. It's offered free of charge, as-is, with no warranty of any kind. If something breaks, the best way to reach the maintainer is a GitHub issue on the source repository (linked in the footer).",
+      ja: "気配エンジンは個人が単独で開発した独立プロジェクトであり、企業ではなく、サポートのSLAもありません。無償かつ現状のまま提供され、いかなる保証もありません。不具合があった場合は、フッターにリンクされているソースリポジトリへのGitHub Issueが開発者への最も確実な連絡手段です。",
+    },
+    collectHeading: { en: "What is collected", ja: "収集する情報" },
+    collectIdentity: {
+      en: "Your name, email, and password hash (or, for Google sign-in, your Google account id/email/name/picture) — for login and identifying you to organizers.",
+      ja: "氏名、メールアドレス、パスワードのハッシュ（Googleログインの場合はGoogleアカウントID・メールアドレス・氏名・プロフィール画像）— ログインおよび主催者への本人特定のために使用します。",
+    },
+    collectOrg: {
+      en: "Which organizations and events/classrooms you're a member of or registered for.",
+      ja: "所属する組織、登録済みのイベントやクラスの情報。",
+    },
+    collectLocation: {
+      en: "GPS coordinates at the moment of check-in only — never tracked continuously or in the background — rounded to about 1.1m precision, plus the device's own reported accuracy and computed distance from the venue.",
+      ja: "チェックインの瞬間のGPS座標のみ — 継続的またはバックグラウンドでの追跡は一切行いません — 約1.1m精度に丸めた上で、デバイスが報告する精度と会場からの距離を保存します。",
+    },
+    collectFlags: {
+      en: "A small set of honest anomaly signals computed at check-in (e.g. an implausible travel speed since your last check-in, or landing on the exact same GPS fix as another attendee). These are shown only to the event's organizer as a flag to review — they never block a check-in on their own, and can be wrong.",
+      ja: "チェックイン時に計算される、誠実な異常検知シグナルの一部（例：前回のチェックインから物理的にありえない移動速度、他の参加者と全く同じGPS座標での記録など）。これらはイベント主催者にのみ確認用のフラグとして表示され、単独でチェックインをブロックすることはなく、誤検知の可能性もあります。",
+    },
+    notCollectedHeading: { en: "What is deliberately not collected", ja: "意図的に収集しない情報" },
+    notCollectedBody: {
+      en: "No continuous or background location tracking, no device fingerprinting, no ad tracking, and raw attendee data (names, emails, coordinates) is never sent to the AI provider — only already-aggregated statistics are.",
+      ja: "継続的またはバックグラウンドでの位置情報追跡、デバイスフィンガープリンティング、広告トラッキングは一切行いません。また、参加者の生データ（氏名、メールアドレス、座標）がAIプロバイダーに送信されることはなく、すでに集計済みの統計情報のみが送信されます。",
+    },
+    limitationsHeading: { en: "Known limitations (stated honestly)", ja: "既知の制約（正直にお伝えします）" },
+    limitationsBody: {
+      en: "Geofence + QR verification proves the reported device location and a valid, time-scoped code were both presented — it is not a claim of spoof-proof presence. A device with a mocked GPS provider can misreport its location, the same limitation every consumer app using browser geolocation has. Treat this as a strong signal, not absolute proof.",
+      ja: "ジオフェンスとQRコードによる検証は、報告されたデバイスの位置情報と有効な時限付きコードの両方が提示されたことを証明しますが、位置情報の偽装が不可能であることを保証するものではありません。位置情報を偽装するデバイスは誤った位置を報告できる可能性があり、これはブラウザの位置情報機能を利用するすべてのコンシューマーアプリに共通する制約です。強力な参考情報として扱ってください、絶対的な証拠としてではなく。",
+    },
+    retentionHeading: { en: "Retention", ja: "データの保持期間" },
+    retentionBody: {
+      en: "Attendance and location records are kept for the lifetime of the event or classroom record, since they're the auditable basis for an attendance decision. Refresh tokens are revoked on logout and expire after 30 days.",
+      ja: "出席記録および位置情報は、出席判定の根拠となる監査データであるため、イベントまたはクラスの記録が存在する限り保持されます。リフレッシュトークンはログアウト時に無効化され、30日で期限切れとなります。",
+    },
+    fullDocLink: {
+      en: "The full technical privacy model, including exactly what code enforces each of these points, is documented in PRIVACY.md in the source repository.",
+      ja: "各項目をどのコードが実際に担保しているかを含む、技術的な詳細はソースリポジトリのPRIVACY.mdに記載されています。",
+    },
   },
 } as const;
 

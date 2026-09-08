@@ -2,6 +2,7 @@ import { prisma } from "../lib/prisma.js";
 import { HttpError } from "../lib/http-error.js";
 import { verifyQrToken } from "../utils/qrToken.js";
 import { checkGeofence } from "../utils/geo.js";
+import { checkImpossibleTravel, isDuplicateLocation, hasZeroAccuracy, type FlagReason } from "../utils/fraud.js";
 import { emitAttendanceUpdate } from "../realtime/socket.js";
 
 export interface CheckInInput {
@@ -68,6 +69,46 @@ export async function checkIn(input: CheckInInput): Promise<CheckInResult> {
     where: { eventId_userId: { eventId: event.id, userId: input.userId } },
   });
 
+  // Flags, never a block — see utils/fraud.ts for why. Checked against
+  // this same event's other check-ins and this user's own most recent
+  // one, whichever event that was on.
+  const flagReasons: FlagReason[] = [];
+  const checkedInAt = new Date();
+  const currentLocation = { latitude: input.latitude, longitude: input.longitude };
+
+  if (hasZeroAccuracy(input.accuracyMeters)) flagReasons.push("zero_accuracy");
+
+  const [lastAttendance, recentEventAttendances] = await Promise.all([
+    prisma.attendanceRecord.findFirst({
+      where: { userId: input.userId, NOT: { eventId: event.id } },
+      orderBy: { checkedInAt: "desc" },
+      select: { latitude: true, longitude: true, checkedInAt: true },
+    }),
+    prisma.attendanceRecord.findMany({
+      where: { eventId: event.id, checkedInAt: { gte: new Date(checkedInAt.getTime() - 5 * 60_000) } },
+      select: { latitude: true, longitude: true, checkedInAt: true },
+    }),
+  ]);
+
+  if (
+    lastAttendance &&
+    checkImpossibleTravel(
+      { location: currentLocation, at: checkedInAt },
+      { location: { latitude: lastAttendance.latitude, longitude: lastAttendance.longitude }, at: lastAttendance.checkedInAt }
+    )
+  ) {
+    flagReasons.push("impossible_travel");
+  }
+
+  if (
+    isDuplicateLocation(
+      { location: currentLocation, at: checkedInAt },
+      recentEventAttendances.map((a) => ({ location: { latitude: a.latitude, longitude: a.longitude }, at: a.checkedInAt }))
+    )
+  ) {
+    flagReasons.push("duplicate_location");
+  }
+
   const attendance = await prisma.attendanceRecord.create({
     data: {
       eventId: event.id,
@@ -80,6 +121,9 @@ export async function checkIn(input: CheckInInput): Promise<CheckInResult> {
       distanceMeters: geofence.distanceMeters,
       locationConfidence: geofence.confidence,
       qrTokenJti: qrPayload.jti,
+      checkedInAt,
+      flagged: flagReasons.length > 0,
+      flagReasons,
     },
   });
 

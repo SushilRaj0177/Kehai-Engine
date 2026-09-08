@@ -23,12 +23,6 @@ export function ClickRippleLayer({ children, className = "" }: { children: React
   const nextId = useRef(0);
 
   function handleClick(e: React.MouseEvent<HTMLDivElement>) {
-    // Buttons, links, and form controls already give their own feedback
-    // (hover sweep, focus ring, native behavior) — bursting glyphs under a
-    // click meant to submit a form or navigate reads as noise, not delight.
-    const target = e.target as HTMLElement;
-    if (target.closest("button, a, input, textarea, select, label")) return;
-
     const rect = e.currentTarget.getBoundingClientRect();
     const id = nextId.current++;
     const x = e.clientX - rect.left;

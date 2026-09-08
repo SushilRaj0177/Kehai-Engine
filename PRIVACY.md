@@ -14,6 +14,7 @@ never used for.
 | Event registration | Registering for an event | Capacity, no-show analysis |
 | GPS coordinates (rounded to ~1.1m) + accuracy + distance from venue | Check-in only | Geofence verification, honest distance feedback |
 | QR token `jti` consumed | Check-in only | Replay auditing, duplicate prevention |
+| Anomaly flags (e.g. "impossible travel since your last check-in", "same GPS fix as another attendee") | Check-in only | Surfaced to the event's organizer for human review — never auto-blocks a check-in, see "Anomaly flags" below |
 
 ## What is deliberately **not** collected
 
@@ -60,6 +61,21 @@ are never trusted from a client-supplied token payload. Attendees can only
 see their own registration/attendance status; organizers can only see
 attendees for events in organizations they belong to at `ORGANIZER` role or
 above.
+
+## Anomaly flags
+
+Every check-in is compared against a few honest, narrow signals — an
+implied travel speed since the same user's last check-in that no ordinary
+transport could achieve, another attendee's check-in landing on the exact
+same GPS fix within minutes, or a device reporting an implausibly exact
+(zero-meter) accuracy. None of this blocks a check-in or accuses anyone —
+it sets a `flagged` marker and human-readable reasons the *organizer* sees
+next to that attendee's row, so a person with real context (did they
+actually see this attendee arrive) makes the call, not the server. See
+`apps/server/src/utils/fraud.ts` for the exact logic — it is deliberately
+conservative and will still miss real spoofing while occasionally
+flagging an honest coincidence (e.g. two friends' phones both losing GPS
+signal and reporting the same cached fix).
 
 ## Known limitations (stated honestly)
 

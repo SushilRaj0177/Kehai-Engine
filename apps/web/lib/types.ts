@@ -45,6 +45,8 @@ export interface AttendeeRow {
   checkedInAt: string | null;
   distanceMeters: number | null;
   method: string | null;
+  flagged: boolean;
+  flagReasons: string[];
 }
 
 export interface EventAnalytics {

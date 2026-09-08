@@ -22,6 +22,10 @@ export function Footer() {
         { label: t("footer.reportIssue"), href: "https://github.com/SushilRaj0177/Kehai-Engine/issues", external: true },
       ],
     },
+    {
+      heading: t("footer.legal"),
+      links: [{ label: t("footer.privacyPolicy"), href: "/privacy" }],
+    },
   ];
 
   const marqueeItem = locale === "ja" ? "気配 KEHAI ENGINE — 出席・検証・洞察 —" : "気配 KEHAI ENGINE — presence, verified —";
@@ -51,7 +55,7 @@ export function Footer() {
       </span>
 
       <div className="relative mx-auto max-w-7xl px-6 py-24">
-        <div className="grid gap-14 sm:grid-cols-[1.4fr_1fr_1fr]">
+        <div className="grid gap-14 sm:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div>
             <div className="group flex items-center gap-2.5">
               <span className="font-display text-2xl font-black leading-none text-shu-400 transition-[text-shadow] duration-300 group-hover:[text-shadow:0_0_22px_rgba(255,45,85,0.65)]">

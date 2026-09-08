@@ -12,7 +12,7 @@ import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { QrScanner } from "@/components/QrScanner";
 import { useAuth } from "@/lib/auth-context";
 import { useClassroom } from "@/lib/hooks";
-import { apiFetch, ApiError } from "@/lib/api";
+import { apiFetchWithRetry, ApiError } from "@/lib/api";
 import { useLocale } from "@/lib/i18n";
 
 type Step = "scan" | "locate" | "confirm" | "done" | "error";
@@ -31,6 +31,7 @@ export default function ClassroomCheckinPage() {
   const [position, setPosition] = useState<GeolocationPosition | null>(null);
   const [result, setResult] = useState<{ distanceMeters: number | null; confidence: string | null } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [retryStatus, setRetryStatus] = useState<{ attempt: number; max: number } | null>(null);
 
   const hasGeofence = classroom?.hasGeofence ?? true;
 
@@ -86,8 +87,9 @@ export default function ClassroomCheckinPage() {
     if (hasGeofence && !position) return;
     setSubmitting(true);
     setError(null);
+    setRetryStatus(null);
     try {
-      const res = await apiFetch<{ distanceMeters: number | null; confidence: string | null }>(
+      const res = await apiFetchWithRetry<{ distanceMeters: number | null; confidence: string | null }>(
         `/api/classrooms/${classroomId}/checkin`,
         {
           method: "POST",
@@ -97,7 +99,8 @@ export default function ClassroomCheckinPage() {
             longitude: position?.coords.longitude,
             accuracyMeters: position?.coords.accuracy,
           }),
-        }
+        },
+        { onRetry: (attempt, max) => setRetryStatus({ attempt, max }) }
       );
       setResult(res);
       setStep("done");
@@ -108,11 +111,15 @@ export default function ClassroomCheckinPage() {
           const d = err.details as { distanceMeters: number };
           setResult({ distanceMeters: d.distanceMeters, confidence: null });
         }
+        setStep("error");
       } else {
-        setError(t("classroomCheckin.checkInFailed"));
+        // Network failure even after retrying — stay on "confirm" so the
+        // captured location and token are still there and retrying is one
+        // tap, not a full re-scan.
+        setError(t("classroomCheckin.connectionFailed"));
       }
-      setStep("error");
     } finally {
+      setRetryStatus(null);
       setSubmitting(false);
     }
   }
@@ -137,13 +144,15 @@ export default function ClassroomCheckinPage() {
             <div className="space-y-4">
               <QrScanner onDecoded={handleDecoded} />
               <p className="text-xs text-white/35">{t("classroomCheckin.scanHint")}</p>
+              {error && <ErrorBlock message={error} />}
             </div>
           )}
 
           {step === "locate" && (
             <Card>
-              <CardBody className="py-10">
-                <p className="mb-4 text-sm text-white/60">{t("classroomCheckin.locateHint")}</p>
+              <CardBody className="space-y-4 py-10">
+                <p className="text-sm text-white/60">{t("classroomCheckin.locateHint")}</p>
+                {error && <ErrorBlock message={error} />}
                 <Button onClick={requestLocation} variant="cyan">
                   {t("classroomCheckin.shareLocation")}
                 </Button>
@@ -159,8 +168,14 @@ export default function ClassroomCheckinPage() {
                     ? t("classroomCheckin.confirmHint", { accuracy: Math.round(position.coords.accuracy) })
                     : t("classroomCheckin.confirmHintNoGeofence")}
                 </p>
+                {retryStatus && (
+                  <p className="text-xs text-amber-300">
+                    {t("classroomCheckin.reconnecting", { attempt: retryStatus.attempt, max: retryStatus.max })}
+                  </p>
+                )}
+                {error && <ErrorBlock message={error} />}
                 <Button onClick={submitCheckIn} loading={submitting} size="lg" className="w-full">
-                  {t("classroomCheckin.confirmAttendance")}
+                  {error ? t("common.tryAgain") : t("classroomCheckin.confirmAttendance")}
                 </Button>
               </CardBody>
             </Card>
@@ -204,8 +219,6 @@ export default function ClassroomCheckinPage() {
               </Button>
             </div>
           )}
-
-          {error && step !== "error" && <ErrorBlock message={error} className="mt-4" />}
         </div>
       </div>
     </ClickRippleLayer>

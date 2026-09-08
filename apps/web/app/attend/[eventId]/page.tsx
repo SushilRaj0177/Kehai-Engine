@@ -12,7 +12,7 @@ import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { QrScanner } from "@/components/QrScanner";
 import { useAuth } from "@/lib/auth-context";
 import { useEvent } from "@/lib/hooks";
-import { apiFetch, ApiError } from "@/lib/api";
+import { apiFetchWithRetry, ApiError } from "@/lib/api";
 import { getCheckInWindow } from "@/lib/checkin-window";
 import { formatDateTime } from "@/lib/format";
 import { useLocale } from "@/lib/i18n";
@@ -35,6 +35,7 @@ export default function AttendPage() {
   const [position, setPosition] = useState<GeolocationPosition | null>(null);
   const [result, setResult] = useState<{ distanceMeters: number; confidence: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [retryStatus, setRetryStatus] = useState<{ attempt: number; max: number } | null>(null);
 
   useEffect(() => {
     const t = search.get("t");
@@ -82,16 +83,21 @@ export default function AttendPage() {
     if (!token || !position) return;
     setSubmitting(true);
     setError(null);
+    setRetryStatus(null);
     try {
-      const res = await apiFetch<{ distanceMeters: number; confidence: string }>(`/api/attendance/${eventId}/checkin`, {
-        method: "POST",
-        body: JSON.stringify({
-          qrToken: token,
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracyMeters: position.coords.accuracy,
-        }),
-      });
+      const res = await apiFetchWithRetry<{ distanceMeters: number; confidence: string }>(
+        `/api/attendance/${eventId}/checkin`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            qrToken: token,
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracyMeters: position.coords.accuracy,
+          }),
+        },
+        { onRetry: (attempt, max) => setRetryStatus({ attempt, max }) }
+      );
       setResult(res);
       setStep("done");
     } catch (err) {
@@ -101,11 +107,16 @@ export default function AttendPage() {
           const d = err.details as { distanceMeters: number };
           setResult({ distanceMeters: d.distanceMeters, confidence: "n/a" });
         }
+        setStep("error");
       } else {
-        setError(t("attend.checkInFailed"));
+        // A network failure (never got a real answer from the server, even
+        // after retrying) shouldn't discard the location fix already
+        // captured or force a re-scan — stay right here so "try again"
+        // is one tap, not the whole flow over again.
+        setError(t("attend.connectionFailed"));
       }
-      setStep("error");
     } finally {
+      setRetryStatus(null);
       setSubmitting(false);
     }
   }
@@ -141,13 +152,15 @@ export default function AttendPage() {
             <div className="space-y-4">
               <QrScanner onDecoded={handleDecoded} />
               <p className="text-xs text-white/35">{t("attend.scanHint")}</p>
+              {error && <ErrorBlock message={error} />}
             </div>
           )}
 
           {step === "locate" && (
             <Card>
-              <CardBody className="py-10">
-                <p className="mb-4 text-sm text-white/60">{t("attend.locateHint")}</p>
+              <CardBody className="space-y-4 py-10">
+                <p className="text-sm text-white/60">{t("attend.locateHint")}</p>
+                {error && <ErrorBlock message={error} />}
                 <Button onClick={requestLocation} variant="cyan">
                   {t("attend.shareLocation")}
                 </Button>
@@ -161,8 +174,14 @@ export default function AttendPage() {
                 <p className="text-sm text-white/60">
                   {t("attend.confirmHint", { accuracy: Math.round(position.coords.accuracy) })}
                 </p>
+                {retryStatus && (
+                  <p className="text-xs text-amber-300">
+                    {t("attend.reconnecting", { attempt: retryStatus.attempt, max: retryStatus.max })}
+                  </p>
+                )}
+                {error && <ErrorBlock message={error} />}
                 <Button onClick={submitCheckIn} loading={submitting} size="lg" className="w-full">
-                  {t("attend.confirmAttendance")}
+                  {error ? t("common.tryAgain") : t("attend.confirmAttendance")}
                 </Button>
               </CardBody>
             </Card>
@@ -202,7 +221,6 @@ export default function AttendPage() {
             </div>
           )}
 
-          {error && step !== "error" && <ErrorBlock message={error} className="mt-4" />}
             </>
           )}
         </div>

@@ -220,6 +220,15 @@ model AttendanceRecord {
 
   overriddenById String? // organizer who manually marked attendance, if any
 
+  // Not a block — a spoofed GPS reading or a shared screenshot of the QR
+  // code looks identical to a real check-in from here, so we can't reject
+  // it with confidence. Instead we compute honest anomaly signals (see
+  // utils/fraud.ts) and surface them to the organizer, who has context
+  // (did they see this person, does the pattern make sense) that the
+  // server never will.
+  flagged     Boolean  @default(false)
+  flagReasons String[] @default([])
+
   event        Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   registration Registration? @relation(fields: [registrationId], references: [id])
@@ -319,6 +328,9 @@ model ClassAttendance {
   qrTokenJti         String
 
   checkedInAt DateTime @default(now())
+
+  flagged     Boolean  @default(false)
+  flagReasons String[] @default([])
 
   session    ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   enrollment Enrollment   @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
