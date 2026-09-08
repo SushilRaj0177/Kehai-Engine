@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/Badge";
 import { LoadingBlock, ErrorBlock, EmptyState } from "@/components/ui/States";
 import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
+import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { useAuth } from "@/lib/auth-context";
 import { useEvent } from "@/lib/hooks";
 import { apiFetch, ApiError } from "@/lib/api";
@@ -33,13 +34,13 @@ export default function EventDetailPage() {
 
   if (eventError || !event) {
     return (
-      <div className="relative min-h-screen">
+      <ClickRippleLayer className="relative min-h-screen">
         <PageGlow />
         <NavBar />
         <div className="relative mx-auto max-w-lg px-6 py-24">
           <EmptyState title={t("eventDetail.notFoundTitle")} description={t("eventDetail.notFoundDescription")} />
         </div>
-      </div>
+      </ClickRippleLayer>
     );
   }
 
@@ -64,11 +65,18 @@ export default function EventDetailPage() {
   const checkInWindow = getCheckInWindow(event);
 
   return (
-    <div className="relative min-h-screen">
+    <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
       <div className="relative mx-auto max-w-3xl px-6 py-20">
         <KanjiMark glyph="詳細" className="absolute -right-6 top-0 text-[5rem] sm:text-[9rem]" />
+
+        <Link
+          href="/events"
+          className="relative z-20 mb-5 inline-block text-sm font-medium text-white/45 transition-colors hover:text-white/80"
+        >
+          {t("eventDetail.backToDiscover")}
+        </Link>
 
         <div className="relative z-20 flex items-center gap-2.5">
           <Badge status={event.status}>{t(`badge.status.${event.status}`)}</Badge>
@@ -131,6 +139,6 @@ export default function EventDetailPage() {
           </CardBody>
         </Card>
       </div>
-    </div>
+    </ClickRippleLayer>
   );
 }

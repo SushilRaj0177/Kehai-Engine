@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { EmptyState, LoadingBlock } from "@/components/ui/States";
 import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
+import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth-context";
 import { useMyRegistrations } from "@/lib/hooks";
@@ -40,7 +41,7 @@ export default function MyEventsPage() {
   );
 
   return (
-    <div className="relative min-h-screen">
+    <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
       <div className="relative mx-auto max-w-5xl px-6 py-20">
@@ -79,7 +80,7 @@ export default function MyEventsPage() {
           </div>
         )}
       </div>
-    </div>
+    </ClickRippleLayer>
   );
 }
 

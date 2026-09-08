@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/Badge";
 import { EmptyState, LoadingBlock } from "@/components/ui/States";
 import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
+import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { useMyOrganizations, useOrgEvents, useOrgOverview } from "@/lib/hooks";
 import { formatDateRange } from "@/lib/format";
 import { useLocale } from "@/lib/i18n";
@@ -26,18 +27,18 @@ export default function OrgPage() {
   if (orgsLoading) return <LoadingBlock />;
   if (!org) {
     return (
-      <div className="relative min-h-screen">
+      <ClickRippleLayer className="relative min-h-screen">
         <PageGlow />
         <NavBar />
         <div className="relative mx-auto max-w-lg px-6 py-24">
           <EmptyState title={t("orgDetail.notFoundTitle")} description={t("orgDetail.notFoundDescription")} />
         </div>
-      </div>
+      </ClickRippleLayer>
     );
   }
 
   return (
-    <div className="relative min-h-screen">
+    <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
       <div className="relative mx-auto max-w-6xl px-6 py-20">
@@ -102,7 +103,7 @@ export default function OrgPage() {
           )}
         </div>
       </div>
-    </div>
+    </ClickRippleLayer>
   );
 }
 

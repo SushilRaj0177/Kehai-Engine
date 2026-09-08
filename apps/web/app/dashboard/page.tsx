@@ -11,6 +11,7 @@ import { Input, Label } from "@/components/ui/Input";
 import { EmptyState, ErrorBlock, LoadingBlock } from "@/components/ui/States";
 import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
+import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { useAuth } from "@/lib/auth-context";
 import { useMyOrganizations } from "@/lib/hooks";
 import { apiFetch, ApiError } from "@/lib/api";
@@ -26,7 +27,7 @@ export default function DashboardPage() {
 
   if (!user) {
     return (
-      <div className="relative min-h-screen">
+      <ClickRippleLayer className="relative min-h-screen">
         <PageGlow />
         <NavBar />
         <div className="relative mx-auto max-w-lg px-6 py-24 text-center">
@@ -35,12 +36,12 @@ export default function DashboardPage() {
             <Button className="mt-4">{t("common.signIn")}</Button>
           </Link>
         </div>
-      </div>
+      </ClickRippleLayer>
     );
   }
 
   return (
-    <div className="relative min-h-screen">
+    <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
       <div className="relative mx-auto max-w-6xl px-6 py-20">
@@ -117,7 +118,7 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
-    </div>
+    </ClickRippleLayer>
   );
 }
 

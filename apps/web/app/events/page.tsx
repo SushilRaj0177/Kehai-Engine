@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { EmptyState, LoadingBlock } from "@/components/ui/States";
 import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
+import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { usePublicEvents } from "@/lib/hooks";
 import { formatDateRange } from "@/lib/format";
 import { useLocale } from "@/lib/i18n";
@@ -17,7 +18,7 @@ export default function DiscoverEventsPage() {
   const { data: events, isLoading } = usePublicEvents();
 
   return (
-    <div className="relative min-h-screen">
+    <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
       <div className="relative mx-auto max-w-6xl px-6 py-20">
@@ -61,6 +62,6 @@ export default function DiscoverEventsPage() {
           )}
         </div>
       </div>
-    </div>
+    </ClickRippleLayer>
   );
 }

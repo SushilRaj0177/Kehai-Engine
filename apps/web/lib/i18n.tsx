@@ -202,9 +202,14 @@ const dict = {
       ja: "このイベントはライブと表示されていますが、チェックインは{time}まで開始されません — それまで参加者には「チェックインはまだ開始されていません」と表示されます。",
     },
     windowWarningClosed: {
-      en: "This event is still marked live, but its check-in window closed at {time} — attendees will see \"check-in has closed\" if they try now. Restart it or extend the end time if you want to keep accepting check-ins.",
-      ja: "このイベントは引き続きライブと表示されていますが、チェックイン受付は{time}に終了しました — 今チェックインしようとした参加者には「チェックインは終了しました」と表示されます。引き続き受け付けたい場合は、再開するか終了時刻を延長してください。",
+      en: "This event is still marked live, but its check-in window closed at {time} — attendees will see \"check-in has closed\" if they try now.",
+      ja: "このイベントは引き続きライブと表示されていますが、チェックイン受付は{time}に終了しました — 今チェックインしようとした参加者には「チェックインは終了しました」と表示されます。",
     },
+    extendPrompt: { en: "Extend check-in by:", ja: "チェックインを延長:" },
+    extendBy15: { en: "+15 min", ja: "+15分" },
+    extendBy30: { en: "+30 min", ja: "+30分" },
+    extendBy60: { en: "+1 hour", ja: "+1時間" },
+    extendError: { en: "Failed to extend the check-in window", ja: "チェックイン受付の延長に失敗しました" },
   },
   eventNew: {
     createKicker: { en: "Create", ja: "作成" },
@@ -254,6 +259,7 @@ const dict = {
     registeredOf: { en: "{count}/{capacity} registered", ja: "登録 {count}/{capacity} 名" },
   },
   eventDetail: {
+    backToDiscover: { en: "← All events", ja: "← イベント一覧に戻る" },
     notFoundTitle: { en: "Event not found", ja: "イベントが見つかりません" },
     notFoundDescription: {
       en: "This event doesn't exist, or you don't have access to it.",
@@ -413,7 +419,7 @@ const dict = {
       ja: "チェックイン用QRコードを発行するには、このイベントを公開または開催中にしてください。",
     },
     heading: { en: "Check-in QR", ja: "チェックイン用QR" },
-    refreshingIn: { en: "refreshing in {seconds}s", ja: "{seconds}秒後に更新" },
+    refreshingIn: { en: "refreshing in {time}", ja: "{time}後に更新" },
     altText: { en: "Event check-in QR code", ja: "イベントのチェックイン用QRコード" },
     rotationNote: {
       en: "This code rotates automatically. A screenshot of it goes stale within one rotation window, and every scan is still checked against the venue geofence server-side.",
@@ -541,6 +547,7 @@ const dict = {
     toastJoined: { en: "{name} just joined!", ja: "{name} さんが参加しました！" },
     toastCheckedIn: { en: "{name} checked in", ja: "{name} さんがチェックインしました" },
     backToClassView: { en: "← Back to class view", ja: "← クラス全体表示に戻る" },
+    backToClassrooms: { en: "← All classrooms", ja: "← クラス一覧に戻る" },
     viewingStudent: { en: "Viewing {name}'s attendance", ja: "{name} さんの出席状況を表示中" },
   },
   classroomCheckin: {
