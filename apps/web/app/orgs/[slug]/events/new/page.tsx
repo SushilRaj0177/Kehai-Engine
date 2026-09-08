@@ -10,6 +10,7 @@ import { QrRotationInput } from "@/components/ui/QrRotationInput";
 import { ErrorBlock, LoadingBlock } from "@/components/ui/States";
 import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
+import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { useMyOrganizations } from "@/lib/hooks";
 import { apiFetch, ApiError } from "@/lib/api";
 import { toLocalDatetimeInputValue } from "@/lib/format";
@@ -91,7 +92,7 @@ export default function NewEventPage() {
   if (isLoading) return <LoadingBlock />;
 
   return (
-    <div className="relative min-h-screen">
+    <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
       <div className="relative mx-auto max-w-3xl px-6 py-20">
@@ -180,6 +181,6 @@ export default function NewEventPage() {
           </Button>
         </form>
       </div>
-    </div>
+    </ClickRippleLayer>
   );
 }

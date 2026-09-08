@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/Badge";
 import { LoadingBlock, ErrorBlock, EmptyState } from "@/components/ui/States";
 import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
+import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { ClassSessionManager } from "@/components/ClassSessionManager";
 import { ClassroomRoster } from "@/components/ClassroomRoster";
 import { AttendanceHeatmap } from "@/components/AttendanceHeatmap";
@@ -60,20 +61,20 @@ export default function ClassroomDetailPage() {
 
   if (classroomError || !classroom) {
     return (
-      <div className="relative min-h-screen">
+      <ClickRippleLayer className="relative min-h-screen">
         <PageGlow />
         <NavBar />
         <div className="relative mx-auto max-w-lg px-6 py-24">
           <EmptyState title={t("classroomDetail.notFoundTitle")} description={t("classroomDetail.notFoundDescription")} />
         </div>
-      </div>
+      </ClickRippleLayer>
     );
   }
 
   const viewingStudent = classroom.isTeacher && !!studentParam;
 
   return (
-    <div className="relative min-h-screen">
+    <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
       <div className="relative mx-auto max-w-6xl px-6 py-16">
@@ -84,6 +85,13 @@ export default function ClassroomDetailPage() {
             {toast}
           </div>
         )}
+
+        <Link
+          href="/classrooms"
+          className="relative z-20 mb-5 inline-block text-sm font-medium text-white/45 transition-colors hover:text-white/80"
+        >
+          {t("classroomDetail.backToClassrooms")}
+        </Link>
 
         <div className="relative z-20 flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -171,7 +179,7 @@ export default function ClassroomDetailPage() {
           </div>
         )}
       </div>
-    </div>
+    </ClickRippleLayer>
   );
 }
 

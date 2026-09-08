@@ -10,6 +10,7 @@ import { ErrorBlock } from "@/components/ui/States";
 import { Card, CardBody } from "@/components/ui/Card";
 import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
+import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api";
 import { useLocale } from "@/lib/i18n";
@@ -38,7 +39,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen">
+    <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
       <div className="relative mx-auto flex min-h-[calc(100vh-160px)] max-w-xl flex-col justify-center px-6 py-16">
@@ -85,6 +86,6 @@ export default function LoginPage() {
           </Link>
         </p>
       </div>
-    </div>
+    </ClickRippleLayer>
   );
 }

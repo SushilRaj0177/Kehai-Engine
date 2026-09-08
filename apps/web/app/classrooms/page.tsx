@@ -11,6 +11,7 @@ import { Input, Label } from "@/components/ui/Input";
 import { EmptyState, ErrorBlock, LoadingBlock } from "@/components/ui/States";
 import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
+import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { JoinClassroomForm } from "@/components/JoinClassroomForm";
 import { useAuth } from "@/lib/auth-context";
 import { useMyClassrooms, useEnrolledClassrooms } from "@/lib/hooks";
@@ -31,7 +32,7 @@ export default function ClassroomsHubPage() {
 
   if (!user) {
     return (
-      <div className="relative min-h-screen">
+      <ClickRippleLayer className="relative min-h-screen">
         <PageGlow />
         <NavBar />
         <div className="relative mx-auto max-w-lg px-6 py-24 text-center">
@@ -40,7 +41,7 @@ export default function ClassroomsHubPage() {
             <Button className="mt-4">{t("common.signIn")}</Button>
           </Link>
         </div>
-      </div>
+      </ClickRippleLayer>
     );
   }
 
@@ -51,7 +52,7 @@ export default function ClassroomsHubPage() {
   }
 
   return (
-    <div className="relative min-h-screen">
+    <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
       <div className="relative mx-auto max-w-6xl px-6 py-20">
@@ -217,7 +218,7 @@ export default function ClassroomsHubPage() {
           )}
         </div>
       </div>
-    </div>
+    </ClickRippleLayer>
   );
 }
 

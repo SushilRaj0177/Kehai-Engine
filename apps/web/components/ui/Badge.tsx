@@ -3,7 +3,7 @@ import { cn } from "@/lib/cn";
 const statusStyles: Record<string, string> = {
   DRAFT: "bg-white/8 text-white/60 border-white/15",
   PUBLISHED: "bg-kehai-500/10 text-kehai-400 border-kehai-500/30",
-  ACTIVE: "bg-shu-500/15 text-shu-400 border-shu-500/40 animate-pulseGlow",
+  ACTIVE: "bg-kehai-500/15 text-kehai-400 border-kehai-500/40 animate-pulseGlow",
   COMPLETED: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
   CANCELLED: "bg-white/5 text-white/35 border-white/10 line-through",
   high: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",

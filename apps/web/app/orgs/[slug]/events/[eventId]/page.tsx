@@ -10,6 +10,7 @@ import { LoadingBlock, ErrorBlock, EmptyState } from "@/components/ui/States";
 import { LiveIndicator } from "@/components/ui/LiveIndicator";
 import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
+import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { LiveQrPanel } from "@/components/LiveQrPanel";
 import { ProgressRing } from "@/components/ui/ProgressRing";
 import { ArrivalTimelineChart } from "@/components/charts/ArrivalTimelineChart";
@@ -45,6 +46,7 @@ export default function EventControlRoomPage() {
   const [liveCount, setLiveCount] = useState<{ attendance: number; registrations: number; rate: number } | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [transitioning, setTransitioning] = useState(false);
+  const [extending, setExtending] = useState(false);
 
   useEffect(() => {
     if (!eventId) return;
@@ -76,17 +78,37 @@ export default function EventControlRoomPage() {
     }
   }
 
+  // A closed check-in window on an otherwise-live event has no "restart"
+  // to reach for (restart only applies once an event is COMPLETED or
+  // CANCELLED) — the actual fix is pushing the window forward, so this
+  // offers that directly instead of making the organizer go edit the
+  // event's end time by hand.
+  async function extendWindow(minutes: number) {
+    if (!event) return;
+    setStatusError(null);
+    setExtending(true);
+    try {
+      const newEndsAt = new Date(new Date(event.endsAt).getTime() + minutes * 60_000).toISOString();
+      await apiFetch(`/api/events/${eventId}`, { method: "PATCH", body: JSON.stringify({ endsAt: newEndsAt }) });
+      await mutate();
+    } catch (err) {
+      setStatusError(err instanceof ApiError ? err.message : t("eventControl.extendError"));
+    } finally {
+      setExtending(false);
+    }
+  }
+
   if (isLoading) return <LoadingBlock label={t("states.loadingEvent")} />;
 
   if (eventError || !event) {
     return (
-      <div className="relative min-h-screen">
+      <ClickRippleLayer className="relative min-h-screen">
         <PageGlow />
         <NavBar />
         <div className="relative mx-auto max-w-lg px-6 py-24">
           <EmptyState title={t("eventDetail.notFoundTitle")} description={t("eventDetail.notFoundDescription")} />
         </div>
-      </div>
+      </ClickRippleLayer>
     );
   }
 
@@ -98,7 +120,7 @@ export default function EventControlRoomPage() {
   const showWindowWarning = (event.status === "ACTIVE" || event.status === "PUBLISHED") && checkInWindow.status !== "open";
 
   return (
-    <div className="relative min-h-screen">
+    <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
       <div className="relative mx-auto max-w-6xl px-6 py-16">
@@ -135,9 +157,21 @@ export default function EventControlRoomPage() {
 
         {showWindowWarning && (
           <div className="relative z-20 mt-4 rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
-            {checkInWindow.status === "not_open"
-              ? t("eventControl.windowWarningNotOpen", { time: formatDateTime(checkInWindow.opensAt, locale) })
-              : t("eventControl.windowWarningClosed", { time: formatDateTime(checkInWindow.closesAt, locale) })}
+            <p>
+              {checkInWindow.status === "not_open"
+                ? t("eventControl.windowWarningNotOpen", { time: formatDateTime(checkInWindow.opensAt, locale) })
+                : t("eventControl.windowWarningClosed", { time: formatDateTime(checkInWindow.closesAt, locale) })}
+            </p>
+            {checkInWindow.status === "closed" && (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className="text-xs uppercase tracking-wider text-amber-200/60">{t("eventControl.extendPrompt")}</span>
+                {[15, 30, 60].map((minutes) => (
+                  <Button key={minutes} variant="secondary" size="sm" loading={extending} onClick={() => extendWindow(minutes)}>
+                    {t(`eventControl.extendBy${minutes}`)}
+                  </Button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -175,7 +209,7 @@ export default function EventControlRoomPage() {
           </div>
         </div>
       </div>
-    </div>
+    </ClickRippleLayer>
   );
 }
 

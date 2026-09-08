@@ -10,6 +10,7 @@ import { ErrorBlock, EmptyState } from "@/components/ui/States";
 import { Card, CardBody } from "@/components/ui/Card";
 import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
+import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { apiFetch, ApiError } from "@/lib/api";
 import { useLocale } from "@/lib/i18n";
 
@@ -49,7 +50,7 @@ export default function ResetPasswordPage() {
 
   if (!token) {
     return (
-      <div className="relative min-h-screen">
+      <ClickRippleLayer className="relative min-h-screen">
         <PageGlow />
         <NavBar />
         <div className="relative mx-auto max-w-lg px-6 py-24">
@@ -63,12 +64,12 @@ export default function ResetPasswordPage() {
             }
           />
         </div>
-      </div>
+      </ClickRippleLayer>
     );
   }
 
   return (
-    <div className="relative min-h-screen">
+    <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
       <div className="relative mx-auto flex min-h-[calc(100vh-160px)] max-w-xl flex-col justify-center px-6 py-16">
@@ -125,6 +126,6 @@ export default function ResetPasswordPage() {
           </CardBody>
         </Card>
       </div>
-    </div>
+    </ClickRippleLayer>
   );
 }

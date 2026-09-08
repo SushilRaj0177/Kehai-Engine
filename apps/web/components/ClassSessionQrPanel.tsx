@@ -5,6 +5,7 @@ import { apiFetch, ApiError } from "@/lib/api";
 import { Card, CardBody, CardHeader } from "./ui/Card";
 import { Button } from "./ui/Button";
 import { QrRotationInput } from "./ui/QrRotationInput";
+import { formatCountdown } from "@/lib/format";
 import { useLocale } from "@/lib/i18n";
 
 interface QrResponse {
@@ -46,7 +47,7 @@ export function ClassSessionQrPanel({
       const data = await apiFetch<QrResponse>(`/api/classrooms/${classroomId}/sessions/${sessionId}/qr`);
       setQr(data);
       setError(null);
-      setCountdown(data.rotationSeconds);
+      setCountdown(Math.min(86400, Math.max(0, data.rotationSeconds)));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t("qrPanel.qrLoadError"));
     }
@@ -68,7 +69,7 @@ export function ClassSessionQrPanel({
       setCountdown((c) => {
         if (c <= 1) {
           void fetchQr();
-          return qr.rotationSeconds;
+          return Math.min(86400, Math.max(0, qr.rotationSeconds));
         }
         return c - 1;
       });
@@ -99,7 +100,7 @@ export function ClassSessionQrPanel({
     <Card className="overflow-hidden">
       <CardHeader className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-white/40">
         <span>{t("qrPanel.heading")}</span>
-        {qr && <span className="font-mono text-shu-400">{t("qrPanel.refreshingIn", { seconds: countdown })}</span>}
+        {qr && <span className="font-mono text-shu-400">{t("qrPanel.refreshingIn", { time: formatCountdown(countdown) })}</span>}
       </CardHeader>
       <CardBody className="flex flex-col items-center gap-4 py-6">
         {error ? (

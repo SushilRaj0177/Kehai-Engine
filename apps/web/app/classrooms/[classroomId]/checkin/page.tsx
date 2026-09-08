@@ -8,6 +8,7 @@ import { Card, CardBody } from "@/components/ui/Card";
 import { ErrorBlock, LoadingBlock } from "@/components/ui/States";
 import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
+import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { QrScanner } from "@/components/QrScanner";
 import { useAuth } from "@/lib/auth-context";
 import { useClassroom } from "@/lib/hooks";
@@ -119,7 +120,7 @@ export default function ClassroomCheckinPage() {
   if (authLoading) return <LoadingBlock />;
 
   return (
-    <div className="relative min-h-screen">
+    <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
       <div className="relative mx-auto max-w-lg px-6 py-16 text-center">
@@ -207,6 +208,6 @@ export default function ClassroomCheckinPage() {
           {error && step !== "error" && <ErrorBlock message={error} className="mt-4" />}
         </div>
       </div>
-    </div>
+    </ClickRippleLayer>
   );
 }

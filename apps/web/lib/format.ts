@@ -24,6 +24,21 @@ export function formatDate(iso: string, locale: "en" | "ja" = "en"): string {
   );
 }
 
+// A raw "{n}s" label reads fine at 20s but turns unreadable — or, for a
+// stray out-of-range value, absurd ("83274893274843748923s") — the moment
+// the rotation interval is minutes or hours instead of seconds. Format to
+// the coarsest unit that keeps the number small, and clamp first so a bad
+// stored value can never render as a wall of digits.
+export function formatCountdown(totalSeconds: number): string {
+  const seconds = Math.min(86400, Math.max(0, Math.round(totalSeconds) || 0));
+  if (seconds < 60) return `${seconds}s`;
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (h > 0) return `${h}h ${String(m).padStart(2, "0")}m`;
+  return `${m}m ${String(s).padStart(2, "0")}s`;
+}
+
 export function formatDateTime(date: Date, locale: "en" | "ja" = "en"): string {
   const intlLocale = locale === "ja" ? "ja-JP" : "en-US";
   const dateFmt = new Intl.DateTimeFormat(intlLocale, { month: locale === "ja" ? "long" : "short", day: "numeric" });
