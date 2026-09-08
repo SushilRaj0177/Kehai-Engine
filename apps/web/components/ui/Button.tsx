@@ -1,7 +1,7 @@
 import { cn } from "@/lib/cn";
 import { forwardRef, type ButtonHTMLAttributes } from "react";
 
-type Variant = "primary" | "secondary" | "ghost" | "danger" | "cyan";
+type Variant = "primary" | "secondary" | "ghost" | "danger" | "cyan" | "terminal";
 type Size = "sm" | "md" | "lg";
 
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -16,6 +16,18 @@ const ghostSizes: Record<Size, string> = {
   lg: "text-base px-5 py-2.5 gap-2.5",
 };
 
+// A terminal prompt line, not a HUD panel: a flat left rule standing in for
+// the whole border, a "&gt;" glyph where a shell prompt would sit, and a
+// blinking cursor block closing the label out — no floating corners, no
+// clip-path, nothing that needs to escape the button's own box. Reserved for
+// tight-space clusters (hero CTAs, empty-state actions) where the HUD
+// bracket variant's outside-the-box marks don't have room to breathe.
+const terminalSizes: Record<Size, string> = {
+  sm: "text-xs px-3 py-1.5 gap-1.5",
+  md: "text-sm px-4 py-2 gap-2",
+  lg: "text-base px-5 py-2.5 gap-2",
+};
+
 // A HUD targeting-reticle, not a card: four free-floating corner brackets
 // framing a mostly-transparent, square-edged box, closing in flush against
 // it on hover while a scanline sweeps through and the fill washes in. Reads
@@ -24,7 +36,7 @@ const ghostSizes: Record<Size, string> = {
 // layers standing in for a border), not just a recolor of it.
 type Tone = { text: string; textHover: string; accent: string; fillHover: string; glow: string };
 
-const tones: Record<Exclude<Variant, "ghost">, Tone> = {
+const tones: Record<Exclude<Variant, "ghost" | "terminal">, Tone> = {
   primary: {
     text: "text-shu-300",
     textHover: "hover:text-void-950 focus-visible:text-void-950",
@@ -127,6 +139,37 @@ export const Button = forwardRef<HTMLButtonElement, Props>(function Button(
       >
         {loading ? <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" /> : null}
         {children}
+      </button>
+    );
+  }
+
+  if (variant === "terminal") {
+    return (
+      <button
+        ref={ref}
+        disabled={disabled || loading}
+        style={style}
+        className={cn(
+          "group inline-flex items-center justify-center border-l-2 border-shu-500 bg-shu-500/[0.07] font-mono font-semibold uppercase tracking-[0.08em] text-shu-200",
+          "transition-colors duration-150 hover:bg-shu-500/[0.16] hover:text-white",
+          "disabled:opacity-40 disabled:cursor-not-allowed",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-shu-400/60",
+          terminalSizes[size],
+          className
+        )}
+        {...props}
+      >
+        <span aria-hidden className="text-shu-400 transition-colors duration-150 group-hover:text-white">
+          &gt;
+        </span>
+        {loading ? (
+          <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+        ) : (
+          <>
+            <span>{children}</span>
+            <span aria-hidden className="terminal-cursor ml-0.5 inline-block h-[1em] w-[2px] bg-current align-middle" />
+          </>
+        )}
       </button>
     );
   }

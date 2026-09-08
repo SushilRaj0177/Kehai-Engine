@@ -218,7 +218,7 @@ export function ClassSessionManager({
                   ))}
                 </div>
               )}
-              <Button size="sm" loading={starting} onClick={startSession} className="w-full sm:w-auto">
+              <Button variant="terminal" size="sm" loading={starting} onClick={startSession} className="w-full sm:w-auto">
                 {t("classroomDetail.startSession")}
               </Button>
             </div>

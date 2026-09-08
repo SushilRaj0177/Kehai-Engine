@@ -23,7 +23,12 @@ export function NavBar() {
     // the page instead of a wall cutting across it.
     <header className="sticky top-4 z-40 px-4">
       <div
-        className="mx-auto flex h-[64px] max-w-6xl items-center justify-between rounded-full border border-white/[0.08] bg-white/[0.05] px-2 pl-4 backdrop-blur-2xl sm:px-3 sm:pl-6"
+        // Right padding is more generous than the left (pr-4/sm:pr-6 vs.
+        // pl-4/sm:pl-6 before this) — the sign-out button's HUD corner
+        // brackets float a few px outside its own box, and the plain px-2
+        // this used to end on didn't leave them any room to breathe against
+        // the pill's own rounded edge.
+        className="mx-auto flex h-[64px] max-w-6xl items-center justify-between rounded-full border border-white/[0.08] bg-white/[0.05] pl-4 pr-4 backdrop-blur-2xl sm:pl-6 sm:pr-6"
         style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.03), 0 12px 40px -12px rgba(0,0,0,0.6), 0 0 60px -20px rgba(255,45,85,0.18)" }}
       >
         <Link href="/" className="group flex items-center gap-2.5">
@@ -64,14 +69,19 @@ export function NavBar() {
           )}
         </nav>
 
-        <div className="flex items-center gap-1 sm:gap-2">
+        <div className="flex items-center gap-2 sm:gap-3">
           <LocaleSwitch locale={locale} onToggle={toggle} />
 
           {user ? (
             <>
-              <span className="hidden text-sm text-white/50 sm:inline">{user.name}</span>
+              {/* Dropped below md, not just sm — the HUD button's own
+                  corner brackets already read as "this is the account
+                  cluster," so the name is a nice-to-have that yields first
+                  as the bar narrows, rather than fighting the brackets for
+                  room down to the last few px. */}
+              <span className="hidden truncate text-sm text-white/50 md:inline md:max-w-[10rem]">{user.name}</span>
               <Button
-                variant="ghost"
+                variant="secondary"
                 size="sm"
                 onClick={() => {
                   logout();

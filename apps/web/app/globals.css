@@ -373,12 +373,29 @@ body {
   cursor: none !important;
 }
 
+/* Terminal-variant Button's trailing cursor block — a hard on/off blink
+   (steps, not eased) reading as a text-cursor, not a fading pulse. */
+@keyframes terminal-cursor-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+.terminal-cursor {
+  animation: terminal-cursor-blink 1s steps(1, end) infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .kanji-breathe,
   .rain-column,
   .hero-flash,
   .glyph-particle,
-  .flow-pulse {
+  .flow-pulse,
+  .terminal-cursor {
     animation: none !important;
   }
   .reveal,
