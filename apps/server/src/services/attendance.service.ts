@@ -95,7 +95,7 @@ export async function checkIn(input: CheckInInput): Promise<CheckInResult> {
     checkedInAt: attendance.checkedInAt.toISOString(),
     totalAttendance,
     totalRegistrations,
-    attendanceRate: totalRegistrations > 0 ? totalAttendance / totalRegistrations : 0,
+    attendanceRate: totalRegistrations > 0 ? Math.min(1, totalAttendance / totalRegistrations) : 0,
   });
 
   return { attendance, distanceMeters: geofence.distanceMeters, confidence: geofence.confidence };

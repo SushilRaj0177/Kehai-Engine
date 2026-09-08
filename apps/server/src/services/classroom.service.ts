@@ -511,6 +511,11 @@ export async function updateSession(classroomId: string, sessionId: string, inpu
   });
 }
 
+export async function deleteSession(classroomId: string, sessionId: string) {
+  const session = await getOwnedSession(classroomId, sessionId);
+  await prisma.classSession.delete({ where: { id: session.id } });
+}
+
 export async function issueSessionQr(classroomId: string, sessionId: string) {
   const session = await getOwnedSession(classroomId, sessionId);
   if (session.status !== "OPEN") throw HttpError.badRequest("This session is closed — restart it first");

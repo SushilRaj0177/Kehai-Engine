@@ -92,7 +92,7 @@ export default function EventControlRoomPage() {
 
   const attendance = liveCount?.attendance ?? analytics?.attendance ?? event._count.attendances;
   const registrations = liveCount?.registrations ?? analytics?.registrations ?? event._count.registrations;
-  const rate = registrations > 0 ? attendance / registrations : 0;
+  const rate = registrations > 0 ? Math.min(1, attendance / registrations) : 0;
 
   const checkInWindow = getCheckInWindow(event);
   const showWindowWarning = (event.status === "ACTIVE" || event.status === "PUBLISHED") && checkInWindow.status !== "open";
