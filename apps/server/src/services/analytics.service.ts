@@ -36,7 +36,10 @@ export async function computeEventAnalytics(eventId: string): Promise<EventAnaly
   ]);
 
   const attendanceCount = attendances.length;
-  const attendanceRate = registrations > 0 ? attendanceCount / registrations : 0;
+  // Walk-ins (checked in without registering) can push attendanceCount
+  // above registrations — clamp to 100% so the rate stays a believable
+  // percentage instead of reading as "167% attendance".
+  const attendanceRate = registrations > 0 ? Math.min(1, attendanceCount / registrations) : 0;
   const unregisteredAttendance = attendances.filter((a) => !a.registrationId).length;
 
   let early = 0;
@@ -114,7 +117,7 @@ export async function computeOrgOverview(organizationId: string): Promise<OrgOve
 
   const rates = events
     .filter((e) => e._count.registrations > 0)
-    .map((e) => e._count.attendances / e._count.registrations);
+    .map((e) => Math.min(1, e._count.attendances / e._count.registrations));
   const averageAttendanceRate = rates.length > 0 ? rates.reduce((s, r) => s + r, 0) / rates.length : 0;
 
   const attendanceByUser = await prisma.attendanceRecord.groupBy({
@@ -139,7 +142,7 @@ export async function computeOrgOverview(organizationId: string): Promise<OrgOve
       status: e.status,
       registrations: e._count.registrations,
       attendance: e._count.attendances,
-      attendanceRate: e._count.registrations > 0 ? e._count.attendances / e._count.registrations : 0,
+      attendanceRate: e._count.registrations > 0 ? Math.min(1, e._count.attendances / e._count.registrations) : 0,
     })),
   };
 }

@@ -101,13 +101,20 @@ export async function registerForEvent(eventId: string, userId: string) {
     throw HttpError.badRequest("Registration has closed");
   }
 
-  if (event.capacity != null) {
-    const count = await prisma.registration.count({ where: { eventId } });
-    if (count >= event.capacity) throw HttpError.conflict("This event is at capacity");
-  }
-
   try {
-    return await prisma.registration.create({ data: { eventId, userId } });
+    return await prisma.$transaction(async (tx) => {
+      // Two people registering for the last open spot at the same instant
+      // would otherwise both pass a plain count-then-create check before
+      // either commits. Locking the event row first forces the second
+      // transaction to wait for the first to finish, so its capacity count
+      // is guaranteed to see the first registration.
+      if (event.capacity != null) {
+        await tx.$executeRaw`SELECT id FROM "Event" WHERE id = ${eventId} FOR UPDATE`;
+        const count = await tx.registration.count({ where: { eventId } });
+        if (count >= event.capacity) throw HttpError.conflict("This event is at capacity");
+      }
+      return await tx.registration.create({ data: { eventId, userId } });
+    });
   } catch (err: any) {
     if (err?.code === "P2002") throw HttpError.conflict("Already registered for this event");
     throw err;

@@ -57,6 +57,9 @@ export function ClassSessionManager({
   const [busySessionId, setBusySessionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [recentLabels, setRecentLabels] = useState<string[]>([]);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     setRecentLabels(readRecentLabels(classroomId));
@@ -113,6 +116,50 @@ export function ClassSessionManager({
     }
   }
 
+  function startRename(sessionId: string, currentLabel: string | null) {
+    setError(null);
+    setConfirmingDeleteId(null);
+    setRenamingId(sessionId);
+    setRenameValue(currentLabel ?? "");
+  }
+
+  async function saveRename(sessionId: string) {
+    setError(null);
+    setBusySessionId(sessionId);
+    try {
+      await apiFetch(`/api/classrooms/${classroomId}/sessions/${sessionId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ label: renameValue.trim() }),
+      });
+      setRenamingId(null);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t("classroomDetail.sessionRenameError"));
+    } finally {
+      setBusySessionId(null);
+    }
+  }
+
+  async function deleteSession(sessionId: string) {
+    if (confirmingDeleteId !== sessionId) {
+      setError(null);
+      setRenamingId(null);
+      setConfirmingDeleteId(sessionId);
+      return;
+    }
+    setError(null);
+    setBusySessionId(sessionId);
+    try {
+      await apiFetch(`/api/classrooms/${classroomId}/sessions/${sessionId}`, { method: "DELETE" });
+      setConfirmingDeleteId(null);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t("classroomDetail.sessionDeleteError"));
+    } finally {
+      setBusySessionId(null);
+    }
+  }
+
   return (
     <div className="space-y-6">
       {openSession && (
@@ -160,27 +207,63 @@ export function ClassSessionManager({
 
           {sessions && sessions.length > 0 ? (
             <div className="scroll-thin max-h-64 space-y-2 overflow-auto border-t border-white/10 pt-3">
-              {sessions.map((s) => (
-                <div
-                  key={s.id}
-                  className="flex items-center justify-between gap-2 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-sm"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate font-medium text-white">{s.label || t("classroomDetail.untitledSession")}</p>
-                    <p className="text-xs text-white/40">
-                      {new Date(s.date).toLocaleDateString(locale === "ja" ? "ja-JP" : "en-US")} ·{" "}
-                      {t("classroomDetail.presentCount", { count: s.presentCount })}
-                    </p>
-                  </div>
-                  {s.status === "OPEN" ? (
-                    <Badge status="ACTIVE">{t("classroomDetail.sessionOpenBadge")}</Badge>
-                  ) : (
-                    <Button variant="ghost" size="sm" loading={busySessionId === s.id} onClick={() => restartSession(s.id)}>
-                      {t("classroomDetail.restartSession")}
+              {sessions.map((s) =>
+                renamingId === s.id ? (
+                  <div
+                    key={s.id}
+                    className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-sm"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <Input
+                        value={renameValue}
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        placeholder={t("classroomDetail.sessionRenamePlaceholder")}
+                        underline={false}
+                        autoFocus
+                      />
+                    </div>
+                    <Button size="sm" loading={busySessionId === s.id} onClick={() => saveRename(s.id)}>
+                      {t("classroomDetail.saveRename")}
                     </Button>
-                  )}
-                </div>
-              ))}
+                    <Button variant="ghost" size="sm" onClick={() => setRenamingId(null)}>
+                      {t("classroomDetail.cancelRename")}
+                    </Button>
+                  </div>
+                ) : (
+                  <div
+                    key={s.id}
+                    className="flex items-center justify-between gap-2 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-sm"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-white">{s.label || t("classroomDetail.untitledSession")}</p>
+                      <p className="text-xs text-white/40">
+                        {new Date(s.date).toLocaleDateString(locale === "ja" ? "ja-JP" : "en-US")} ·{" "}
+                        {t("classroomDetail.presentCount", { count: s.presentCount })}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      {s.status === "OPEN" && <Badge status="ACTIVE">{t("classroomDetail.sessionOpenBadge")}</Badge>}
+                      <Button variant="ghost" size="sm" onClick={() => startRename(s.id, s.label)}>
+                        {t("classroomDetail.renameSession")}
+                      </Button>
+                      {s.status !== "OPEN" && (
+                        <Button variant="ghost" size="sm" loading={busySessionId === s.id} onClick={() => restartSession(s.id)}>
+                          {t("classroomDetail.restartSession")}
+                        </Button>
+                      )}
+                      <Button
+                        variant={confirmingDeleteId === s.id ? "danger" : "ghost"}
+                        size="sm"
+                        loading={busySessionId === s.id}
+                        onClick={() => deleteSession(s.id)}
+                        onBlur={() => setConfirmingDeleteId((cur) => (cur === s.id ? null : cur))}
+                      >
+                        {confirmingDeleteId === s.id ? t("classroomDetail.confirmDeleteSession") : t("classroomDetail.deleteSession")}
+                      </Button>
+                    </div>
+                  </div>
+                )
+              )}
             </div>
           ) : sessions ? (
             <p className="border-t border-white/10 pt-3 text-sm text-white/35">{t("classroomDetail.noSessionsYet")}</p>

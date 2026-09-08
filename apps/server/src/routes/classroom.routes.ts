@@ -136,6 +136,16 @@ classroomRouter.patch(
   })
 );
 
+classroomRouter.delete(
+  "/:classroomId/sessions/:sessionId",
+  requireAuth,
+  requireClassroomTeacher(),
+  asyncHandler(async (req, res) => {
+    await classroomService.deleteSession(req.params.classroomId, req.params.sessionId);
+    res.status(204).end();
+  })
+);
+
 classroomRouter.post(
   "/:classroomId/sessions/:sessionId/close",
   requireAuth,
