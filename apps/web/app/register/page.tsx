@@ -58,7 +58,8 @@ export default function RegisterPage() {
               {error && <ErrorBlock message={error} />}
               <div>
                 <Label htmlFor="name">{t("auth.fullNameLabel")}</Label>
-                <Input id="name" required value={name} onChange={(e) => setName(e.target.value)} />
+                <Input id="name" required minLength={2} maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
+                <p className="mt-2 text-sm text-white/35">{t("auth.displayNameHint")}</p>
               </div>
               <div>
                 <Label htmlFor="email">{t("auth.emailLabel")}</Label>

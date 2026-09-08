@@ -346,7 +346,11 @@ const dict = {
       en: "Start an organization or register for events as an attendee.",
       ja: "組織を立ち上げるか、参加者としてイベントに登録しましょう。",
     },
-    fullNameLabel: { en: "Full name", ja: "氏名" },
+    fullNameLabel: { en: "Display name", ja: "表示名" },
+    displayNameHint: {
+      en: "This is what other people will see — on rosters, attendee lists, and event dashboards.",
+      ja: "受講者一覧、参加者リスト、イベントダッシュボードなど、他の人に表示される名前です。",
+    },
     passwordHint: { en: "At least 8 characters.", ja: "8文字以上で入力してください。" },
     createAccountButton: { en: "Create account", ja: "アカウントを作成" },
     haveAccount: { en: "Already have an account?", ja: "すでにアカウントをお持ちですか？" },
