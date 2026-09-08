@@ -65,7 +65,7 @@ export default function ClassroomsHubPage() {
           </div>
           <div className="flex flex-wrap gap-2.5">
             <Button
-              variant="secondary"
+              variant="terminal"
               size="lg"
               onClick={() => {
                 setShowJoin((s) => !s);
@@ -75,6 +75,7 @@ export default function ClassroomsHubPage() {
               {showJoin ? t("common.cancel") : t("classroomHub.joinClassroom")}
             </Button>
             <Button
+              variant="terminal"
               size="lg"
               onClick={() => {
                 setShowCreate((s) => !s);
@@ -126,7 +127,11 @@ export default function ClassroomsHubPage() {
               glyph="学"
               title={t("classroomHub.enrolledEmptyTitle")}
               description={t("classroomHub.enrolledEmptyDescription")}
-              action={<Button onClick={() => setShowJoin(true)}>{t("classroomHub.joinClassroom")}</Button>}
+              action={
+                <Button variant="terminal" onClick={() => setShowJoin(true)}>
+                  {t("classroomHub.joinClassroom")}
+                </Button>
+              }
             />
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -164,7 +169,11 @@ export default function ClassroomsHubPage() {
               glyph="級"
               title={t("classroomHub.teachingEmptyTitle")}
               description={t("classroomHub.teachingEmptyDescription")}
-              action={<Button onClick={() => setShowCreate(true)}>{t("classroomHub.newClassroom")}</Button>}
+              action={
+                <Button variant="terminal" onClick={() => setShowCreate(true)}>
+                  {t("classroomHub.newClassroom")}
+                </Button>
+              }
             />
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

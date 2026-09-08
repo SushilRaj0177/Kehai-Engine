@@ -287,10 +287,12 @@ export default function LandingPage() {
 
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/register">
-              <Button size="lg">{t("hero.ctaPrimary")}</Button>
+              <Button size="lg" variant="terminal">
+                {t("hero.ctaPrimary")}
+              </Button>
             </Link>
             <Link href="/events">
-              <Button size="lg" variant="secondary">
+              <Button size="lg" variant="terminal">
                 {t("hero.ctaSecondary")}
               </Button>
             </Link>
