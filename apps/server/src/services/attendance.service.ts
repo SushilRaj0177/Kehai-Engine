@@ -32,10 +32,10 @@ export async function checkIn(input: CheckInInput): Promise<CheckInResult> {
   const windowStart = new Date(event.startsAt.getTime() - event.attendanceOpensMinutesBefore * 60_000);
   const windowEnd = new Date(event.endsAt.getTime() + event.attendanceClosesMinutesAfter * 60_000);
   if (now < windowStart) {
-    throw HttpError.badRequest("Check-in has not opened yet for this event");
+    throw HttpError.badRequest(`Check-in has not opened yet for this event — it opens at ${windowStart.toISOString()}`);
   }
   if (now > windowEnd) {
-    throw HttpError.badRequest("Check-in has closed for this event");
+    throw HttpError.badRequest(`Check-in has closed for this event — it closed at ${windowEnd.toISOString()}`);
   }
 
   let qrPayload;

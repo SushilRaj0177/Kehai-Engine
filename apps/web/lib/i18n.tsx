@@ -195,7 +195,16 @@ const dict = {
     transitionGoLive: { en: "Go live", ja: "開催を開始" },
     transitionMarkCompleted: { en: "Mark completed", ja: "終了にする" },
     transitionCancel: { en: "Cancel", ja: "中止する" },
+    transitionRestart: { en: "Restart", ja: "再開" },
     statusUpdateError: { en: "Failed to update event status", ja: "イベントのステータス更新に失敗しました" },
+    windowWarningNotOpen: {
+      en: "This event is marked live, but check-in doesn't open until {time} — attendees will see \"check-in has not opened yet\" until then.",
+      ja: "このイベントはライブと表示されていますが、チェックインは{time}まで開始されません — それまで参加者には「チェックインはまだ開始されていません」と表示されます。",
+    },
+    windowWarningClosed: {
+      en: "This event is still marked live, but its check-in window closed at {time} — attendees will see \"check-in has closed\" if they try now. Restart it or extend the end time if you want to keep accepting check-ins.",
+      ja: "このイベントは引き続きライブと表示されていますが、チェックイン受付は{time}に終了しました — 今チェックインしようとした参加者には「チェックインは終了しました」と表示されます。引き続き受け付けたい場合は、再開するか終了時刻を延長してください。",
+    },
   },
   eventNew: {
     createKicker: { en: "Create", ja: "作成" },
@@ -301,6 +310,16 @@ const dict = {
       ja: "会場から{distance}m離れているようです — 近づいてからもう一度お試しください。",
     },
     checkInFailed: { en: "Check-in failed.", ja: "チェックインに失敗しました。" },
+    windowNotOpenTitle: { en: "Check-in hasn't opened yet", ja: "チェックインはまだ開始されていません" },
+    windowNotOpenBody: {
+      en: "This event shows as live, but check-in opens at {time}. Come back then — no action needed from you right now.",
+      ja: "このイベントはライブと表示されていますが、チェックインの開始は{time}です。その時間になったら再度お試しください — 今は何もする必要はありません。",
+    },
+    windowClosedTitle: { en: "Check-in window has closed", ja: "チェックインの受付は終了しました" },
+    windowClosedBody: {
+      en: "This event still shows as live, but its check-in window closed at {time}. Ask the organizer to extend the event or restart it if you need to check in.",
+      ja: "このイベントは引き続きライブと表示されていますが、チェックインの受付は{time}に終了しました。チェックインが必要な場合は、主催者にイベントの延長または再開を依頼してください。",
+    },
     cameraError: {
       en: "Camera access denied or unavailable. You can also open the check-in link directly.",
       ja: "カメラへのアクセスが拒否されたか利用できません。チェックイン用リンクを直接開くこともできます。",

@@ -18,8 +18,9 @@ import { AiInsightsPanel } from "@/components/AiInsightsPanel";
 import { ExportButtons } from "@/components/ExportButtons";
 import { useEvent, useEventAnalytics, useMyOrganizations } from "@/lib/hooks";
 import { apiFetch, ApiError } from "@/lib/api";
-import { formatDateRange } from "@/lib/format";
+import { formatDateRange, formatDateTime } from "@/lib/format";
 import { subscribeToEvent } from "@/lib/realtime";
+import { getCheckInWindow } from "@/lib/checkin-window";
 import type { EventStatus } from "@/lib/types";
 import { useLocale } from "@/lib/i18n";
 
@@ -27,8 +28,8 @@ const TRANSITIONS: Record<EventStatus, EventStatus[]> = {
   DRAFT: ["PUBLISHED", "CANCELLED"],
   PUBLISHED: ["ACTIVE", "CANCELLED"],
   ACTIVE: ["COMPLETED", "CANCELLED"],
-  COMPLETED: [],
-  CANCELLED: [],
+  COMPLETED: ["ACTIVE"],
+  CANCELLED: ["DRAFT"],
 };
 
 export default function EventControlRoomPage() {
@@ -93,6 +94,9 @@ export default function EventControlRoomPage() {
   const registrations = liveCount?.registrations ?? analytics?.registrations ?? event._count.registrations;
   const rate = registrations > 0 ? attendance / registrations : 0;
 
+  const checkInWindow = getCheckInWindow(event);
+  const showWindowWarning = (event.status === "ACTIVE" || event.status === "PUBLISHED") && checkInWindow.status !== "open";
+
   return (
     <div className="relative min-h-screen">
       <PageGlow />
@@ -121,13 +125,21 @@ export default function EventControlRoomPage() {
                 loading={transitioning}
                 onClick={() => transition(next)}
               >
-                {labelFor(next, t)}
+                {labelFor(event.status, next, t)}
               </Button>
             ))}
             {org && <ExportButtons eventId={event.id} />}
           </div>
         </div>
         {statusError && <ErrorBlock message={statusError} className="relative mt-3" />}
+
+        {showWindowWarning && (
+          <div className="relative z-20 mt-4 rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
+            {checkInWindow.status === "not_open"
+              ? t("eventControl.windowWarningNotOpen", { time: formatDateTime(checkInWindow.opensAt, locale) })
+              : t("eventControl.windowWarningClosed", { time: formatDateTime(checkInWindow.closesAt, locale) })}
+          </div>
+        )}
 
         <div className="relative mt-12 grid grid-cols-2 gap-4 sm:grid-cols-4">
           <StatTile label={t("eventControl.statRegistrations")} value={registrations} />
@@ -167,8 +179,10 @@ export default function EventControlRoomPage() {
   );
 }
 
-function labelFor(status: EventStatus, t: (path: string) => string): string {
-  switch (status) {
+function labelFor(current: EventStatus, next: EventStatus, t: (path: string) => string): string {
+  const isRestart = current === "COMPLETED" || current === "CANCELLED";
+  if (isRestart) return t("eventControl.transitionRestart");
+  switch (next) {
     case "PUBLISHED":
       return t("eventControl.transitionPublish");
     case "ACTIVE":
@@ -178,7 +192,7 @@ function labelFor(status: EventStatus, t: (path: string) => string): string {
     case "CANCELLED":
       return t("eventControl.transitionCancel");
     default:
-      return status;
+      return next;
   }
 }
 
