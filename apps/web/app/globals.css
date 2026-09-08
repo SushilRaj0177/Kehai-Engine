@@ -363,6 +363,16 @@ body {
   }
 }
 
+/* CustomCursor.tsx toggles this class on <html> only once it's actually
+   running (fine pointer, no reduced motion) — the native cursor is never
+   hidden without the glow ring already there to replace it. !important
+   because plenty of elements (links, inputs) carry their own semantic
+   `cursor` value that would otherwise win. */
+.hide-native-cursor,
+.hide-native-cursor * {
+  cursor: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .kanji-breathe,
   .rain-column,

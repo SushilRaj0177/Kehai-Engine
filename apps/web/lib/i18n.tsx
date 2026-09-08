@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useMemo, useState } from "react";
 
 export type Locale = "en" | "ja";
 
@@ -754,16 +754,28 @@ interface LocaleState {
 const LocaleContext = createContext<LocaleState | null>(null);
 
 export function LocaleProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocale] = useState<Locale>("en");
-
-  useEffect(() => {
+  // Reading localStorage inside a plain useEffect meant the app's very
+  // first render was ALWAYS "en" (the literal default above), correcting
+  // to the stored "ja" a moment later via a second render — every
+  // consumer, including the locale toggle's own sliding thumb, briefly
+  // saw the wrong locale and then visibly animated to the right one. A
+  // lazy useState initializer runs synchronously during that first
+  // render instead, so a returning Japanese-locale user's very first
+  // committed state is already "ja" — nothing to correct, nothing to
+  // animate. (A hard page reload still has an unavoidable flash of the
+  // server-rendered default before this client code runs at all; this
+  // fixes every render after that, including every client-side
+  // navigation, which is what was reported.)
+  const [locale, setLocale] = useState<Locale>(() => {
+    if (typeof window === "undefined") return "en";
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored === "en" || stored === "ja") setLocale(stored);
+      if (stored === "en" || stored === "ja") return stored;
     } catch {
       // ignore — localStorage unavailable
     }
-  }, []);
+    return "en";
+  });
 
   const value = useMemo<LocaleState>(
     () => ({
