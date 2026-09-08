@@ -189,6 +189,8 @@ eventRouter.get(
         checkedInAt: r.attendance?.checkedInAt ?? null,
         distanceMeters: r.attendance?.distanceMeters ?? null,
         method: r.attendance?.method ?? null,
+        flagged: r.attendance?.flagged ?? false,
+        flagReasons: r.attendance?.flagReasons ?? [],
       }))
     );
   })

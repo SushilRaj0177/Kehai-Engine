@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useLocale } from "@/lib/i18n";
 import { Button } from "./ui/Button";
@@ -177,7 +177,18 @@ function LocaleSwitch({ locale, onToggle }: { locale: "en" | "ja"; onToggle: () 
   // Measuring each label and sizing/positioning the thumb to hug whichever
   // is active keeps the sliding-thumb motion but makes the fill actually
   // enclose the text instead of just occupying a fixed half.
-  useEffect(() => {
+  //
+  // useLayoutEffect, not useEffect: NavBar is instantiated fresh on every
+  // page (it isn't hoisted into the root layout), so every navigation
+  // mounts a brand new LocaleSwitch whose thumb starts at its unset DOM
+  // default before this positions it. useEffect runs after the browser
+  // has already painted that default frame, so the correct-but-later
+  // position change visibly animates in via the thumb's own transition —
+  // reading exactly like the toggle just switched to Japanese, even when
+  // it was already Japanese and never changed. useLayoutEffect runs
+  // synchronously before paint, so that wrong intermediate frame is never
+  // shown at all.
+  useLayoutEffect(() => {
     function place() {
       const track = trackRef.current;
       const thumb = thumbRef.current;

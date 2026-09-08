@@ -23,6 +23,8 @@ async function getAttendeeRows(eventId: string) {
       method: r.attendance?.method ?? "",
       distanceMeters: r.attendance ? Math.round(r.attendance.distanceMeters) : "",
       locationConfidence: r.attendance?.locationConfidence ?? "",
+      flagged: r.attendance?.flagged ? "Yes" : "",
+      flagReasons: r.attendance?.flagReasons.join("; ") ?? "",
     })),
   };
 }
@@ -36,6 +38,8 @@ const COLUMNS = [
   { header: "Method", key: "method", width: 16 },
   { header: "Distance (m)", key: "distanceMeters", width: 14 },
   { header: "Location Confidence", key: "locationConfidence", width: 18 },
+  { header: "Flagged", key: "flagged", width: 10 },
+  { header: "Flag Reasons", key: "flagReasons", width: 30 },
 ];
 
 export async function exportAttendeesCsv(eventId: string): Promise<{ filename: string; content: string }> {
@@ -54,7 +58,7 @@ export async function exportAttendeesExcel(eventId: string): Promise<{ filename:
   sheet.columns = COLUMNS;
   sheet.getRow(1).font = { bold: true };
   rows.forEach((r) => sheet.addRow(r));
-  sheet.autoFilter = { from: "A1", to: `H1` };
+  sheet.autoFilter = { from: "A1", to: `J1` };
 
   const arrayBuffer = await workbook.xlsx.writeBuffer();
   return { filename: `${slug(event.name)}-attendees.xlsx`, buffer: Buffer.from(arrayBuffer) };

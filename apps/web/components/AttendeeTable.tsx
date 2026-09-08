@@ -9,6 +9,19 @@ import { Badge } from "./ui/Badge";
 import { LoadingBlock } from "./ui/States";
 import { useLocale } from "@/lib/i18n";
 
+function FlagBadge({ reasons, t }: { reasons: string[]; t: (path: string) => string }) {
+  if (!reasons.length) return null;
+  const title = reasons.map((r) => t(`attendeeTable.flagReason_${r}`)).join(" · ");
+  return (
+    <span
+      title={title}
+      className="inline-flex shrink-0 cursor-help items-center gap-1 rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-[11px] font-medium text-amber-300"
+    >
+      ⚠ {t("attendeeTable.flaggedTitle")}
+    </span>
+  );
+}
+
 export function AttendeeTable({ eventId }: { eventId: string }) {
   const { t, locale } = useLocale();
   const [q, setQ] = useState("");
@@ -59,7 +72,10 @@ export function AttendeeTable({ eventId }: { eventId: string }) {
                     <p className="truncate font-medium text-white">{row.user.name}</p>
                     <p className="truncate text-xs text-white/45">{row.user.email}</p>
                   </div>
-                  {row.attended ? <Badge status="COMPLETED">{t("badge.attended")}</Badge> : <Badge>{t("badge.pending")}</Badge>}
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <FlagBadge reasons={row.flagReasons} t={t} />
+                    {row.attended ? <Badge status="COMPLETED">{t("badge.attended")}</Badge> : <Badge>{t("badge.pending")}</Badge>}
+                  </div>
                 </div>
                 <div className="mt-2.5 flex items-center gap-4 border-t border-white/[0.06] pt-2.5 text-xs text-white/45">
                   <span>
@@ -91,7 +107,10 @@ export function AttendeeTable({ eventId }: { eventId: string }) {
                     <td className="px-4 py-2.5 font-medium text-white">{row.user.name}</td>
                     <td className="px-4 py-2.5 text-white/50">{row.user.email}</td>
                     <td className="px-4 py-2.5">
-                      {row.attended ? <Badge status="COMPLETED">{t("badge.attended")}</Badge> : <Badge>{t("badge.pending")}</Badge>}
+                      <div className="flex items-center gap-1.5">
+                        {row.attended ? <Badge status="COMPLETED">{t("badge.attended")}</Badge> : <Badge>{t("badge.pending")}</Badge>}
+                        <FlagBadge reasons={row.flagReasons} t={t} />
+                      </div>
                     </td>
                     <td className="px-4 py-2.5 text-white/50">
                       {row.checkedInAt ? new Date(row.checkedInAt).toLocaleTimeString(locale === "ja" ? "ja-JP" : "en-US") : "—"}

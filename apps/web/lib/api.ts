@@ -132,3 +132,33 @@ export async function apiFetch<T>(
 export function getAccessToken(): string | undefined {
   return getStoredTokens().accessToken;
 }
+
+// A real rejection (already checked in, outside the geofence, event not
+// live) always arrives as an ApiError from a real HTTP response — never
+// worth retrying, the answer won't change. Anything else (a dropped wifi
+// packet, the free-tier API still waking up from a cold start, a DNS
+// blip) throws a plain network error with no response at all, and IS
+// worth retrying: the venue's wifi flaking out mid check-in is exactly
+// the moment this app most needs to not just give up. This wrapper
+// retries only that second class of failure, with backoff, and reports
+// each attempt so the UI can show "reconnecting" instead of a dead end.
+export async function apiFetchWithRetry<T>(
+  path: string,
+  options: RequestInit & { skipAuth?: boolean; raw?: boolean } = {},
+  opts: { retries?: number; onRetry?: (attempt: number, maxAttempts: number) => void } = {}
+): Promise<T> {
+  const maxAttempts = (opts.retries ?? 4) + 1;
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await apiFetch<T>(path, options);
+    } catch (err) {
+      lastErr = err;
+      if (err instanceof ApiError) throw err;
+      if (attempt === maxAttempts) throw err;
+      opts.onRetry?.(attempt, maxAttempts);
+      await new Promise((resolve) => setTimeout(resolve, attempt * 1500));
+    }
+  }
+  throw lastErr;
+}
