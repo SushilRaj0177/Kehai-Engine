@@ -67,6 +67,16 @@ export async function transitionEventStatus(eventId: string, nextStatus: EventSt
   // still revoked — that would just trade one "why isn't this working"
   // confusion for another.
   const isRestart = event.status === "COMPLETED" || event.status === "CANCELLED";
+  // The event's original startsAt/endsAt are almost certainly in the past
+  // by the time someone restarts it — going straight back to ACTIVE would
+  // just recreate the "marked live, check-in window already closed" trap
+  // this whole restart feature exists to escape. Restarting to ACTIVE
+  // re-anchors the window to right now with a deliberately generous,
+  // effectively open-ended end time (a year out), so the event genuinely
+  // accepts check-ins immediately instead of needing an extra "extend"
+  // click before it actually works.
+  const isRestartingLive = isRestart && nextStatus === "ACTIVE";
+  const now = new Date();
 
   return prisma.event.update({
     where: { id: eventId },
@@ -74,6 +84,8 @@ export async function transitionEventStatus(eventId: string, nextStatus: EventSt
       status: nextStatus,
       cancelledAt: nextStatus === "CANCELLED" ? new Date() : null,
       qrRevoked: isRestart ? false : undefined,
+      startsAt: isRestartingLive ? now : undefined,
+      endsAt: isRestartingLive ? new Date(now.getTime() + 365 * 24 * 60 * 60_000) : undefined,
     },
   });
 }
