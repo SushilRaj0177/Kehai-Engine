@@ -4,11 +4,12 @@ import { useEffect, useRef } from "react";
 
 /**
  * A trailing glow ring that follows the pointer with a slight lag, and
- * swells + shifts color over anything clickable. Deliberately doesn't hide
- * or replace the system cursor — this app has real forms, tables, and text
- * fields where a fully custom cursor would actively hurt usability. It's a
- * layer of polish on top of the normal cursor, not a replacement for it.
- * No-ops entirely on touch devices (no fine pointer).
+ * swells + shifts color over anything clickable — the system cursor is
+ * hidden entirely (via the "hide-native-cursor" class on <html>, see
+ * globals.css) while this is active, so the ring is the only pointer
+ * visible. No-ops entirely on touch devices (no fine pointer) or with
+ * reduced motion — the system cursor is left alone in both cases, since
+ * nothing would be there to replace it.
  */
 export function CustomCursor() {
   const ringRef = useRef<HTMLDivElement>(null);
@@ -21,6 +22,8 @@ export function CustomCursor() {
     const ring = ringRef.current;
     const streak = streakRef.current;
     if (!ring || !streak) return;
+
+    document.documentElement.classList.add("hide-native-cursor");
 
     let mouseX = window.innerWidth / 2;
     let mouseY = window.innerHeight / 2;
@@ -76,6 +79,7 @@ export function CustomCursor() {
     return () => {
       window.removeEventListener("mousemove", onMove);
       cancelAnimationFrame(raf);
+      document.documentElement.classList.remove("hide-native-cursor");
     };
   }, []);
 
