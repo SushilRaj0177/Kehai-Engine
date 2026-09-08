@@ -18,6 +18,12 @@ import { useLocale } from "@/lib/i18n";
 
 const defaultStart = new Date(Date.now() + 24 * 60 * 60 * 1000);
 const defaultEnd = new Date(defaultStart.getTime() + 2 * 60 * 60 * 1000);
+// Matches the "restart" convention already used elsewhere for an
+// effectively open-ended event — the schema's endsAt column stays
+// non-nullable (every place that reads it, from the check-in window to
+// exports, would otherwise need null-handling), so "no fixed end time"
+// is represented as a far-future date rather than a real null.
+const OPEN_ENDED_HORIZON_MS = 365 * 24 * 60 * 60 * 1000;
 
 export default function NewEventPage() {
   const { t } = useLocale();
@@ -44,6 +50,7 @@ export default function NewEventPage() {
   const [locationSet, setLocationSet] = useState(false);
   const [manualCoords, setManualCoords] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [openEnded, setOpenEnded] = useState(false);
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -81,7 +88,9 @@ export default function NewEventPage() {
           description: form.description || undefined,
           venue: form.venue,
           startsAt: new Date(form.startsAt).toISOString(),
-          endsAt: new Date(form.endsAt).toISOString(),
+          endsAt: openEnded
+            ? new Date(new Date(form.startsAt).getTime() + OPEN_ENDED_HORIZON_MS).toISOString()
+            : new Date(form.endsAt).toISOString(),
           latitude: Number(form.latitude),
           longitude: Number(form.longitude),
           geofenceRadiusM: Number(form.geofenceRadiusM),
@@ -136,8 +145,27 @@ export default function NewEventPage() {
                 </div>
                 <div>
                   <Label htmlFor="endsAt">{t("eventNew.endsLabel")}</Label>
-                  <Input id="endsAt" type="datetime-local" required value={form.endsAt} onChange={(e) => set("endsAt", e.target.value)} />
+                  <Input
+                    id="endsAt"
+                    type="datetime-local"
+                    required={!openEnded}
+                    disabled={openEnded}
+                    value={form.endsAt}
+                    onChange={(e) => set("endsAt", e.target.value)}
+                  />
                 </div>
+              </div>
+              <div>
+                <label className="flex items-center gap-2 text-sm text-white/70">
+                  <input
+                    type="checkbox"
+                    checked={openEnded}
+                    onChange={(e) => setOpenEnded(e.target.checked)}
+                    className="h-4 w-4 rounded border-white/20 bg-white/5 accent-kehai-500"
+                  />
+                  {t("eventNew.noEndTime")}
+                </label>
+                <p className="mt-1.5 text-[11px] text-white/35">{t("eventNew.noEndTimeHint")}</p>
               </div>
               <div>
                 <Label htmlFor="capacity">{t("eventNew.capacityLabel")}</Label>

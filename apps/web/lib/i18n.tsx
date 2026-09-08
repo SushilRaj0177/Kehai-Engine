@@ -212,6 +212,15 @@ const dict = {
     extendBy30: { en: "+30 min", ja: "+30分" },
     extendBy60: { en: "+1 hour", ja: "+1時間" },
     extendError: { en: "Failed to extend the check-in window", ja: "チェックイン受付の延長に失敗しました" },
+    editDetails: { en: "Edit details", ja: "詳細を編集" },
+    editTiming: { en: "Edit timing", ja: "日時を編集" },
+    saveChanges: { en: "Save changes", ja: "変更を保存" },
+    editSaved: { en: "Saved", ja: "保存しました" },
+    editError: { en: "Failed to save changes", ja: "変更の保存に失敗しました" },
+    editLockedHint: {
+      en: "This event is completed or cancelled and can no longer be edited.",
+      ja: "このイベントは終了または中止されているため、編集できません。",
+    },
   },
   eventNew: {
     createKicker: { en: "Create", ja: "作成" },
@@ -227,6 +236,11 @@ const dict = {
     venuePlaceholder: { en: "e.g. Tech Park Auditorium", ja: "例: テックパーク講堂" },
     startsLabel: { en: "Starts", ja: "開始日時" },
     endsLabel: { en: "Ends", ja: "終了日時" },
+    noEndTime: { en: "No fixed end time", ja: "終了時刻を設定しない" },
+    noEndTimeHint: {
+      en: "Check-in stays open indefinitely instead of closing at a set time — good for ongoing or open-schedule events. You can always set an end time later.",
+      ja: "決まった時刻で締め切らず、チェックインを無期限に受け付けます — 継続的な開催やスケジュール未定のイベントに向いています。終了時刻は後からいつでも設定できます。",
+    },
     capacityLabel: { en: "Capacity (optional)", ja: "定員（任意）" },
     geofenceHeading: { en: "Venue location", ja: "会場の位置" },
     locating: { en: "Locating…", ja: "位置情報を取得中…" },
