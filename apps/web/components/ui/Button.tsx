@@ -79,10 +79,48 @@ const sizes: Record<Size, string> = {
   lg: "text-base px-7 py-3.5 gap-2.5",
 };
 
+// The cut-corner treatment (border/fill/sweep layers, clipped shape) is a
+// deliberate flourish for actions that should read as "the" thing to do —
+// a hero CTA, a form submit, a status transition. Stamping the same
+// elaborate construction on every minor, frequent action too (a row's
+// "Cancel", a dropdown's confirm step, a tiny table action) is what was
+// making the UI feel noisy — the flourish stops meaning anything once
+// it's everywhere. "ghost" is the variant reached for by far the most for
+// exactly those minor/frequent actions, so it skips the whole apparatus:
+// a plain label with a soft hover background, nothing clipped or layered.
 export const Button = forwardRef<HTMLButtonElement, Props>(function Button(
   { className, variant = "primary", size = "md", loading, disabled, children, style, ...props },
   ref
 ) {
+  if (variant === "ghost") {
+    const ghostSizes: Record<Size, string> = {
+      sm: "text-xs px-2.5 py-1.5 gap-1.5",
+      md: "text-sm px-3.5 py-2 gap-2",
+      lg: "text-base px-5 py-2.5 gap-2.5",
+    };
+    return (
+      <button
+        ref={ref}
+        disabled={disabled || loading}
+        style={style}
+        className={cn(
+          "inline-flex items-center justify-center rounded-lg font-medium text-white/70",
+          "transition-colors duration-150 hover:bg-white/[0.06] hover:text-white",
+          "disabled:opacity-40 disabled:cursor-not-allowed",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-shu-400/60",
+          ghostSizes[size],
+          className
+        )}
+        {...props}
+      >
+        {loading ? (
+          <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+        ) : null}
+        {children}
+      </button>
+    );
+  }
+
   const cut = cutCorner[size];
   const innerCut = `calc(${cut} - 1px)`;
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { apiFetch, ApiError } from "@/lib/api";
 import { Card, CardBody, CardHeader } from "./ui/Card";
 import { Button } from "./ui/Button";
@@ -60,10 +60,27 @@ export function ClassSessionManager({
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setRecentLabels(readRecentLabels(classroomId));
   }, [classroomId]);
+
+  // A row's Rename/Restart/Delete crammed into three always-visible text
+  // buttons was the actual mess — closing on any outside click keeps them
+  // tucked behind one "⋯" until someone actually needs them.
+  useEffect(() => {
+    if (!openMenuId) return;
+    function onDocMouseDown(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenMenuId(null);
+        setConfirmingDeleteId(null);
+      }
+    }
+    document.addEventListener("mousedown", onDocMouseDown);
+    return () => document.removeEventListener("mousedown", onDocMouseDown);
+  }, [openMenuId]);
 
   async function refresh() {
     await mutate();
@@ -105,6 +122,7 @@ export function ClassSessionManager({
 
   async function restartSession(sessionId: string) {
     setError(null);
+    setOpenMenuId(null);
     setBusySessionId(sessionId);
     try {
       await apiFetch(`/api/classrooms/${classroomId}/sessions/${sessionId}/reopen`, { method: "POST" });
@@ -119,6 +137,7 @@ export function ClassSessionManager({
   function startRename(sessionId: string, currentLabel: string | null) {
     setError(null);
     setConfirmingDeleteId(null);
+    setOpenMenuId(null);
     setRenamingId(sessionId);
     setRenameValue(currentLabel ?? "");
   }
@@ -152,6 +171,7 @@ export function ClassSessionManager({
     try {
       await apiFetch(`/api/classrooms/${classroomId}/sessions/${sessionId}`, { method: "DELETE" });
       setConfirmingDeleteId(null);
+      setOpenMenuId(null);
       await refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t("classroomDetail.sessionDeleteError"));
@@ -206,7 +226,11 @@ export function ClassSessionManager({
           {error && <p className="text-sm text-shu-400">{error}</p>}
 
           {sessions && sessions.length > 0 ? (
-            <div className="scroll-thin max-h-64 space-y-2 overflow-auto border-t border-white/10 pt-3">
+            <div
+              className={`scroll-thin max-h-64 space-y-2 border-t border-white/10 pt-3 ${
+                openMenuId ? "overflow-visible" : "overflow-auto"
+              }`}
+            >
               {sessions.map((s) =>
                 renamingId === s.id ? (
                   <div
@@ -241,25 +265,71 @@ export function ClassSessionManager({
                         {t("classroomDetail.presentCount", { count: s.presentCount })}
                       </p>
                     </div>
-                    <div className="flex shrink-0 items-center gap-1.5">
+                    <div className="flex shrink-0 items-center gap-2">
                       {s.status === "OPEN" && <Badge status="ACTIVE">{t("classroomDetail.sessionOpenBadge")}</Badge>}
-                      <Button variant="ghost" size="sm" onClick={() => startRename(s.id, s.label)}>
-                        {t("classroomDetail.renameSession")}
-                      </Button>
-                      {s.status !== "OPEN" && (
-                        <Button variant="ghost" size="sm" loading={busySessionId === s.id} onClick={() => restartSession(s.id)}>
-                          {t("classroomDetail.restartSession")}
-                        </Button>
-                      )}
-                      <Button
-                        variant={confirmingDeleteId === s.id ? "danger" : "ghost"}
-                        size="sm"
-                        loading={busySessionId === s.id}
-                        onClick={() => deleteSession(s.id)}
-                        onBlur={() => setConfirmingDeleteId((cur) => (cur === s.id ? null : cur))}
-                      >
-                        {confirmingDeleteId === s.id ? t("classroomDetail.confirmDeleteSession") : t("classroomDetail.deleteSession")}
-                      </Button>
+                      <div className="relative" ref={openMenuId === s.id ? menuRef : undefined}>
+                        <button
+                          type="button"
+                          aria-label={t("classroomDetail.sessionActions")}
+                          onClick={() => {
+                            setOpenMenuId((cur) => (cur === s.id ? null : s.id));
+                            setConfirmingDeleteId(null);
+                          }}
+                          className="flex h-8 w-8 items-center justify-center rounded-full text-white/45 transition-colors hover:bg-white/[0.06] hover:text-white"
+                        >
+                          ⋯
+                        </button>
+
+                        {openMenuId === s.id && (
+                          <div className="absolute right-0 top-full z-20 mt-1 w-44 overflow-hidden rounded-lg border border-white/10 bg-void-900 shadow-[0_12px_32px_-8px_rgba(0,0,0,0.6)]">
+                            {confirmingDeleteId === s.id ? (
+                              <div className="space-y-2 p-3">
+                                <p className="text-xs text-white/60">{t("classroomDetail.confirmDeleteSession")}</p>
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="danger"
+                                    size="sm"
+                                    loading={busySessionId === s.id}
+                                    onClick={() => deleteSession(s.id)}
+                                    className="flex-1"
+                                  >
+                                    {t("classroomDetail.deleteSession")}
+                                  </Button>
+                                  <Button variant="ghost" size="sm" onClick={() => setConfirmingDeleteId(null)}>
+                                    {t("classroomDetail.cancelRename")}
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="py-1 text-sm">
+                                <button
+                                  type="button"
+                                  onClick={() => startRename(s.id, s.label)}
+                                  className="block w-full px-3 py-2 text-left text-white/75 hover:bg-white/[0.06] hover:text-white"
+                                >
+                                  {t("classroomDetail.renameSession")}
+                                </button>
+                                {s.status !== "OPEN" && (
+                                  <button
+                                    type="button"
+                                    onClick={() => restartSession(s.id)}
+                                    className="block w-full px-3 py-2 text-left text-white/75 hover:bg-white/[0.06] hover:text-white"
+                                  >
+                                    {t("classroomDetail.restartSession")}
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => setConfirmingDeleteId(s.id)}
+                                  className="block w-full px-3 py-2 text-left text-shu-400 hover:bg-shu-500/10"
+                                >
+                                  {t("classroomDetail.deleteSession")}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )
