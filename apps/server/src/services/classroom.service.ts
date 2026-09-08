@@ -361,7 +361,15 @@ export async function getHeatmap(
       days.push({ date: key, level });
     }
 
-    return { scope: "class", days, totalSessions, presentCount: 0, currentStreak: 0, longestStreak: 0 };
+    // presentCount here isn't a literal headcount — the frontend divides it
+    // by totalSessions to get a single class-wide attendance rate, so it
+    // needs to be "average sessions attended per enrolled student" to make
+    // that division produce the same rate already used to color the days
+    // above (totalAttendanceRecords / (totalEnrolled * totalSessions)).
+    const totalAttendanceRecords = Array.from(attendanceCounts.values()).reduce((sum, c) => sum + c, 0);
+    const presentCount = totalEnrolled > 0 ? totalAttendanceRecords / totalEnrolled : 0;
+
+    return { scope: "class", days, totalSessions, presentCount, currentStreak: 0, longestStreak: 0 };
   }
 
   // Student scope.

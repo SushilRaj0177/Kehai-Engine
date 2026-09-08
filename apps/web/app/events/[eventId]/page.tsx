@@ -14,7 +14,8 @@ import { PageGlow } from "@/components/ui/PageGlow";
 import { useAuth } from "@/lib/auth-context";
 import { useEvent } from "@/lib/hooks";
 import { apiFetch, ApiError } from "@/lib/api";
-import { formatDateRange } from "@/lib/format";
+import { formatDateRange, formatDateTime } from "@/lib/format";
+import { getCheckInWindow } from "@/lib/checkin-window";
 import { useLocale } from "@/lib/i18n";
 
 const EventMap = dynamic(() => import("@/components/EventMap").then((m) => m.EventMap), { ssr: false });
@@ -60,6 +61,7 @@ export default function EventDetailPage() {
   }
 
   const isOpen = event.status === "PUBLISHED" || event.status === "ACTIVE";
+  const checkInWindow = getCheckInWindow(event);
 
   return (
     <div className="relative min-h-screen">
@@ -88,11 +90,20 @@ export default function EventDetailPage() {
             <Badge status="COMPLETED">{t("badge.attendanceConfirmed")}</Badge>
           ) : event.isRegistered ? (
             isOpen ? (
-              <Link href={`/attend/${event.id}`}>
-                <Button variant="cyan" size="lg">
-                  {t("eventDetail.checkInWithQr")}
-                </Button>
-              </Link>
+              <div className="flex flex-col gap-2">
+                <Link href={`/attend/${event.id}`}>
+                  <Button variant="cyan" size="lg">
+                    {t("eventDetail.checkInWithQr")}
+                  </Button>
+                </Link>
+                {checkInWindow.status !== "open" && (
+                  <span className="text-xs text-amber-300/80">
+                    {checkInWindow.status === "not_open"
+                      ? t("attend.windowNotOpenBody", { time: formatDateTime(checkInWindow.opensAt, locale) })
+                      : t("attend.windowClosedBody", { time: formatDateTime(checkInWindow.closesAt, locale) })}
+                  </span>
+                )}
+              </div>
             ) : (
               <Badge>{t("badge.registered")}</Badge>
             )

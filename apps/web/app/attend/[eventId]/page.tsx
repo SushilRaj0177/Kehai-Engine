@@ -12,17 +12,21 @@ import { QrScanner } from "@/components/QrScanner";
 import { useAuth } from "@/lib/auth-context";
 import { useEvent } from "@/lib/hooks";
 import { apiFetch, ApiError } from "@/lib/api";
+import { getCheckInWindow } from "@/lib/checkin-window";
+import { formatDateTime } from "@/lib/format";
 import { useLocale } from "@/lib/i18n";
 
 type Step = "scan" | "locate" | "confirm" | "done" | "error";
 
 export default function AttendPage() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const { eventId } = useParams<{ eventId: string }>();
   const search = useSearchParams();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { data: event } = useEvent(eventId);
+
+  const checkInWindow = event ? getCheckInWindow(event) : null;
 
   const [token, setToken] = useState<string | null>(null);
   const [step, setStep] = useState<Step>("scan");
@@ -117,6 +121,21 @@ export default function AttendPage() {
         <p className="relative z-20 mt-2 text-base text-white/45">{t("attend.subheading")}</p>
 
         <div className="relative z-20 mt-10">
+          {checkInWindow && checkInWindow.status !== "open" ? (
+            <Card className="border-amber-400/30">
+              <CardBody className="py-8">
+                <p className="font-display text-lg font-semibold text-white">
+                  {checkInWindow.status === "not_open" ? t("attend.windowNotOpenTitle") : t("attend.windowClosedTitle")}
+                </p>
+                <p className="mt-2 text-sm text-white/55">
+                  {checkInWindow.status === "not_open"
+                    ? t("attend.windowNotOpenBody", { time: formatDateTime(checkInWindow.opensAt, locale) })
+                    : t("attend.windowClosedBody", { time: formatDateTime(checkInWindow.closesAt, locale) })}
+                </p>
+              </CardBody>
+            </Card>
+          ) : (
+            <>
           {step === "scan" && (
             <div className="space-y-4">
               <QrScanner onDecoded={handleDecoded} />
@@ -183,6 +202,8 @@ export default function AttendPage() {
           )}
 
           {error && step !== "error" && <ErrorBlock message={error} className="mt-4" />}
+            </>
+          )}
         </div>
       </div>
     </div>

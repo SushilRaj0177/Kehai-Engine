@@ -17,6 +17,8 @@ export interface EventSummary {
   status: EventStatus;
   startsAt: string;
   endsAt: string;
+  attendanceOpensMinutesBefore: number;
+  attendanceClosesMinutesAfter: number;
   latitude: number;
   longitude: number;
   geofenceRadiusM: number;

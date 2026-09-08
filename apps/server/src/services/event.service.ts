@@ -45,8 +45,12 @@ const VALID_TRANSITIONS: Record<EventStatus, EventStatus[]> = {
   DRAFT: ["PUBLISHED", "CANCELLED"],
   PUBLISHED: ["ACTIVE", "CANCELLED", "DRAFT"],
   ACTIVE: ["COMPLETED", "CANCELLED"],
-  COMPLETED: [],
-  CANCELLED: [],
+  // A COMPLETED or CANCELLED event isn't necessarily done for good — an
+  // organizer who closed it too early, or wants to reopen check-ins for a
+  // second round, needs a way back rather than having to recreate the
+  // event from scratch.
+  COMPLETED: ["ACTIVE"],
+  CANCELLED: ["DRAFT"],
 };
 
 export async function transitionEventStatus(eventId: string, nextStatus: EventStatus) {
@@ -58,11 +62,18 @@ export async function transitionEventStatus(eventId: string, nextStatus: EventSt
     throw HttpError.badRequest(`Cannot move event from ${event.status} to ${nextStatus}`);
   }
 
+  // Restarting out of COMPLETED/CANCELLED should actually work again, not
+  // silently stay broken because a QR revoked before the earlier close is
+  // still revoked — that would just trade one "why isn't this working"
+  // confusion for another.
+  const isRestart = event.status === "COMPLETED" || event.status === "CANCELLED";
+
   return prisma.event.update({
     where: { id: eventId },
     data: {
       status: nextStatus,
-      cancelledAt: nextStatus === "CANCELLED" ? new Date() : undefined,
+      cancelledAt: nextStatus === "CANCELLED" ? new Date() : null,
+      qrRevoked: isRestart ? false : undefined,
     },
   });
 }

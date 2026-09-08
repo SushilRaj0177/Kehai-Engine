@@ -24,6 +24,13 @@ export function formatDate(iso: string, locale: "en" | "ja" = "en"): string {
   );
 }
 
+export function formatDateTime(date: Date, locale: "en" | "ja" = "en"): string {
+  const intlLocale = locale === "ja" ? "ja-JP" : "en-US";
+  const dateFmt = new Intl.DateTimeFormat(intlLocale, { month: locale === "ja" ? "long" : "short", day: "numeric" });
+  const timeFmt = new Intl.DateTimeFormat(intlLocale, { hour: "numeric", minute: "2-digit" });
+  return `${dateFmt.format(date)} · ${timeFmt.format(date)}`;
+}
+
 export function toLocalDatetimeInputValue(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
