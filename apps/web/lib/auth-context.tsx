@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { apiFetch, storeTokens, clearTokens, getAccessToken } from "./api";
+import { apiFetch, storeTokens, clearTokens, getAccessToken, ApiError } from "./api";
 
 export interface OrgMembership {
   role: "OWNER" | "ADMIN" | "ORGANIZER" | "VIEWER";
@@ -39,17 +39,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       return;
     }
-    try {
-      const data = await apiFetch<{ user: SessionUser; memberships: OrgMembership[] }>("/api/auth/me");
-      setUser(data.user);
-      setMemberships(data.memberships);
-    } catch {
-      clearTokens();
-      setUser(null);
-      setMemberships([]);
-    } finally {
-      setLoading(false);
-    }
+
+    // A definitive 401 means the server itself rejected the token — the
+    // session really is dead, so clearing it is correct. Anything else
+    // (a network error, a timeout, a 5xx, the free-tier API cold-starting
+    // after it's been idle) is transient and has nothing to do with
+    // whether the token is valid — wiping the stored tokens over one of
+    // those was forcing a real logout on every reload that happened to
+    // land during a brief hiccup, especially under concurrent load from
+    // more than one signed-in session at once. Retry a few times before
+    // giving up, and even then leave the tokens in storage so the very
+    // next successful request anywhere in the app can still recover the
+    // session — only this render treats the user as signed out.
+    const attempt = async (retriesLeft: number): Promise<void> => {
+      try {
+        const data = await apiFetch<{ user: SessionUser; memberships: OrgMembership[] }>("/api/auth/me");
+        setUser(data.user);
+        setMemberships(data.memberships);
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 401) {
+          clearTokens();
+          setUser(null);
+          setMemberships([]);
+          return;
+        }
+        if (retriesLeft > 0) {
+          await new Promise((resolve) => setTimeout(resolve, (4 - retriesLeft) * 1500));
+          return attempt(retriesLeft - 1);
+        }
+        setUser(null);
+        setMemberships([]);
+      }
+    };
+
+    await attempt(3);
+    setLoading(false);
   }, []);
 
   useEffect(() => {
