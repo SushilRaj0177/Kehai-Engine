@@ -24,7 +24,7 @@ export async function checkIn(input: CheckInInput): Promise<CheckInResult> {
   if (!event) throw HttpError.notFound("Event not found");
 
   if (event.status !== "ACTIVE" && event.status !== "PUBLISHED") {
-    throw HttpError.badRequest("This event is not currently accepting check-ins");
+    throw HttpError.badRequest(`This event is not currently accepting check-ins (status: ${event.status})`);
   }
   if (event.qrRevoked) throw HttpError.badRequest("This event's QR code has been revoked");
 

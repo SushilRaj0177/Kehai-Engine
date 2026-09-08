@@ -122,19 +122,44 @@ export async function listEnrolledClassrooms(studentId: string) {
     include: { classroom: { include: { teacher: { select: { name: true } } } } },
     orderBy: { createdAt: "desc" },
   });
+  if (enrollments.length === 0) return [];
 
-  const results = [];
-  for (const enrollment of enrollments) {
-    const { classroom } = enrollment;
-    const sessions = await prisma.classSession.findMany({
-      where: { classroomId: classroom.id },
+  // Two batched queries covering every enrolled classroom, instead of two
+  // sequential round-trips per classroom — under concurrent load (several
+  // students' dashboards loading at once) the per-enrollment version could
+  // hold a lot of connections open at once for no reason.
+  const classroomIds = enrollments.map((e) => e.classroom.id);
+  const enrollmentIds = enrollments.map((e) => e.id);
+
+  const [allSessions, allAttendances] = await Promise.all([
+    prisma.classSession.findMany({
+      where: { classroomId: { in: classroomIds } },
       orderBy: { date: "asc" },
-      select: { id: true, date: true },
-    });
-    const attendances = await prisma.classAttendance.findMany({
-      where: { enrollmentId: enrollment.id },
-      select: { sessionId: true },
-    });
+      select: { id: true, date: true, classroomId: true },
+    }),
+    prisma.classAttendance.findMany({
+      where: { enrollmentId: { in: enrollmentIds } },
+      select: { sessionId: true, enrollmentId: true },
+    }),
+  ]);
+
+  const sessionsByClassroom = new Map<string, typeof allSessions>();
+  for (const s of allSessions) {
+    const bucket = sessionsByClassroom.get(s.classroomId);
+    if (bucket) bucket.push(s);
+    else sessionsByClassroom.set(s.classroomId, [s]);
+  }
+  const attendancesByEnrollment = new Map<string, typeof allAttendances>();
+  for (const a of allAttendances) {
+    const bucket = attendancesByEnrollment.get(a.enrollmentId);
+    if (bucket) bucket.push(a);
+    else attendancesByEnrollment.set(a.enrollmentId, [a]);
+  }
+
+  return enrollments.map((enrollment) => {
+    const { classroom } = enrollment;
+    const sessions = sessionsByClassroom.get(classroom.id) ?? [];
+    const attendances = attendancesByEnrollment.get(enrollment.id) ?? [];
     const attendedSessionIds = new Set(attendances.map((a) => a.sessionId));
 
     const totalDays = sessions.length;
@@ -147,7 +172,7 @@ export async function listEnrolledClassrooms(studentId: string) {
     }));
     const { currentStreak } = computeStreaks(streakDays);
 
-    results.push({
+    return {
       classroom: {
         id: classroom.id,
         name: classroom.name,
@@ -161,10 +186,8 @@ export async function listEnrolledClassrooms(studentId: string) {
       totalDays,
       attendanceRate,
       currentStreak,
-    });
-  }
-
-  return results;
+    };
+  });
 }
 
 export async function getClassroomDetail(classroomId: string, userId: string) {
@@ -225,26 +248,38 @@ export async function getRoster(classroomId: string) {
   });
   const totalDays = sessions.length;
 
-  const roster = [];
-  for (const enrollment of enrollments) {
-    const attendances = await prisma.classAttendance.findMany({
-      where: { enrollmentId: enrollment.id },
+  // One batched query for every enrolled student's attendance instead of a
+  // sequential round-trip per student — a class with many students was
+  // holding a connection open per name, one at a time.
+  const attendancesByEnrollment = new Map<string, { sessionId: string; checkedInAt: Date }[]>();
+  if (enrollments.length > 0) {
+    const allAttendances = await prisma.classAttendance.findMany({
+      where: { enrollmentId: { in: enrollments.map((e) => e.id) } },
       orderBy: { checkedInAt: "asc" },
-      select: { sessionId: true, checkedInAt: true },
+      select: { sessionId: true, checkedInAt: true, enrollmentId: true },
     });
+    for (const a of allAttendances) {
+      const bucket = attendancesByEnrollment.get(a.enrollmentId);
+      if (bucket) bucket.push(a);
+      else attendancesByEnrollment.set(a.enrollmentId, [a]);
+    }
+  }
+
+  const roster = enrollments.map((enrollment) => {
+    const attendances = attendancesByEnrollment.get(enrollment.id) ?? [];
     const presentDays = attendances.length;
     const attendanceRate = totalDays > 0 ? presentDays / totalDays : 0;
     const lastAttendedAt = attendances.length > 0 ? attendances[attendances.length - 1].checkedInAt : null;
 
-    roster.push({
+    return {
       student: enrollment.student,
       enrolledAt: enrollment.createdAt,
       presentDays,
       totalDays,
       attendanceRate,
       lastAttendedAt,
-    });
-  }
+    };
+  });
 
   roster.sort((a, b) => a.student.name.localeCompare(b.student.name));
   return roster;
