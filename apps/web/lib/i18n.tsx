@@ -453,7 +453,8 @@ const dict = {
       en: "Track a semester's attendance with a recurring daily QR + geofence check-in — for every class you teach or join.",
       ja: "毎日のQR＋ジオフェンスによるチェックインで、学期を通じた出席を記録します — 担当・受講するすべてのクラスで。",
     },
-    teachingHeading: { en: "Teaching", ja: "担当クラス" },
+    teachingHeading: { en: "Classes you teach", ja: "担当クラス" },
+    joinClassroom: { en: "Join a classroom", ja: "クラスに参加" },
     teachingEmptyTitle: { en: "No classrooms yet", ja: "クラスがまだありません" },
     teachingEmptyDescription: {
       en: "Create a classroom to get a join code, a recurring check-in QR, and a live attendance heatmap.",
@@ -484,7 +485,7 @@ const dict = {
     copyCode: { en: "Copy code", ja: "コードをコピー" },
     copyLink: { en: "Copy link", ja: "リンクをコピー" },
     copied: { en: "Copied!", ja: "コピーしました！" },
-    enrolledHeading: { en: "Enrolled", ja: "受講中のクラス" },
+    enrolledHeading: { en: "Your classes", ja: "受講中のクラス" },
     enrolledEmptyTitle: { en: "Not enrolled in any classroom", ja: "受講中のクラスはありません" },
     enrolledEmptyDescription: {
       en: "Join a classroom with the 6-character code your teacher shares.",

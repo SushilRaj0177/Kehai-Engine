@@ -23,6 +23,7 @@ export default function ClassroomsHubPage() {
   const { data: teaching, isLoading: teachingLoading, mutate: mutateTeaching } = useMyClassrooms();
   const { data: enrolled, isLoading: enrolledLoading, mutate: mutateEnrolled } = useEnrolledClassrooms();
   const [showCreate, setShowCreate] = useState(false);
+  const [showJoin, setShowJoin] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const router = useRouter();
 
@@ -61,10 +62,45 @@ export default function ClassroomsHubPage() {
             <h1 className="mt-3 font-display text-4xl font-black text-white md:text-5xl">{t("classroomHub.title")}</h1>
             <p className="mt-3 max-w-xl text-lg text-white/50">{t("classroomHub.subtitle")}</p>
           </div>
-          <Button size="lg" onClick={() => setShowCreate((s) => !s)}>
-            {showCreate ? t("common.cancel") : t("classroomHub.newClassroom")}
-          </Button>
+          <div className="flex flex-wrap gap-2.5">
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={() => {
+                setShowJoin((s) => !s);
+                setShowCreate(false);
+              }}
+            >
+              {showJoin ? t("common.cancel") : t("classroomHub.joinClassroom")}
+            </Button>
+            <Button
+              size="lg"
+              onClick={() => {
+                setShowCreate((s) => !s);
+                setShowJoin(false);
+              }}
+            >
+              {showCreate ? t("common.cancel") : t("classroomHub.newClassroom")}
+            </Button>
+          </div>
         </div>
+
+        {showJoin && (
+          <div className="relative z-20 mt-6">
+            <Card>
+              <CardBody>
+                <h2 className="mb-1 font-display text-lg font-bold text-white/85">{t("classroomHub.joinHeading")}</h2>
+                <p className="mb-4 text-sm text-white/45">{t("classroomHub.joinSubtitle")}</p>
+                <JoinClassroomForm
+                  onJoined={(result) => {
+                    void mutateEnrolled();
+                    router.push(`/classrooms/${result.classroom.id}`);
+                  }}
+                />
+              </CardBody>
+            </Card>
+          </div>
+        )}
 
         {showCreate && (
           <CreateClassroomForm
@@ -75,19 +111,47 @@ export default function ClassroomsHubPage() {
           />
         )}
 
-        <div className="relative z-20 mt-14">
-          <Card>
-            <CardBody>
-              <h2 className="mb-1 font-display text-lg font-bold text-white/85">{t("classroomHub.joinHeading")}</h2>
-              <p className="mb-4 text-sm text-white/45">{t("classroomHub.joinSubtitle")}</p>
-              <JoinClassroomForm
-                onJoined={(result) => {
-                  void mutateEnrolled();
-                  router.push(`/classrooms/${result.classroom.id}`);
-                }}
-              />
-            </CardBody>
-          </Card>
+        {/* Classes you're taking come first — for most people (students
+            outnumber teachers) this is the reason they opened this page at
+            all, and the thing they'll come back to check most often. What
+            you teach, plus the join/create utilities above, are secondary
+            and shouldn't push it below the fold. */}
+        <div className="relative z-20 mt-16">
+          <h2 className="mb-6 font-display text-xl font-bold text-white/70">{t("classroomHub.enrolledHeading")}</h2>
+          {enrolledLoading ? (
+            <LoadingBlock />
+          ) : !enrolled?.length ? (
+            <EmptyState
+              glyph="学"
+              title={t("classroomHub.enrolledEmptyTitle")}
+              description={t("classroomHub.enrolledEmptyDescription")}
+              action={<Button onClick={() => setShowJoin(true)}>{t("classroomHub.joinClassroom")}</Button>}
+            />
+          ) : (
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {enrolled.map((e) => (
+                <Link key={e.classroom.id} href={`/classrooms/${e.classroom.id}`}>
+                  <TiltCard className="h-full rounded-2xl">
+                    <Card className="h-full transition-colors hover:border-shu-500/30">
+                      <CardBody className="relative z-10 py-6">
+                        <h3 className="font-display text-base font-bold leading-snug text-white">{e.classroom.name}</h3>
+                        <p className="mt-1 text-sm text-white/40">
+                          {[e.classroom.courseCode, e.classroom.semesterLabel].filter(Boolean).join(" · ") || " "}
+                        </p>
+                        <p className="mt-1 text-sm text-white/35">{t("classroomHub.teacherLabel", { name: e.classroom.teacherName })}</p>
+                        <div className="mt-4 flex items-center gap-4 border-t border-white/[0.06] pt-4 text-sm">
+                          <span className="text-kehai-400">{Math.round(e.attendanceRate * 100)}% {t("classroomHub.attendanceRate")}</span>
+                          <span className="flex items-center gap-1 text-shu-400">
+                            🔥 {e.currentStreak}
+                          </span>
+                        </div>
+                      </CardBody>
+                    </Card>
+                  </TiltCard>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="relative z-20 mt-16">
@@ -149,39 +213,6 @@ export default function ClassroomsHubPage() {
                   </TiltCard>
                 );
               })}
-            </div>
-          )}
-        </div>
-
-        <div className="relative z-20 mt-16">
-          <h2 className="mb-6 font-display text-xl font-bold text-white/70">{t("classroomHub.enrolledHeading")}</h2>
-          {enrolledLoading ? (
-            <LoadingBlock />
-          ) : !enrolled?.length ? (
-            <EmptyState glyph="学" title={t("classroomHub.enrolledEmptyTitle")} description={t("classroomHub.enrolledEmptyDescription")} />
-          ) : (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {enrolled.map((e) => (
-                <Link key={e.classroom.id} href={`/classrooms/${e.classroom.id}`}>
-                  <TiltCard className="h-full rounded-2xl">
-                    <Card className="h-full transition-colors hover:border-shu-500/30">
-                      <CardBody className="relative z-10 py-6">
-                        <h3 className="font-display text-base font-bold leading-snug text-white">{e.classroom.name}</h3>
-                        <p className="mt-1 text-sm text-white/40">
-                          {[e.classroom.courseCode, e.classroom.semesterLabel].filter(Boolean).join(" · ") || " "}
-                        </p>
-                        <p className="mt-1 text-sm text-white/35">{t("classroomHub.teacherLabel", { name: e.classroom.teacherName })}</p>
-                        <div className="mt-4 flex items-center gap-4 border-t border-white/[0.06] pt-4 text-sm">
-                          <span className="text-kehai-400">{Math.round(e.attendanceRate * 100)}% {t("classroomHub.attendanceRate")}</span>
-                          <span className="flex items-center gap-1 text-shu-400">
-                            🔥 {e.currentStreak}
-                          </span>
-                        </div>
-                      </CardBody>
-                    </Card>
-                  </TiltCard>
-                </Link>
-              ))}
             </div>
           )}
         </div>

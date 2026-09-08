@@ -16,11 +16,19 @@ eventRouter.get(
   asyncHandler(async (req, res) => {
     const events = await prisma.event.findMany({
       where: { status: { in: ["PUBLISHED", "ACTIVE"] } },
-      orderBy: { startsAt: "asc" },
       include: {
         organization: { select: { id: true, name: true, slug: true } },
         _count: { select: { registrations: true, attendances: true } },
       },
+    });
+    // This page's own heading promises "live right now" — a plain
+    // soonest-first sort broke that promise by letting a PUBLISHED event
+    // starting next week outrank an ACTIVE one happening at this very
+    // moment. Live events surface first; everything else follows soonest
+    // first, same as before.
+    events.sort((a, b) => {
+      if (a.status !== b.status) return a.status === "ACTIVE" ? -1 : 1;
+      return a.startsAt.getTime() - b.startsAt.getTime();
     });
     res.json(events);
   })

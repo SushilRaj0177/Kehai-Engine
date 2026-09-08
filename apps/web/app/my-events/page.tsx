@@ -27,8 +27,17 @@ export default function MyEventsPage() {
   if (authLoading || !user) return <LoadingBlock label={t("common.loading")} />;
 
   const now = Date.now();
-  const upcoming = registrations?.filter((r) => new Date(r.event.endsAt).getTime() >= now) ?? [];
-  const past = registrations?.filter((r) => new Date(r.event.endsAt).getTime() < now) ?? [];
+  // The soonest upcoming event — the one a user is most likely checking
+  // this page to prepare for — was sorting to the bottom of "Upcoming"
+  // because the fetch order (newest-created-event-first) doesn't match
+  // either group's natural order. Upcoming reads soonest-first (what's
+  // next), past reads most-recent-first (what you just did).
+  const upcoming = (registrations?.filter((r) => new Date(r.event.endsAt).getTime() >= now) ?? []).sort(
+    (a, b) => new Date(a.event.startsAt).getTime() - new Date(b.event.startsAt).getTime()
+  );
+  const past = (registrations?.filter((r) => new Date(r.event.endsAt).getTime() < now) ?? []).sort(
+    (a, b) => new Date(b.event.startsAt).getTime() - new Date(a.event.startsAt).getTime()
+  );
 
   return (
     <div className="relative min-h-screen">
