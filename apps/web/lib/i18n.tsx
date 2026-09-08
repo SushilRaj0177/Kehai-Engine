@@ -580,6 +580,7 @@ const dict = {
     noSessionsYet: { en: "No sessions yet.", ja: "まだセッションがありません。" },
     presentCount: { en: "{count} checked in", ja: "{count} 名出席" },
     sessionOpenBadge: { en: "Open", ja: "開催中" },
+    sessionActions: { en: "Session actions", ja: "セッションの操作" },
     sessionStartError: { en: "Failed to start the session", ja: "セッションの開始に失敗しました" },
     sessionEndError: { en: "Failed to end the session", ja: "セッションの終了に失敗しました" },
     sessionRestartError: { en: "Failed to restart the session", ja: "セッションの再開に失敗しました" },
