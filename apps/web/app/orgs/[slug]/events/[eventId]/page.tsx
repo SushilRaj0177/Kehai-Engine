@@ -17,13 +17,20 @@ import { ArrivalTimelineChart } from "@/components/charts/ArrivalTimelineChart";
 import { AttendeeTable } from "@/components/AttendeeTable";
 import { AiInsightsPanel } from "@/components/AiInsightsPanel";
 import { ExportButtons } from "@/components/ExportButtons";
+import { Input, Label } from "@/components/ui/Input";
 import { useEvent, useEventAnalytics, useMyOrganizations } from "@/lib/hooks";
 import { apiFetch, ApiError } from "@/lib/api";
-import { formatDateRange, formatDateTime } from "@/lib/format";
+import { formatDateRange, formatDateTime, toLocalDatetimeInputValue } from "@/lib/format";
 import { subscribeToEvent } from "@/lib/realtime";
 import { getCheckInWindow } from "@/lib/checkin-window";
-import type { EventStatus } from "@/lib/types";
+import type { EventStatus, EventSummary } from "@/lib/types";
 import { useLocale } from "@/lib/i18n";
+
+// Same convention as the "restart" and event-creation flows — the
+// endsAt column stays non-nullable, so "no fixed end time" is
+// represented as a far-future date rather than a real null.
+const OPEN_ENDED_HORIZON_MS = 365 * 24 * 60 * 60 * 1000;
+const OPEN_ENDED_THRESHOLD_MS = 300 * 24 * 60 * 60 * 1000;
 
 const TRANSITIONS: Record<EventStatus, EventStatus[]> = {
   DRAFT: ["PUBLISHED", "CANCELLED"],
@@ -155,6 +162,12 @@ export default function EventControlRoomPage() {
         </div>
         {statusError && <ErrorBlock message={statusError} className="relative mt-3" />}
 
+        {org && event.status !== "COMPLETED" && event.status !== "CANCELLED" && (
+          <div className="relative z-20 mt-4">
+            <EditTimingPanel event={event} onSaved={() => mutate()} />
+          </div>
+        )}
+
         {showWindowWarning && (
           <div className="relative z-20 mt-4 rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
             <p>
@@ -210,6 +223,101 @@ export default function EventControlRoomPage() {
         </div>
       </div>
     </ClickRippleLayer>
+  );
+}
+
+function EditTimingPanel({ event, onSaved }: { event: EventSummary; onSaved: () => void }) {
+  const { t } = useLocale();
+  const [open, setOpen] = useState(false);
+  const [startsAt, setStartsAt] = useState(() => toLocalDatetimeInputValue(new Date(event.startsAt)));
+  const [endsAt, setEndsAt] = useState(() => toLocalDatetimeInputValue(new Date(event.endsAt)));
+  const [openEnded, setOpenEnded] = useState(
+    () => new Date(event.endsAt).getTime() - new Date(event.startsAt).getTime() > OPEN_ENDED_THRESHOLD_MS
+  );
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  function toggle() {
+    setOpen((o) => !o);
+    setError(null);
+    setSaved(false);
+    // Re-sync from the latest server values each time it's opened, so a
+    // previous edit (or someone else's, seen via mutate()) isn't stomped.
+    setStartsAt(toLocalDatetimeInputValue(new Date(event.startsAt)));
+    setEndsAt(toLocalDatetimeInputValue(new Date(event.endsAt)));
+    setOpenEnded(new Date(event.endsAt).getTime() - new Date(event.startsAt).getTime() > OPEN_ENDED_THRESHOLD_MS);
+  }
+
+  async function save() {
+    setSaving(true);
+    setError(null);
+    setSaved(false);
+    try {
+      const startDate = new Date(startsAt);
+      const endDate = openEnded ? new Date(startDate.getTime() + OPEN_ENDED_HORIZON_MS) : new Date(endsAt);
+      await apiFetch(`/api/events/${event.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ startsAt: startDate.toISOString(), endsAt: endDate.toISOString() }),
+      });
+      onSaved();
+      setSaved(true);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t("eventControl.editError"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <Button variant="ghost" size="sm" onClick={toggle}>
+        {t("eventControl.editTiming")}
+      </Button>
+    );
+  }
+
+  return (
+    <Card>
+      <CardBody className="space-y-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <Label htmlFor="edit-startsAt">{t("eventNew.startsLabel")}</Label>
+            <Input id="edit-startsAt" type="datetime-local" required value={startsAt} onChange={(e) => setStartsAt(e.target.value)} />
+          </div>
+          <div>
+            <Label htmlFor="edit-endsAt">{t("eventNew.endsLabel")}</Label>
+            <Input
+              id="edit-endsAt"
+              type="datetime-local"
+              required={!openEnded}
+              disabled={openEnded}
+              value={endsAt}
+              onChange={(e) => setEndsAt(e.target.value)}
+            />
+          </div>
+        </div>
+        <label className="flex items-center gap-2 text-sm text-white/70">
+          <input
+            type="checkbox"
+            checked={openEnded}
+            onChange={(e) => setOpenEnded(e.target.checked)}
+            className="h-4 w-4 rounded border-white/20 bg-white/5 accent-kehai-500"
+          />
+          {t("eventNew.noEndTime")}
+        </label>
+        {error && <ErrorBlock message={error} />}
+        <div className="flex flex-wrap items-center gap-3">
+          <Button size="sm" loading={saving} onClick={save}>
+            {t("eventControl.saveChanges")}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={toggle}>
+            {t("common.cancel")}
+          </Button>
+          {saved && <span className="text-sm text-kehai-400">✓ {t("eventControl.editSaved")}</span>}
+        </div>
+      </CardBody>
+    </Card>
   );
 }
 
