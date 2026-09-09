@@ -46,8 +46,10 @@ export default function ClassroomsHubPage() {
   }
 
   function copy(text: string, id: string) {
-    void navigator.clipboard?.writeText(text);
-    setCopiedId(id);
+    navigator.clipboard
+      ?.writeText(text)
+      .then(() => setCopiedId(id))
+      .catch(() => setCopiedId(null));
     setTimeout(() => setCopiedId((cur) => (cur === id ? null : cur)), 1800);
   }
 
@@ -203,7 +205,7 @@ export default function ClassroomsHubPage() {
                               e.preventDefault();
                               copy(c.joinCode, `${c.id}-code`);
                             }}
-                            className="text-xs font-medium text-white/45 hover:text-white/80"
+                            className="rounded text-xs font-medium text-white/45 hover:text-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-shu-400/60"
                           >
                             {copiedId === `${c.id}-code` ? t("classroomHub.copied") : t("classroomHub.copyCode")}
                           </button>
@@ -213,7 +215,7 @@ export default function ClassroomsHubPage() {
                               e.preventDefault();
                               copy(joinLink, `${c.id}-link`);
                             }}
-                            className="text-xs font-medium text-white/45 hover:text-white/80"
+                            className="rounded text-xs font-medium text-white/45 hover:text-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-shu-400/60"
                           >
                             {copiedId === `${c.id}-link` ? t("classroomHub.copied") : t("classroomHub.copyLink")}
                           </button>

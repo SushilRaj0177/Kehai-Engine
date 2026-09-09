@@ -111,7 +111,10 @@ export default function ClassroomCheckinPage() {
           const d = err.details as { distanceMeters: number };
           setResult({ distanceMeters: d.distanceMeters, confidence: null });
         }
-        setStep("error");
+        // An invalid/expired QR can't be fixed by retrying the same
+        // check-in — send the student back to actually scan the current
+        // code instead of re-confirming a location against a dead token.
+        setStep(err.code === "INVALID_QR" ? "scan" : "error");
       } else {
         // Network failure even after retrying — stay on "confirm" so the
         // captured location and token are still there and retrying is one

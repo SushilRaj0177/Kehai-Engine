@@ -15,7 +15,7 @@ export function LoadingBlock({ label, className }: { label?: string; className?:
 
 export function ErrorBlock({ message, className }: { message: string; className?: string }) {
   return (
-    <div className={cn("rounded-lg border border-shu-500/30 bg-shu-500/5 px-4 py-3 text-sm text-shu-300", className)}>
+    <div className={cn("rounded-2xl border border-shu-500/30 bg-shu-500/5 px-4 py-3 text-sm text-shu-300", className)}>
       {message}
     </div>
   );

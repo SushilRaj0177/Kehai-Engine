@@ -43,7 +43,7 @@ export async function checkIn(input: CheckInInput): Promise<CheckInResult> {
   try {
     qrPayload = verifyQrToken(input.qrToken, event.id, event.qrSecret);
   } catch {
-    throw HttpError.badRequest("This QR code is invalid or has expired — ask the organizer to rescan");
+    throw new HttpError(400, "INVALID_QR", "This QR code is invalid or has expired — scan the current one to continue");
   }
 
   const geofence = checkGeofence({

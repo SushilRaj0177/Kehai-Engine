@@ -550,7 +550,7 @@ export async function checkInToClassroom(classroomId: string, studentId: string,
   // session issued the code, with no day-based lookup involved at all.
   const unverified = jwt.decode(input.qrToken) as (ClassQrTokenPayload & jwt.JwtPayload) | null;
   if (!unverified?.sessionId) {
-    throw HttpError.badRequest("This QR code is invalid or has expired — ask your teacher to refresh it");
+    throw new HttpError(400, "INVALID_QR", "This QR code is invalid or has expired — ask your teacher to refresh it");
   }
 
   const session = await prisma.classSession.findUnique({ where: { id: unverified.sessionId } });
@@ -562,7 +562,7 @@ export async function checkInToClassroom(classroomId: string, studentId: string,
   try {
     qrPayload = verifyClassQrToken(input.qrToken, session.id, session.qrSecret);
   } catch {
-    throw HttpError.badRequest("This QR code is invalid or has expired — ask your teacher to refresh it");
+    throw new HttpError(400, "INVALID_QR", "This QR code is invalid or has expired — ask your teacher to refresh it");
   }
 
   let latitude: number | null = input.latitude ?? null;

@@ -10,7 +10,7 @@ export function Label({ className, ...props }: LabelHTMLAttributes<HTMLLabelElem
 // input rather than a stock rounded-rect field, and the grow-from-center
 // motion is a real focus cue instead of just a color swap.
 const fieldBase =
-  "peer w-full border-0 border-b border-white/12 bg-white/[0.03] px-4 py-3.5 text-base text-white placeholder:text-white/30 outline-none transition-colors focus:bg-white/[0.05]";
+  "peer w-full rounded-sm border-0 border-b border-white/12 bg-white/[0.03] px-4 py-3.5 text-base text-white placeholder:text-white/30 outline-none transition-colors focus:bg-white/[0.05] focus-visible:ring-2 focus-visible:ring-shu-400/60 disabled:cursor-not-allowed disabled:opacity-40";
 const fieldRule =
   "pointer-events-none absolute inset-x-0 bottom-0 h-[2px] origin-center scale-x-0 bg-gradient-to-r from-shu-400 via-shu-500 to-kehai-400 transition-transform duration-300 ease-out peer-focus:scale-x-100";
 

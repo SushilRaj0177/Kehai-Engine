@@ -117,8 +117,17 @@ export default function ResetPasswordPage() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                   />
+                  {confirmPassword.length > 0 && confirmPassword !== password && (
+                    <p className="mt-2 text-xs text-shu-400">{t("auth.passwordMismatch")}</p>
+                  )}
                 </div>
-                <Button type="submit" size="lg" className="w-full" loading={loading}>
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="w-full"
+                  loading={loading}
+                  disabled={confirmPassword.length > 0 && confirmPassword !== password}
+                >
                   {t("auth.resetPasswordSubmit")}
                 </Button>
               </form>
