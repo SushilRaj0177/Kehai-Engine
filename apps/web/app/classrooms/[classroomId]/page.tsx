@@ -191,8 +191,10 @@ function ShareJoinCode({ joinCode }: { joinCode?: string }) {
   const link = typeof window !== "undefined" ? `${window.location.origin}/classrooms/join?code=${joinCode}` : "";
 
   function copy(text: string, which: "code" | "link") {
-    void navigator.clipboard?.writeText(text);
-    setCopied(which);
+    navigator.clipboard
+      ?.writeText(text)
+      .then(() => setCopied(which))
+      .catch(() => setCopied(null));
     setTimeout(() => setCopied((cur) => (cur === which ? null : cur)), 1800);
   }
 

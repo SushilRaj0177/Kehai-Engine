@@ -107,7 +107,11 @@ export default function AttendPage() {
           const d = err.details as { distanceMeters: number };
           setResult({ distanceMeters: d.distanceMeters, confidence: "n/a" });
         }
-        setStep("error");
+        // An invalid/expired QR can't be fixed by retrying the same
+        // check-in — the token itself is dead, so send the attendee back
+        // to actually scan the current code rather than re-confirm a
+        // location against a token that will fail again either way.
+        setStep(err.code === "INVALID_QR" ? "scan" : "error");
       } else {
         // A network failure (never got a real answer from the server, even
         // after retrying) shouldn't discard the location fix already

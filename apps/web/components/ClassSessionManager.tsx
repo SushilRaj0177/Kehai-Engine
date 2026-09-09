@@ -6,6 +6,7 @@ import { Card, CardBody, CardHeader } from "./ui/Card";
 import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
 import { Badge } from "./ui/Badge";
+import { ErrorBlock } from "./ui/States";
 import { ClassSessionQrPanel } from "./ClassSessionQrPanel";
 import { useClassroomSessions } from "@/lib/hooks";
 import { useLocale } from "@/lib/i18n";
@@ -211,7 +212,7 @@ export function ClassSessionManager({
                       key={l}
                       type="button"
                       onClick={() => setLabel(l)}
-                      className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] text-white/50 transition-colors hover:border-kehai-500/40 hover:text-kehai-300"
+                      className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] text-white/50 transition-colors hover:border-kehai-500/40 hover:text-kehai-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-shu-400/60"
                     >
                       {l}
                     </button>
@@ -223,7 +224,7 @@ export function ClassSessionManager({
               </Button>
             </div>
           )}
-          {error && <p className="text-sm text-shu-400">{error}</p>}
+          {error && <ErrorBlock message={error} />}
 
           {sessions && sessions.length > 0 ? (
             <div
@@ -275,7 +276,7 @@ export function ClassSessionManager({
                             setOpenMenuId((cur) => (cur === s.id ? null : s.id));
                             setConfirmingDeleteId(null);
                           }}
-                          className="flex h-8 w-8 items-center justify-center rounded-full text-white/45 transition-colors hover:bg-white/[0.06] hover:text-white"
+                          className="flex h-8 w-8 items-center justify-center rounded-full text-white/45 transition-colors hover:bg-white/[0.06] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-shu-400/60"
                         >
                           ⋯
                         </button>
@@ -305,7 +306,7 @@ export function ClassSessionManager({
                                 <button
                                   type="button"
                                   onClick={() => startRename(s.id, s.label)}
-                                  className="block w-full px-3 py-2 text-left text-white/75 hover:bg-white/[0.06] hover:text-white"
+                                  className="block w-full px-3 py-2 text-left text-white/75 hover:bg-white/[0.06] hover:text-white focus-visible:outline-none focus-visible:bg-white/[0.06] focus-visible:text-white"
                                 >
                                   {t("classroomDetail.renameSession")}
                                 </button>
@@ -313,7 +314,7 @@ export function ClassSessionManager({
                                   <button
                                     type="button"
                                     onClick={() => restartSession(s.id)}
-                                    className="block w-full px-3 py-2 text-left text-white/75 hover:bg-white/[0.06] hover:text-white"
+                                    className="block w-full px-3 py-2 text-left text-white/75 hover:bg-white/[0.06] hover:text-white focus-visible:outline-none focus-visible:bg-white/[0.06] focus-visible:text-white"
                                   >
                                     {t("classroomDetail.restartSession")}
                                   </button>
@@ -321,7 +322,7 @@ export function ClassSessionManager({
                                 <button
                                   type="button"
                                   onClick={() => setConfirmingDeleteId(s.id)}
-                                  className="block w-full px-3 py-2 text-left text-shu-400 hover:bg-shu-500/10"
+                                  className="block w-full px-3 py-2 text-left text-shu-400 hover:bg-shu-500/10 focus-visible:outline-none focus-visible:bg-shu-500/10"
                                 >
                                   {t("classroomDetail.deleteSession")}
                                 </button>
