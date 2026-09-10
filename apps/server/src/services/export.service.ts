@@ -72,3 +72,78 @@ function csvEscape(value: unknown): string {
 function slug(s: string): string {
   return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "event";
 }
+
+// One row per student per session that had a class open on that day —
+// present rows carry a real check-in, absent rows are synthesized (no
+// ClassAttendance record exists for that student+session pair) so the
+// export reads as a full attendance sheet, not just a log of check-ins.
+async function getClassroomAttendanceRows(classroomId: string) {
+  const classroom = await prisma.classroom.findUnique({ where: { id: classroomId } });
+  if (!classroom) throw HttpError.notFound("Classroom not found");
+
+  const [enrollments, sessions] = await Promise.all([
+    prisma.enrollment.findMany({
+      where: { classroomId },
+      include: { student: { select: { id: true, name: true, email: true } } },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.classSession.findMany({
+      where: { classroomId },
+      include: { attendances: { select: { studentId: true, checkedInAt: true, flagged: true, flagReasons: true } } },
+      orderBy: { date: "asc" },
+    }),
+  ]);
+
+  const rows: Record<string, unknown>[] = [];
+  for (const session of sessions) {
+    const byStudent = new Map(session.attendances.map((a) => [a.studentId, a]));
+    for (const enrollment of enrollments) {
+      const attendance = byStudent.get(enrollment.student.id);
+      rows.push({
+        sessionDate: session.date.toISOString().slice(0, 10),
+        sessionLabel: session.label ?? "",
+        name: enrollment.student.name,
+        email: enrollment.student.email,
+        present: attendance ? "Yes" : "No",
+        checkedInAt: attendance?.checkedInAt.toISOString() ?? "",
+        flagged: attendance?.flagged ? "Yes" : "",
+        flagReasons: attendance?.flagReasons.join("; ") ?? "",
+      });
+    }
+  }
+
+  return { classroom, rows };
+}
+
+const CLASSROOM_COLUMNS = [
+  { header: "Session Date", key: "sessionDate", width: 14 },
+  { header: "Session Label", key: "sessionLabel", width: 20 },
+  { header: "Name", key: "name", width: 24 },
+  { header: "Email", key: "email", width: 30 },
+  { header: "Present", key: "present", width: 10 },
+  { header: "Checked In At", key: "checkedInAt", width: 24 },
+  { header: "Flagged", key: "flagged", width: 10 },
+  { header: "Flag Reasons", key: "flagReasons", width: 30 },
+];
+
+export async function exportClassroomAttendanceCsv(classroomId: string): Promise<{ filename: string; content: string }> {
+  const { classroom, rows } = await getClassroomAttendanceRows(classroomId);
+  const header = CLASSROOM_COLUMNS.map((c) => c.header).join(",");
+  const lines = rows.map((r) => CLASSROOM_COLUMNS.map((c) => csvEscape((r as any)[c.key])).join(","));
+  return { filename: `${slug(classroom.name)}-attendance.csv`, content: [header, ...lines].join("\n") };
+}
+
+export async function exportClassroomAttendanceExcel(classroomId: string): Promise<{ filename: string; buffer: Buffer }> {
+  const { classroom, rows } = await getClassroomAttendanceRows(classroomId);
+
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "Kehai Engine";
+  const sheet = workbook.addWorksheet("Attendance");
+  sheet.columns = CLASSROOM_COLUMNS;
+  sheet.getRow(1).font = { bold: true };
+  rows.forEach((r) => sheet.addRow(r));
+  sheet.autoFilter = { from: "A1", to: `H1` };
+
+  const arrayBuffer = await workbook.xlsx.writeBuffer();
+  return { filename: `${slug(classroom.name)}-attendance.xlsx`, buffer: Buffer.from(arrayBuffer) };
+}

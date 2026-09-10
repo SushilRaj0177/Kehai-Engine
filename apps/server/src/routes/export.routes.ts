@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { asyncHandler } from "../middleware/error.js";
-import { requireAuth, requireOrgRole } from "../middleware/auth.js";
+import { requireAuth, requireOrgRole, requireClassroomTeacher } from "../middleware/auth.js";
 import * as exportService from "../services/export.service.js";
 
 export const exportRouter = Router();
@@ -23,6 +23,30 @@ exportRouter.get(
   requireOrgRole("ORGANIZER"),
   asyncHandler(async (req, res) => {
     const { filename, buffer } = await exportService.exportAttendeesExcel(req.params.eventId);
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.send(buffer);
+  })
+);
+
+exportRouter.get(
+  "/classrooms/:classroomId/attendance.csv",
+  requireAuth,
+  requireClassroomTeacher(),
+  asyncHandler(async (req, res) => {
+    const { filename, content } = await exportService.exportClassroomAttendanceCsv(req.params.classroomId);
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.send(content);
+  })
+);
+
+exportRouter.get(
+  "/classrooms/:classroomId/attendance.xlsx",
+  requireAuth,
+  requireClassroomTeacher(),
+  asyncHandler(async (req, res) => {
+    const { filename, buffer } = await exportService.exportClassroomAttendanceExcel(req.params.classroomId);
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
     res.send(buffer);

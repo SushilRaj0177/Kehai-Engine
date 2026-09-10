@@ -5,14 +5,29 @@ import { getApiBase, getAccessToken } from "@/lib/api";
 import { Button } from "./ui/Button";
 import { useLocale } from "@/lib/i18n";
 
+type ExportSource = { kind: "event"; eventId: string } | { kind: "classroom"; classroomId: string };
+
 export function ExportButtons({ eventId }: { eventId: string }) {
+  return <ExportButtonsInternal source={{ kind: "event", eventId }} />;
+}
+
+export function ClassroomExportButtons({ classroomId }: { classroomId: string }) {
+  return <ExportButtonsInternal source={{ kind: "classroom", classroomId }} />;
+}
+
+function ExportButtonsInternal({ source }: { source: ExportSource }) {
   const { t } = useLocale();
   const [downloading, setDownloading] = useState<"csv" | "xlsx" | null>(null);
+
+  const basePath =
+    source.kind === "event"
+      ? `/api/export/events/${source.eventId}/attendees`
+      : `/api/export/classrooms/${source.classroomId}/attendance`;
 
   async function download(format: "csv" | "xlsx") {
     setDownloading(format);
     try {
-      const res = await fetch(`${getApiBase()}/api/export/events/${eventId}/attendees.${format}`, {
+      const res = await fetch(`${getApiBase()}${basePath}.${format}`, {
         headers: { Authorization: `Bearer ${getAccessToken() ?? ""}` },
       });
       if (!res.ok) throw new Error("Export failed");
@@ -20,7 +35,7 @@ export function ExportButtons({ eventId }: { eventId: string }) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `attendees.${format}`;
+      a.download = `${source.kind === "event" ? "attendees" : "attendance"}.${format}`;
       document.body.appendChild(a);
       a.click();
       a.remove();
