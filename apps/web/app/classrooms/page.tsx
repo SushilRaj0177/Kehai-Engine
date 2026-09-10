@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { NavBar } from "@/components/NavBar";
@@ -26,7 +26,28 @@ export default function ClassroomsHubPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [q, setQ] = useState("");
   const router = useRouter();
+
+  const needle = q.trim().toLowerCase();
+  const filteredEnrolled = useMemo(
+    () =>
+      enrolled?.filter(
+        (e) =>
+          !needle ||
+          e.classroom.name.toLowerCase().includes(needle) ||
+          e.classroom.teacherName.toLowerCase().includes(needle) ||
+          (e.classroom.courseCode?.toLowerCase().includes(needle) ?? false)
+      ),
+    [enrolled, needle]
+  );
+  const filteredTeaching = useMemo(
+    () =>
+      teaching?.filter(
+        (c) => !needle || c.name.toLowerCase().includes(needle) || (c.courseCode?.toLowerCase().includes(needle) ?? false)
+      ),
+    [teaching, needle]
+  );
 
   if (authLoading) return <LoadingBlock label={t("states.checkingSession")} />;
 
@@ -115,12 +136,24 @@ export default function ClassroomsHubPage() {
           />
         )}
 
+        {((enrolled && enrolled.length > 0) || (teaching && teaching.length > 0)) && (
+          <div className="relative z-20 mt-10">
+            <Input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={t("classroomHub.searchPlaceholder")}
+              underline={false}
+              className="max-w-xs"
+            />
+          </div>
+        )}
+
         {/* Classes you're taking come first — for most people (students
             outnumber teachers) this is the reason they opened this page at
             all, and the thing they'll come back to check most often. What
             you teach, plus the join/create utilities above, are secondary
             and shouldn't push it below the fold. */}
-        <div className="relative z-20 mt-16">
+        <div className="relative z-20 mt-10">
           <h2 className="mb-6 font-display text-xl font-bold text-white/70">{t("classroomHub.enrolledHeading")}</h2>
           {enrolledLoading ? (
             <LoadingBlock />
@@ -135,9 +168,11 @@ export default function ClassroomsHubPage() {
                 </Button>
               }
             />
+          ) : !filteredEnrolled?.length ? (
+            <EmptyState glyph="学" title={t("classroomHub.noMatchTitle")} description={t("classroomHub.noMatchDescription")} />
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {enrolled.map((e) => (
+              {filteredEnrolled.map((e) => (
                 <Link key={e.classroom.id} href={`/classrooms/${e.classroom.id}`}>
                   <TiltCard className="h-full rounded-2xl">
                     <Card className="h-full transition-colors hover:border-shu-500/30">
@@ -177,9 +212,11 @@ export default function ClassroomsHubPage() {
                 </Button>
               }
             />
+          ) : !filteredTeaching?.length ? (
+            <EmptyState glyph="級" title={t("classroomHub.noMatchTitle")} description={t("classroomHub.noMatchDescription")} />
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {teaching.map((c) => {
+              {filteredTeaching.map((c) => {
                 const joinLink = typeof window !== "undefined" ? `${window.location.origin}/classrooms/join?code=${c.joinCode}` : "";
                 return (
                   <TiltCard key={c.id} className="h-full rounded-2xl">

@@ -287,6 +287,13 @@ const dict = {
       ja: "しばらくしてから確認するか、主催者にイベントの公開を依頼してください。",
     },
     registeredOf: { en: "{count}/{capacity} registered", ja: "登録 {count}/{capacity} 名" },
+    searchPlaceholder: { en: "Search by name, venue, organizer…", ja: "名前・会場・主催者で検索…" },
+    filterAll: { en: "All", ja: "すべて" },
+    noMatchTitle: { en: "No matching events", ja: "一致するイベントがありません" },
+    noMatchDescription: {
+      en: "Try a different search term or filter.",
+      ja: "別のキーワードやフィルターをお試しください。",
+    },
   },
   eventDetail: {
     backToDiscover: { en: "← All events", ja: "← イベント一覧に戻る" },
@@ -516,6 +523,9 @@ const dict = {
     },
     teachingHeading: { en: "Classes you teach", ja: "担当クラス" },
     joinClassroom: { en: "Join a classroom", ja: "クラスに参加" },
+    searchPlaceholder: { en: "Search your classes…", ja: "クラスを検索…" },
+    noMatchTitle: { en: "No matching classes", ja: "一致するクラスがありません" },
+    noMatchDescription: { en: "Try a different search term.", ja: "別のキーワードをお試しください。" },
     teachingEmptyTitle: { en: "No classrooms yet", ja: "クラスがまだありません" },
     teachingEmptyDescription: {
       en: "Create a classroom to get a join code, a recurring check-in QR, and a live attendance heatmap.",

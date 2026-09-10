@@ -13,6 +13,7 @@ import { PageGlow } from "@/components/ui/PageGlow";
 import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { ClassSessionManager } from "@/components/ClassSessionManager";
 import { ClassroomRoster } from "@/components/ClassroomRoster";
+import { ClassroomExportButtons } from "@/components/ExportButtons";
 import { AttendanceHeatmap } from "@/components/AttendanceHeatmap";
 import { LiveIndicator } from "@/components/ui/LiveIndicator";
 import { useClassroom, useClassroomHeatmap, useClassroomRoster } from "@/lib/hooks";
@@ -141,8 +142,11 @@ export default function ClassroomDetailPage() {
               </Card>
 
               <Card>
-                <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">
-                  {t("classroomDetail.rosterHeading")}
+                <CardHeader className="flex flex-wrap items-center justify-between gap-3">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-white/40">
+                    {t("classroomDetail.rosterHeading")}
+                  </span>
+                  <ClassroomExportButtons classroomId={classroomId} />
                 </CardHeader>
                 <CardBody>
                   <ClassroomRoster classroomId={classroomId} />
