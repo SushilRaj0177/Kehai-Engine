@@ -149,7 +149,7 @@ export default function ClassroomDetailPage() {
                   <ClassroomExportButtons classroomId={classroomId} />
                 </CardHeader>
                 <CardBody>
-                  <ClassroomRoster classroomId={classroomId} />
+                  <ClassroomRoster classroomId={classroomId} openSessionId={classroom.openSession?.id} />
                 </CardBody>
               </Card>
             </div>

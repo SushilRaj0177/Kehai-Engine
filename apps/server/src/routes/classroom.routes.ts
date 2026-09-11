@@ -10,6 +10,7 @@ import {
   createSessionSchema,
   updateSessionSchema,
   classCheckInSchema,
+  classAttendanceOverrideSchema,
 } from "../validators/classroom.js";
 import * as classroomService from "../services/classroom.service.js";
 import { env } from "../config/env.js";
@@ -176,6 +177,22 @@ classroomRouter.get(
     const deepLink = `${env.WEB_ORIGIN}/classrooms/${req.params.classroomId}/checkin?t=${encodeURIComponent(token)}`;
     const dataUrl = await QRCode.toDataURL(deepLink, { margin: 1, width: 480, color: { dark: "#0a0e14", light: "#ffffff" } });
     res.json({ dataUrl, expiresAt, rotationSeconds });
+  })
+);
+
+classroomRouter.post(
+  "/:classroomId/sessions/:sessionId/override",
+  requireAuth,
+  requireClassroomTeacher(),
+  asyncHandler(async (req, res) => {
+    const { studentId } = classAttendanceOverrideSchema.parse(req.body);
+    const attendance = await classroomService.manualOverrideClassAttendance(
+      req.params.classroomId,
+      req.params.sessionId,
+      studentId,
+      req.user!.id
+    );
+    res.status(201).json(attendance);
   })
 );
 

@@ -320,6 +320,8 @@ model ClassAttendance {
   enrollmentId String
   studentId    String
 
+  method AttendanceMethod @default(QR_GEO)
+
   latitude           Float?
   longitude          Float?
   accuracyMeters     Float?
@@ -328,6 +330,8 @@ model ClassAttendance {
   qrTokenJti         String
 
   checkedInAt DateTime @default(now())
+
+  overriddenById String? // teacher who manually marked attendance, if any
 
   flagged     Boolean  @default(false)
   flagReasons String[] @default([])

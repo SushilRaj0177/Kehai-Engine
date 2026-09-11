@@ -242,11 +242,14 @@ export async function getRoster(classroomId: string) {
     include: { student: { select: { id: true, name: true, email: true, avatarUrl: true } } },
   });
 
-  const sessions = await prisma.classSession.findMany({
-    where: { classroomId },
-    orderBy: { date: "asc" },
-    select: { id: true, date: true },
-  });
+  const [sessions, openSession] = await Promise.all([
+    prisma.classSession.findMany({
+      where: { classroomId },
+      orderBy: { date: "asc" },
+      select: { id: true, date: true },
+    }),
+    prisma.classSession.findFirst({ where: { classroomId, status: "OPEN" }, orderBy: { openedAt: "desc" } }),
+  ]);
   const totalDays = sessions.length;
 
   // One batched query for every enrolled student's attendance instead of a
@@ -271,6 +274,7 @@ export async function getRoster(classroomId: string) {
     const presentDays = attendances.length;
     const attendanceRate = totalDays > 0 ? presentDays / totalDays : 0;
     const lastAttendedAt = attendances.length > 0 ? attendances[attendances.length - 1].checkedInAt : null;
+    const checkedInOpenSession = openSession ? attendances.some((a) => a.sessionId === openSession.id) : false;
 
     return {
       student: enrollment.student,
@@ -279,6 +283,7 @@ export async function getRoster(classroomId: string) {
       totalDays,
       attendanceRate,
       lastAttendedAt,
+      checkedInOpenSession,
     };
   });
 
@@ -683,4 +688,56 @@ export async function checkInToClassroom(classroomId: string, studentId: string,
   });
 
   return { attendance, distanceMeters, confidence };
+}
+
+// Not a fallback for a broken QR flow in general — the QR + geofence path
+// stays the default and the only self-service one. This exists for the one
+// case self-service can't cover: a student was genuinely in class but their
+// phone died, had no signal, or the geofence was a little too strict for
+// where they were sitting. The teacher was there and can vouch for it, so
+// their say-so is trusted the same way overriding an event check-in is —
+// visibly tagged MANUAL_OVERRIDE, never silently indistinguishable from a
+// real QR+geo check-in.
+export async function manualOverrideClassAttendance(classroomId: string, sessionId: string, studentId: string, overriddenById: string) {
+  const session = await prisma.classSession.findUnique({ where: { id: sessionId } });
+  if (!session || session.classroomId !== classroomId) throw HttpError.notFound("Session not found");
+  if (session.status !== "OPEN") throw HttpError.badRequest("This session is closed — restart it first");
+
+  const enrollment = await prisma.enrollment.findUnique({
+    where: { classroomId_studentId: { classroomId, studentId } },
+  });
+  if (!enrollment) throw HttpError.badRequest("This student is not enrolled in this classroom");
+
+  const existing = await prisma.classAttendance.findUnique({
+    where: { sessionId_studentId: { sessionId, studentId } },
+  });
+  if (existing) throw HttpError.conflict("This student has already checked in to this session");
+
+  const attendance = await prisma.classAttendance.create({
+    data: {
+      sessionId,
+      enrollmentId: enrollment.id,
+      studentId,
+      method: "MANUAL_OVERRIDE",
+      qrTokenJti: "manual-override",
+      overriddenById,
+    },
+  });
+
+  const [totalPresent, totalEnrolled, student] = await Promise.all([
+    prisma.classAttendance.count({ where: { sessionId } }),
+    prisma.enrollment.count({ where: { classroomId } }),
+    prisma.user.findUnique({ where: { id: studentId } }),
+  ]);
+
+  emitClassAttendanceUpdate(classroomId, {
+    type: "checkin",
+    studentName: student?.name ?? "Student",
+    checkedInAt: attendance.checkedInAt.toISOString(),
+    totalPresent,
+    totalEnrolled,
+    attendanceRate: totalEnrolled > 0 ? totalPresent / totalEnrolled : 0,
+  });
+
+  return attendance;
 }
