@@ -506,6 +506,39 @@ export async function listSessions(classroomId: string) {
   }));
 }
 
+// The heatmap gives a student the shape of their attendance at a glance,
+// but "which specific classes did I miss" needs an actual list — this is
+// that list, one row per session that ever existed for the classroom
+// (not just ones the student attended), newest first.
+export async function getMyAttendanceHistory(classroomId: string, studentId: string) {
+  const enrollment = await prisma.enrollment.findUnique({
+    where: { classroomId_studentId: { classroomId, studentId } },
+  });
+  if (!enrollment) throw HttpError.forbidden("You are not enrolled in this classroom");
+
+  const [sessions, attendances] = await Promise.all([
+    prisma.classSession.findMany({ where: { classroomId }, orderBy: [{ date: "desc" }, { openedAt: "desc" }] }),
+    prisma.classAttendance.findMany({
+      where: { enrollmentId: enrollment.id },
+      select: { sessionId: true, checkedInAt: true, method: true },
+    }),
+  ]);
+  const bySessionId = new Map(attendances.map((a) => [a.sessionId, a]));
+
+  return sessions.map((s) => {
+    const attendance = bySessionId.get(s.id);
+    return {
+      id: s.id,
+      label: s.label,
+      date: s.date,
+      status: s.status,
+      present: !!attendance,
+      checkedInAt: attendance?.checkedInAt ?? null,
+      method: attendance?.method ?? null,
+    };
+  });
+}
+
 export async function updateSession(classroomId: string, sessionId: string, input: { label?: string; qrRotationSeconds?: number }) {
   const session = await getOwnedSession(classroomId, sessionId);
   return prisma.classSession.update({

@@ -15,6 +15,7 @@ import { ClassSessionManager } from "@/components/ClassSessionManager";
 import { ClassroomRoster } from "@/components/ClassroomRoster";
 import { ClassroomExportButtons } from "@/components/ExportButtons";
 import { AtRiskStudents } from "@/components/AtRiskStudents";
+import { MyAttendanceHistory } from "@/components/MyAttendanceHistory";
 import { AttendanceHeatmap } from "@/components/AttendanceHeatmap";
 import { SessionTrendChart } from "@/components/charts/SessionTrendChart";
 import { LiveIndicator } from "@/components/ui/LiveIndicator";
@@ -199,6 +200,15 @@ export default function ClassroomDetailPage() {
                 {t("classroomDetail.heatmapHeading")}
               </CardHeader>
               <CardBody>{heatmap ? <AttendanceHeatmap data={heatmap} /> : <LoadingBlock />}</CardBody>
+            </Card>
+
+            <Card>
+              <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">
+                {t("classroomDetail.myAttendanceHeading")}
+              </CardHeader>
+              <CardBody>
+                <MyAttendanceHistory classroomId={classroomId} />
+              </CardBody>
             </Card>
           </div>
         )}

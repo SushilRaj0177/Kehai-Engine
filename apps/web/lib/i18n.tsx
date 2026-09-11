@@ -611,6 +611,7 @@ const dict = {
     rosterHeading: { en: "Roster", ja: "受講者一覧" },
     heatmapHeading: { en: "Attendance", ja: "出席状況" },
     trendHeading: { en: "Attendance trend", ja: "出席率の推移" },
+    myAttendanceHeading: { en: "My attendance", ja: "自分の出席記録" },
     checkInNow: { en: "Check in now", ja: "今すぐチェックイン" },
     noOpenSessionHint: {
       en: "No session is open right now — check back once your teacher starts one.",
@@ -680,6 +681,12 @@ const dict = {
       en: "Enter the 6-character code your teacher shared with you.",
       ja: "先生から共有された6文字のコードを入力してください。",
     },
+  },
+  myAttendance: {
+    empty: { en: "No sessions have happened yet.", ja: "まだセッションが開催されていません。" },
+    present: { en: "Present", ja: "出席" },
+    absent: { en: "Absent", ja: "欠席" },
+    markedByTeacher: { en: "marked by teacher", ja: "教員が記録" },
   },
   classroomRoster: {
     searchPlaceholder: { en: "Search name or email…", ja: "名前またはメールアドレスで検索…" },
