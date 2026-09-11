@@ -134,7 +134,7 @@ eventRouter.delete(
   requireAuth,
   requireOrgRole("ORGANIZER"),
   asyncHandler(async (req, res) => {
-    await eventService.removeRegistration(req.params.eventId, req.params.userId);
+    await eventService.removeRegistration(req.params.eventId, req.params.userId, req.user!.id);
     res.status(204).end();
   })
 );

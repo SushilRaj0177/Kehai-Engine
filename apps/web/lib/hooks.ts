@@ -5,6 +5,7 @@ import { apiFetch } from "./api";
 import type {
   AttendeeRow,
   Anomaly,
+  AuditLogEntry,
   ClassroomDetail,
   ClassroomSummary,
   ClassSessionSummary,
@@ -84,6 +85,10 @@ export function useOrgOverview(orgId: string | undefined) {
 
 export function useOrgMembers(orgId: string | undefined) {
   return useSWR<OrgMember[]>(orgId ? `/api/orgs/${orgId}/members` : null, fetcher);
+}
+
+export function useOrgAuditLog(orgId: string | undefined) {
+  return useSWR<AuditLogEntry[]>(orgId ? `/api/orgs/${orgId}/audit-log` : null, fetcher);
 }
 
 export function useMyClassrooms() {

@@ -84,6 +84,28 @@ export async function removeMember(organizationId: string, userId: string, calle
   }
 
   await prisma.membership.delete({ where: { id: membership.id } });
+
+  await prisma.auditLog.create({
+    data: {
+      organizationId,
+      actorUserId: callerId,
+      action: "member.removed",
+      metadata: { removedUserId: userId, removedRole: membership.role },
+    },
+  });
+}
+
+export async function getAuditLog(organizationId: string) {
+  const entries = await prisma.auditLog.findMany({
+    where: { organizationId },
+    orderBy: { createdAt: "desc" },
+    take: 100,
+    include: {
+      actor: { select: { id: true, name: true, email: true } },
+      event: { select: { id: true, name: true } },
+    },
+  });
+  return entries;
 }
 
 // Plain "newest first" buried the one event an organizer most likely opened

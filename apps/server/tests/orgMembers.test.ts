@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import crypto from "node:crypto";
 import { prisma } from "../src/lib/prisma.js";
-import { createOrganization, inviteMember, removeMember } from "../src/services/org.service.js";
+import { createOrganization, inviteMember, removeMember, getAuditLog } from "../src/services/org.service.js";
 
 let orgId: string;
 let ownerId: string;
@@ -117,5 +117,24 @@ describe("inviting an organization member", () => {
       where: { userId_organizationId: { userId: adminId, organizationId: orgId } },
       data: { role: "ADMIN" },
     });
+  });
+});
+
+describe("organization audit log", () => {
+  it("records a member.removed entry with the acting user and the removed role", async () => {
+    const removable = await prisma.user.create({
+      data: { name: "Audited Removal", email: `audited-removal-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
+    });
+    await inviteMember(orgId, removable.email, "VIEWER", "OWNER");
+    await removeMember(orgId, removable.id, ownerId, "OWNER");
+
+    const log = await getAuditLog(orgId);
+    const entry = log.find((e) => e.action === "member.removed" && (e.metadata as any)?.removedUserId === removable.id);
+    expect(entry).toBeTruthy();
+    expect(entry?.actor?.id).toBe(ownerId);
+    expect((entry?.metadata as any)?.removedRole).toBe("VIEWER");
+
+    await prisma.auditLog.deleteMany({ where: { organizationId: orgId, action: "member.removed" } });
+    await prisma.user.delete({ where: { id: removable.id } });
   });
 });

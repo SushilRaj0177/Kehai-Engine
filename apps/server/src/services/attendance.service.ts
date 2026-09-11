@@ -175,6 +175,7 @@ export async function manualOverride(eventId: string, targetUserId: string, over
 
   await prisma.auditLog.create({
     data: {
+      organizationId: event.organizationId,
       eventId,
       actorUserId: overriddenById,
       action: "attendance.override",

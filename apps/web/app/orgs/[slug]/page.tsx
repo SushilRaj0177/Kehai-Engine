@@ -15,6 +15,7 @@ import { PageGlow } from "@/components/ui/PageGlow";
 import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { OrgAttendanceTrendChart } from "@/components/charts/OrgAttendanceTrendChart";
 import { OrgMembers } from "@/components/OrgMembers";
+import { AuditLogPanel } from "@/components/AuditLogPanel";
 import { useMyOrganizations, useOrgEvents, useOrgOverview } from "@/lib/hooks";
 import { formatDateRange } from "@/lib/format";
 import { useLocale } from "@/lib/i18n";
@@ -149,6 +150,17 @@ export default function OrgPage() {
             </CardBody>
           </Card>
         </div>
+
+        {(org.role === "ADMIN" || org.role === "OWNER") && (
+          <div className="relative mt-16">
+            <h2 className="mb-6 font-display text-xl font-bold text-white/70">{t("auditLog.heading")}</h2>
+            <Card>
+              <CardBody>
+                <AuditLogPanel orgId={org.id} />
+              </CardBody>
+            </Card>
+          </div>
+        )}
       </div>
     </ClickRippleLayer>
   );

@@ -9,6 +9,15 @@ export interface Organization {
   role?: OrgRole;
 }
 
+export interface AuditLogEntry {
+  id: string;
+  action: string;
+  createdAt: string;
+  metadata: Record<string, unknown> | null;
+  actor: { id: string; name: string; email: string } | null;
+  event: { id: string; name: string } | null;
+}
+
 export interface OrgMember {
   id: string;
   role: OrgRole;

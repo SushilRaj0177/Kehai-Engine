@@ -205,6 +205,15 @@ const dict = {
     role_ORGANIZER: { en: "Organizer", ja: "運営者" },
     role_VIEWER: { en: "Viewer", ja: "閲覧者" },
   },
+  auditLog: {
+    heading: { en: "Activity log", ja: "アクティビティログ" },
+    empty: { en: "No activity yet.", ja: "まだアクティビティがありません。" },
+    unknownActor: { en: "Someone", ja: "不明なユーザー" },
+    unknownEvent: { en: "an event", ja: "イベント" },
+    attendanceOverride: { en: "{actor} manually marked someone present at {event}", ja: "{actor} が {event} で手動出席登録しました" },
+    registrationRemoved: { en: "{actor} removed a registration from {event}", ja: "{actor} が {event} の登録を削除しました" },
+    memberRemoved: { en: "{actor} removed a {role} from the team", ja: "{actor} がチームから {role} を削除しました" },
+  },
   eventControl: {
     live: { en: "Live", ja: "ライブ" },
     polling: { en: "Polling", ja: "ポーリング中" },
