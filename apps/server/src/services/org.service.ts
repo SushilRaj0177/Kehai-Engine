@@ -19,9 +19,28 @@ export async function createOrganization(ownerId: string, name: string) {
   });
 }
 
-export async function inviteMember(organizationId: string, email: string, role: "ADMIN" | "ORGANIZER" | "VIEWER") {
+export async function inviteMember(
+  organizationId: string,
+  email: string,
+  role: "ADMIN" | "ORGANIZER" | "VIEWER",
+  callerRole: "OWNER" | "ADMIN"
+) {
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) throw HttpError.notFound("No user found with that email — they must create an account first");
+
+  // An ADMIN can only ever *grant* up to ADMIN (see inviteMemberSchema), but
+  // without this check they could still re-invite an existing OWNER at a
+  // lower role and silently demote them — the same privilege-escalation
+  // concern removeMember already guards against, just via upsert instead of
+  // delete.
+  if (callerRole === "ADMIN") {
+    const existing = await prisma.membership.findUnique({
+      where: { userId_organizationId: { userId: user.id, organizationId } },
+    });
+    if (existing && existing.role === "OWNER") {
+      throw HttpError.forbidden("You can't change an owner's role");
+    }
+  }
 
   return prisma.membership.upsert({
     where: { userId_organizationId: { userId: user.id, organizationId } },
@@ -48,7 +67,11 @@ export async function removeMember(organizationId: string, userId: string, calle
   // An ADMIN can invite up to ADMIN (see inviteMemberSchema) but must not be
   // able to remove a peer or superior — that would let an ADMIN unilaterally
   // shrink the org's leadership, which only an OWNER should be able to do.
-  if (ROLE_RANK[membership.role] >= ROLE_RANK[callerRole]) {
+  // OWNER-removing-OWNER is the one same-rank case that's allowed through —
+  // otherwise the last-owner check below could never be reached by anyone,
+  // since no role outranks OWNER.
+  const sameRankButBothOwners = callerRole === "OWNER" && membership.role === "OWNER";
+  if (ROLE_RANK[membership.role] >= ROLE_RANK[callerRole] && !sameRankButBothOwners) {
     throw HttpError.forbidden("You can't remove a member with an equal or higher role than your own");
   }
 

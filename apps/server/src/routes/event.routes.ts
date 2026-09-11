@@ -81,29 +81,7 @@ eventRouter.get(
   "/:eventId",
   optionalAuth,
   asyncHandler(async (req, res) => {
-    const event = await prisma.event.findUnique({
-      where: { id: req.params.eventId },
-      include: {
-        organization: { select: { id: true, name: true, slug: true } },
-        _count: { select: { registrations: true, attendances: true } },
-      },
-    });
-    if (!event) throw HttpError.notFound("Event not found");
-
-    let isRegistered = false;
-    let hasAttended = false;
-    if (req.user) {
-      const [reg, att] = await Promise.all([
-        prisma.registration.findUnique({ where: { eventId_userId: { eventId: event.id, userId: req.user.id } } }),
-        prisma.attendanceRecord.findUnique({ where: { eventId_userId: { eventId: event.id, userId: req.user.id } } }),
-      ]);
-      isRegistered = !!reg;
-      hasAttended = !!att;
-    }
-
-    // Never leak the QR signing secret to clients
-    const { qrSecret, ...safeEvent } = event;
-    res.json({ ...safeEvent, isRegistered, hasAttended });
+    res.json(await eventService.getEventForViewer(req.params.eventId, req.user?.id));
   })
 );
 
