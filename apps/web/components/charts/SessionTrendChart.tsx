@@ -22,7 +22,7 @@ export function SessionTrendChart({ sessions, studentCount }: { sessions: ClassS
 
   return (
     <ResponsiveContainer width="100%" height={200}>
-      <LineChart data={data} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+      <LineChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
         <XAxis dataKey="label" stroke="rgba(255,255,255,0.3)" fontSize={11} tickLine={false} />
         <YAxis
@@ -30,7 +30,7 @@ export function SessionTrendChart({ sessions, studentCount }: { sessions: ClassS
           fontSize={11}
           tickLine={false}
           axisLine={false}
-          width={32}
+          width={40}
           domain={[0, 100]}
           tickFormatter={(v) => `${v}%`}
         />

@@ -174,7 +174,13 @@ const dict = {
     statRegistrations: { en: "Registrations", ja: "登録者数" },
     statAttendance: { en: "Attendance", ja: "出席者数" },
     statAvgRate: { en: "Avg. attendance rate", ja: "平均出席率" },
+    statCompleted: { en: "Completed", ja: "終了済み" },
+    statRecurringRate: { en: "Repeat attendees", ja: "リピート参加率" },
+    trendHeading: { en: "Attendance trend", ja: "出席率の推移" },
     eventsHeading: { en: "Events", ja: "イベント" },
+    searchPlaceholder: { en: "Search events…", ja: "イベントを検索…" },
+    noMatchTitle: { en: "No matching events", ja: "一致するイベントがありません" },
+    noMatchDescription: { en: "Try a different search term.", ja: "別のキーワードをお試しください。" },
     emptyTitle: { en: "No events yet", ja: "イベントがまだありません" },
     emptyDescription: {
       en: "Create your first event — set the venue, geofence, and publish when ready.",
@@ -518,6 +524,8 @@ const dict = {
     minutesFromStart: { en: "{signed} min from start", ja: "開始から{signed}分" },
     needMoreSessions: { en: "Trend appears after a couple of sessions.", ja: "セッションが2回以上たまるとトレンドが表示されます。" },
     presentOfEnrolled: { en: "{present}/{total} enrolled present", ja: "在籍{total}名中{present}名出席" },
+    needMoreEvents: { en: "Trend appears after a couple of events.", ja: "イベントが2件以上たまるとトレンドが表示されます。" },
+    attendedOfRegistered: { en: "{attended}/{total} registered attended", ja: "登録{total}名中{attended}名出席" },
   },
   classroomHub: {
     kicker: { en: "Recurring attendance", ja: "継続的な出席管理" },

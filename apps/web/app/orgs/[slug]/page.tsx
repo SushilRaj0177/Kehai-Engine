@@ -1,16 +1,19 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/Button";
-import { Card, CardBody } from "@/components/ui/Card";
+import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { TiltCard } from "@/components/ui/TiltCard";
 import { Badge } from "@/components/ui/Badge";
+import { Input } from "@/components/ui/Input";
 import { EmptyState, LoadingBlock } from "@/components/ui/States";
 import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
 import { ClickRippleLayer } from "@/components/ui/ClickRipple";
+import { OrgAttendanceTrendChart } from "@/components/charts/OrgAttendanceTrendChart";
 import { useMyOrganizations, useOrgEvents, useOrgOverview } from "@/lib/hooks";
 import { formatDateRange } from "@/lib/format";
 import { useLocale } from "@/lib/i18n";
@@ -22,7 +25,15 @@ export default function OrgPage() {
   const org = orgs?.find((o) => o.slug === slug);
 
   const { data: events, isLoading: eventsLoading } = useOrgEvents(org?.id);
-  const { data: overview } = useOrgOverview(org?.id) as { data: any };
+  const { data: overview } = useOrgOverview(org?.id);
+  const [q, setQ] = useState("");
+
+  const filteredEvents = useMemo(() => {
+    if (!events) return events;
+    const needle = q.trim().toLowerCase();
+    if (!needle) return events;
+    return events.filter((e) => e.name.toLowerCase().includes(needle) || e.venue.toLowerCase().includes(needle));
+  }, [events, q]);
 
   if (orgsLoading) return <LoadingBlock />;
   if (!org) {
@@ -54,16 +65,40 @@ export default function OrgPage() {
         </div>
 
         {overview && (
-          <div className="relative mt-14 grid grid-cols-2 gap-8 sm:grid-cols-4">
+          <div className="relative mt-14 grid grid-cols-2 gap-8 sm:grid-cols-3 lg:grid-cols-6">
             <MiniStat label={t("orgDetail.statEvents")} value={overview.totalEvents} />
+            <MiniStat label={t("orgDetail.statCompleted")} value={overview.completedEvents} />
             <MiniStat label={t("orgDetail.statRegistrations")} value={overview.totalRegistrations} />
             <MiniStat label={t("orgDetail.statAttendance")} value={overview.totalAttendance} />
             <MiniStat label={t("orgDetail.statAvgRate")} value={`${Math.round((overview.averageAttendanceRate ?? 0) * 100)}%`} />
+            <MiniStat label={t("orgDetail.statRecurringRate")} value={`${Math.round((overview.recurringAttendeeRate ?? 0) * 100)}%`} />
           </div>
         )}
 
+        {overview && overview.events.length > 0 && (
+          <Card className="relative mt-10">
+            <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">
+              {t("orgDetail.trendHeading")}
+            </CardHeader>
+            <CardBody>
+              <OrgAttendanceTrendChart events={overview.events} />
+            </CardBody>
+          </Card>
+        )}
+
         <div className="relative mt-16">
-          <h2 className="mb-6 font-display text-xl font-bold text-white/70">{t("orgDetail.eventsHeading")}</h2>
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-display text-xl font-bold text-white/70">{t("orgDetail.eventsHeading")}</h2>
+            {events && events.length > 0 && (
+              <Input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder={t("orgDetail.searchPlaceholder")}
+                underline={false}
+                className="max-w-xs"
+              />
+            )}
+          </div>
           {eventsLoading ? (
             <LoadingBlock />
           ) : !events?.length ? (
@@ -77,9 +112,11 @@ export default function OrgPage() {
                 </Link>
               }
             />
+          ) : !filteredEvents?.length ? (
+            <EmptyState glyph="催" title={t("orgDetail.noMatchTitle")} description={t("orgDetail.noMatchDescription")} />
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {events.map((event) => (
+              {filteredEvents.map((event) => (
                 <Link key={event.id} href={`/orgs/${org.slug}/events/${event.id}`}>
                   <TiltCard className="h-full rounded-2xl">
                     <Card className="h-full transition-colors hover:border-shu-500/30">
