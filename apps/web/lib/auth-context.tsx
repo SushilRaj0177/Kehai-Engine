@@ -15,6 +15,7 @@ export interface SessionUser {
   avatarUrl?: string | null;
   provider?: "PASSWORD" | "GOOGLE";
   emailNotificationsEnabled?: boolean;
+  emailVerifiedAt?: string | null;
 }
 
 interface AuthState {

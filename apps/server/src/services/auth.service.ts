@@ -32,6 +32,30 @@ async function issueSession(userId: string, email: string, name: string) {
   return { accessToken, refreshToken };
 }
 
+const VERIFICATION_TOKEN_TTL_MS = 1000 * 60 * 60 * 24; // 24 hours — longer-lived than a
+// password reset link since there's no urgency and no harm in a stale one.
+
+async function sendVerificationEmail(userId: string, email: string, name: string) {
+  const rawToken = crypto.randomBytes(32).toString("hex");
+  await prisma.emailVerificationToken.create({
+    data: {
+      userId,
+      tokenHash: hashToken(rawToken),
+      expiresAt: new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS),
+    },
+  });
+
+  const link = `${env.WEB_ORIGIN}/verify-email?token=${encodeURIComponent(rawToken)}`;
+  await sendEmail(
+    email,
+    "Verify your Kehai Engine email",
+    `<p>Hi ${name},</p>
+     <p>Click the link below to confirm this is your email address. This link expires in 24 hours.</p>
+     <p><a href="${link}">${link}</a></p>
+     <p>If you didn't create this account, you can safely ignore this email.</p>`
+  );
+}
+
 export async function register(input: { name: string; email: string; password: string }) {
   const existing = await prisma.user.findUnique({ where: { email: input.email } });
   if (existing) throw HttpError.conflict("An account with this email already exists");
@@ -41,8 +65,29 @@ export async function register(input: { name: string; email: string; password: s
     data: { name: input.name, email: input.email, passwordHash, provider: "PASSWORD" },
   });
 
+  await sendVerificationEmail(user.id, user.email, user.name);
+
   const session = await issueSession(user.id, user.email, user.name);
   return { user: sanitizeUser(user), ...session };
+}
+
+export async function resendVerificationEmail(userId: string) {
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+  if (user.emailVerifiedAt) throw HttpError.badRequest("This email is already verified");
+  await sendVerificationEmail(user.id, user.email, user.name);
+}
+
+export async function verifyEmail(rawToken: string) {
+  const tokenHash = hashToken(rawToken);
+  const stored = await prisma.emailVerificationToken.findUnique({ where: { tokenHash } });
+  if (!stored || stored.usedAt || stored.expiresAt < new Date()) {
+    throw HttpError.badRequest("This verification link is invalid or has expired — request a new one.");
+  }
+
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: stored.userId }, data: { emailVerifiedAt: new Date() } }),
+    prisma.emailVerificationToken.update({ where: { id: stored.id }, data: { usedAt: new Date() } }),
+  ]);
 }
 
 export async function login(input: { email: string; password: string }) {
@@ -68,9 +113,16 @@ export async function loginWithGoogle(idToken: string) {
   if (!user) {
     user = await prisma.user.findUnique({ where: { email: payload.email } });
     if (user) {
+      // Google has already verified this address, whether or not the
+      // existing PASSWORD account ever confirmed it themselves.
       user = await prisma.user.update({
         where: { id: user.id },
-        data: { googleSub: payload.sub, provider: "GOOGLE", avatarUrl: payload.picture },
+        data: {
+          googleSub: payload.sub,
+          provider: "GOOGLE",
+          avatarUrl: payload.picture,
+          emailVerifiedAt: user.emailVerifiedAt ?? new Date(),
+        },
       });
     } else {
       user = await prisma.user.create({
@@ -80,6 +132,7 @@ export async function loginWithGoogle(idToken: string) {
           googleSub: payload.sub,
           provider: "GOOGLE",
           avatarUrl: payload.picture,
+          emailVerifiedAt: new Date(),
         },
       });
     }

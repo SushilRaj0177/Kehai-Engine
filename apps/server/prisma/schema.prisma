@@ -37,12 +37,20 @@ model User {
   // password resets, only the scheduler's own recurring sends.
   emailNotificationsEnabled Boolean @default(true)
 
+  // Null until the address is confirmed. A GOOGLE-provider account is
+  // stamped verified at creation (Google already vouches for the email);
+  // a PASSWORD account starts null and is verified through the emailed
+  // link. Deliberately non-blocking — nothing in the app currently gates
+  // on this — so it's a trust signal, not an access control.
+  emailVerifiedAt DateTime?
+
   memberships   Membership[]
   registrations Registration[]
   attendances   AttendanceRecord[]
   auditLogs     AuditLog[]
   refreshTokens RefreshToken[]
   passwordResetTokens PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
   createdEvents Event[]            @relation("EventCreatedBy")
 
   taughtClassrooms Classroom[]       @relation("ClassroomTeacher")
@@ -66,6 +74,19 @@ model RefreshToken {
 }
 
 model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model EmailVerificationToken {
   id        String    @id @default(cuid())
   userId    String
   tokenHash String    @unique
