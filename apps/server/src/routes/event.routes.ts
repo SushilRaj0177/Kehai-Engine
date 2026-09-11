@@ -4,6 +4,7 @@ import { requireAuth, requireOrgRole, optionalAuth } from "../middleware/auth.js
 import { HttpError } from "../lib/http-error.js";
 import { updateEventSchema, eventStatusSchema } from "../validators/event.js";
 import * as eventService from "../services/event.service.js";
+import * as icsService from "../services/ics.service.js";
 import { prisma } from "../lib/prisma.js";
 import { emitEventUpdate } from "../realtime/socket.js";
 
@@ -60,6 +61,19 @@ eventRouter.get(
         };
       })
     );
+  })
+);
+
+// Public — same audience as browsing the event itself, no registration or
+// org membership required, so a visitor deciding whether to attend can
+// already save the date.
+eventRouter.get(
+  "/:eventId/calendar.ics",
+  asyncHandler(async (req, res) => {
+    const { filename, content } = await icsService.generateEventIcs(req.params.eventId);
+    res.setHeader("Content-Type", "text/calendar; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.send(content);
   })
 );
 

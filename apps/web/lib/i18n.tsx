@@ -304,6 +304,7 @@ const dict = {
     },
     checkInWithQr: { en: "Check in with QR", ja: "QRでチェックイン" },
     registerToAttend: { en: "Register to attend", ja: "参加登録する" },
+    addToCalendar: { en: "+ Add to calendar", ja: "+ カレンダーに追加" },
     registeredCount: { en: "{count} registered", ja: "登録 {count} 名" },
     registeredWithCapacity: { en: "{count} registered / {capacity} capacity", ja: "登録 {count} / 定員 {capacity} 名" },
     attendedCount: { en: "{count} attended", ja: "出席 {count} 名" },
@@ -690,6 +691,11 @@ const dict = {
     present: { en: "Present", ja: "出席済み" },
     markPresent: { en: "Mark present", ja: "出席にする" },
     overrideError: { en: "Failed to mark student present", ja: "出席の記録に失敗しました" },
+  },
+  atRisk: {
+    heading: { en: "Attendance risk", ja: "出席リスク" },
+    presentOf: { en: "{present}/{total} sessions", ja: "{total}回中{present}回出席" },
+    viewRoster: { en: "View full roster →", ja: "全員の名簿を見る →" },
   },
   legal: {
     kicker: { en: "Legal", ja: "法的情報" },
