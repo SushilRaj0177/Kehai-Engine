@@ -591,6 +591,10 @@ const dict = {
       ja: "このクラスの受講者・担当教員ではないか、クラスが存在しない可能性があります。",
     },
     studentCountLabel: { en: "Students", ja: "学生数" },
+    editDetails: { en: "Edit details", ja: "詳細を編集" },
+    saveChanges: { en: "Save changes", ja: "変更を保存" },
+    editSaved: { en: "Saved", ja: "保存しました" },
+    editError: { en: "Failed to save changes", ja: "変更の保存に失敗しました" },
     sessionsHeading: { en: "Sessions", ja: "セッション" },
     sessionLabelPlaceholder: {
       en: "Session name (optional) — e.g. Lecture, Quiz",
