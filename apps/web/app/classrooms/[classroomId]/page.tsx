@@ -14,6 +14,7 @@ import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { ClassSessionManager } from "@/components/ClassSessionManager";
 import { ClassroomRoster } from "@/components/ClassroomRoster";
 import { ClassroomExportButtons } from "@/components/ExportButtons";
+import { AtRiskStudents } from "@/components/AtRiskStudents";
 import { AttendanceHeatmap } from "@/components/AttendanceHeatmap";
 import { LiveIndicator } from "@/components/ui/LiveIndicator";
 import { useClassroom, useClassroomHeatmap, useClassroomRoster } from "@/lib/hooks";
@@ -141,7 +142,7 @@ export default function ClassroomDetailPage() {
                 </CardBody>
               </Card>
 
-              <Card>
+              <Card id="roster">
                 <CardHeader className="flex flex-wrap items-center justify-between gap-3">
                   <span className="text-xs font-semibold uppercase tracking-wider text-white/40">
                     {t("classroomDetail.rosterHeading")}
@@ -160,6 +161,8 @@ export default function ClassroomDetailPage() {
                 openSession={classroom.openSession}
                 onSessionsChanged={() => mutate()}
               />
+
+              <AtRiskStudents classroomId={classroomId} />
 
               <Card>
                 <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">

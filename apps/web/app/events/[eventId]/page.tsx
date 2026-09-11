@@ -14,7 +14,7 @@ import { PageGlow } from "@/components/ui/PageGlow";
 import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { useAuth } from "@/lib/auth-context";
 import { useEvent } from "@/lib/hooks";
-import { apiFetch, ApiError } from "@/lib/api";
+import { apiFetch, ApiError, getApiBase } from "@/lib/api";
 import { formatDateRange, formatDateTime } from "@/lib/format";
 import { getCheckInWindow } from "@/lib/checkin-window";
 import { useLocale } from "@/lib/i18n";
@@ -85,8 +85,16 @@ export default function EventDetailPage() {
         <h1 className="relative z-20 mt-4 font-display text-4xl font-black leading-tight text-white md:text-5xl">
           {event.name}
         </h1>
-        <p className="relative z-20 mt-3 text-lg text-white/50">
-          {formatDateRange(event.startsAt, event.endsAt, locale)} · {event.venue}
+        <p className="relative z-20 mt-3 flex flex-wrap items-center gap-x-2 text-lg text-white/50">
+          <span>
+            {formatDateRange(event.startsAt, event.endsAt, locale)} · {event.venue}
+          </span>
+          <a
+            href={`${getApiBase()}/api/events/${event.id}/calendar.ics`}
+            className="text-sm font-medium text-kehai-400 hover:text-kehai-300"
+          >
+            {t("eventDetail.addToCalendar")}
+          </a>
         </p>
 
         {event.description && <p className="relative z-20 mt-5 text-base leading-relaxed text-white/60">{event.description}</p>}
