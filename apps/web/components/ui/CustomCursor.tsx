@@ -30,6 +30,7 @@ export function CustomCursor() {
     let ringX = mouseX;
     let ringY = mouseY;
     let hovering = false;
+    let overSmallStateControl = false;
     let raf = 0;
     let streakOpacity = 0;
 
@@ -37,7 +38,14 @@ export function CustomCursor() {
       mouseX = e.clientX;
       mouseY = e.clientY;
       const target = e.target as Element | null;
-      hovering = !!target?.closest("a, button, [role='button'], input, textarea, [data-cursor-hover]");
+      // Small color-coded state indicators (a toggle switch, a checkbox)
+      // are their own feedback — enlarging the ring to 1.8x and boosting
+      // its opacity right on top of one, the same treatment a full-size
+      // button gets, means the ring's red/cyan glow (mix-blend-screen)
+      // sits directly over the control's own on/off color at exactly the
+      // moment its state changes, reading as if the toggle itself glitched.
+      overSmallStateControl = !!target?.closest("[role='switch'], [role='checkbox'], [role='radio'], input[type='checkbox'], input[type='radio']");
+      hovering = !overSmallStateControl && !!target?.closest("a, button, [role='button'], input, textarea, [data-cursor-hover]");
     }
 
     function tick() {
@@ -49,7 +57,11 @@ export function CustomCursor() {
       ringY += (mouseY - ringY) * 0.18;
       if (ring) {
         ring.style.transform = `translate3d(${ringX}px, ${ringY}px, 0) translate(-50%, -50%) scale(${hovering ? 1.8 : 1})`;
-        ring.style.opacity = hovering ? "0.9" : "0.55";
+        // Even at rest, the ring's 24px diameter is close enough to a small
+        // control's own footprint (this toggle's thumb is 20px) to visually
+        // collide with it — fade the ring back rather than merely declining
+        // to enlarge it.
+        ring.style.opacity = overSmallStateControl ? "0.15" : hovering ? "0.9" : "0.55";
       }
 
       // A sandevistan-style speed-streak: a thin blade of light stretched
