@@ -2,6 +2,18 @@ import ExcelJS from "exceljs";
 import { prisma } from "../lib/prisma.js";
 import { HttpError } from "../lib/http-error.js";
 
+// A spreadsheet cell whose text starts with =, +, -, or @ is a formula to
+// Excel/Sheets/LibreOffice, not literal text — and every field here that
+// comes from a user-chosen name (display name, a teacher's session label)
+// is exactly the kind of string an attacker could set to something like
+// `=HYPERLINK(...)` or a DDE payload, then wait for an organizer to open
+// the export. Prefixing a leading apostrophe is the standard mitigation:
+// spreadsheet apps render it as plain text instead of evaluating it, and a
+// value that already starts with a quote is untouched either way.
+function sanitizeCell(value: string): string {
+  return /^[=+\-@]/.test(value) ? `'${value}` : value;
+}
+
 async function getAttendeeRows(eventId: string) {
   const event = await prisma.event.findUnique({ where: { id: eventId } });
   if (!event) throw HttpError.notFound("Event not found");
@@ -15,8 +27,8 @@ async function getAttendeeRows(eventId: string) {
   return {
     event,
     rows: registrations.map((r) => ({
-      name: r.user.name,
-      email: r.user.email,
+      name: sanitizeCell(r.user.name),
+      email: sanitizeCell(r.user.email),
       registeredAt: r.createdAt.toISOString(),
       attended: r.attendance ? "Yes" : "No",
       checkedInAt: r.attendance?.checkedInAt.toISOString() ?? "",
@@ -101,9 +113,9 @@ async function getClassroomAttendanceRows(classroomId: string) {
       const attendance = byStudent.get(enrollment.student.id);
       rows.push({
         sessionDate: session.date.toISOString().slice(0, 10),
-        sessionLabel: session.label ?? "",
-        name: enrollment.student.name,
-        email: enrollment.student.email,
+        sessionLabel: sanitizeCell(session.label ?? ""),
+        name: sanitizeCell(enrollment.student.name),
+        email: sanitizeCell(enrollment.student.email),
         present: attendance ? "Yes" : "No",
         checkedInAt: attendance?.checkedInAt.toISOString() ?? "",
         flagged: attendance?.flagged ? "Yes" : "",
