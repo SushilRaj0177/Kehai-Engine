@@ -219,6 +219,8 @@ export default function ClassroomDetailPage() {
                   <ShareJoinCode joinCode={classroom.joinCode} />
                 </CardBody>
               </Card>
+
+              <DeleteClassroomSection classroomId={classroomId} classroomName={classroom.name} />
             </div>
           </div>
         ) : (
@@ -348,6 +350,60 @@ function EditClassroomDetailsPanel({ classroom, onSaved }: { classroom: Classroo
           </Button>
           {saved && <span className="text-sm text-kehai-400">✓ {t("classroomDetail.editSaved")}</span>}
         </div>
+      </CardBody>
+    </Card>
+  );
+}
+
+function DeleteClassroomSection({ classroomId, classroomName }: { classroomId: string; classroomName: string }) {
+  const { t } = useLocale();
+  const router = useRouter();
+  const [confirming, setConfirming] = useState(false);
+  const [typedName, setTypedName] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function confirmDelete() {
+    setError(null);
+    setDeleting(true);
+    try {
+      await apiFetch(`/api/classrooms/${classroomId}`, { method: "DELETE" });
+      router.push("/classrooms");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t("classroomDetail.deleteClassroomError"));
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  return (
+    <Card className="border-shu-500/20">
+      <CardBody className="space-y-4">
+        <div>
+          <p className="text-sm font-medium text-white/85">{t("classroomDetail.deleteClassroomLabel")}</p>
+          <p className="mt-1 text-xs text-white/40">{t("classroomDetail.deleteClassroomHint")}</p>
+        </div>
+        {error && <ErrorBlock message={error} />}
+        {confirming ? (
+          <div className="space-y-3 rounded-lg border border-shu-500/20 bg-shu-500/5 p-4">
+            <div>
+              <Label htmlFor="delete-classroom-confirm">{t("classroomDetail.typeNameToConfirm", { name: classroomName })}</Label>
+              <Input id="delete-classroom-confirm" value={typedName} onChange={(e) => setTypedName(e.target.value)} />
+            </div>
+            <div className="flex items-center gap-3">
+              <Button variant="danger" size="sm" loading={deleting} onClick={confirmDelete} disabled={typedName !== classroomName}>
+                {t("classroomDetail.deleteClassroomConfirm")}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setConfirming(false)}>
+                {t("common.cancel")}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button variant="danger" size="sm" onClick={() => setConfirming(true)}>
+            {t("classroomDetail.deleteClassroomLabel")}
+          </Button>
+        )}
       </CardBody>
     </Card>
   );
