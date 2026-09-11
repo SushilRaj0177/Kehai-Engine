@@ -52,6 +52,7 @@ export default function SettingsPage() {
           <ProfileSection />
           <NotificationsSection />
           {user.provider !== "GOOGLE" && <ChangePasswordSection />}
+          <DeleteAccountSection />
         </div>
       </div>
     </ClickRippleLayer>
@@ -237,6 +238,82 @@ function ChangePasswordSection() {
         >
           {t("settings.changePassword")}
         </Button>
+      </CardBody>
+    </Card>
+  );
+}
+
+function DeleteAccountSection() {
+  const { t } = useLocale();
+  const { user } = useAuth();
+  const router = useRouter();
+  const [confirming, setConfirming] = useState(false);
+  const [password, setPassword] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const needsPassword = user?.provider !== "GOOGLE";
+
+  async function confirmDelete() {
+    setError(null);
+    setDeleting(true);
+    try {
+      await apiFetch("/api/auth/me", {
+        method: "DELETE",
+        body: JSON.stringify(needsPassword ? { password } : {}),
+      });
+      clearTokens();
+      router.push("/");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t("settings.deleteAccountError"));
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  return (
+    <Card className="border-shu-500/20">
+      <CardHeader className="text-xs font-semibold uppercase tracking-wider text-shu-400">{t("settings.dangerZoneHeading")}</CardHeader>
+      <CardBody className="space-y-4">
+        <div>
+          <p className="text-sm font-medium text-white/85">{t("settings.deleteAccountLabel")}</p>
+          <p className="mt-1 text-xs text-white/40">{t("settings.deleteAccountHint")}</p>
+        </div>
+        {error && <ErrorBlock message={error} />}
+        {confirming ? (
+          <div className="space-y-3 rounded-lg border border-shu-500/20 bg-shu-500/5 p-4">
+            {needsPassword && (
+              <div>
+                <Label htmlFor="settings-delete-password">{t("settings.confirmPasswordToDelete")}</Label>
+                <Input
+                  id="settings-delete-password"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+            )}
+            <div className="flex items-center gap-3">
+              <Button
+                variant="danger"
+                size="sm"
+                loading={deleting}
+                onClick={confirmDelete}
+                disabled={needsPassword && !password}
+              >
+                {t("settings.deleteAccountConfirm")}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setConfirming(false)}>
+                {t("common.cancel")}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button variant="danger" size="sm" onClick={() => setConfirming(true)}>
+            {t("settings.deleteAccountLabel")}
+          </Button>
+        )}
       </CardBody>
     </Card>
   );
