@@ -347,6 +347,10 @@ function EditDetailsPanel({ event, onSaved }: { event: EventSummary; onSaved: ()
   const [description, setDescription] = useState(event.description ?? "");
   const [venue, setVenue] = useState(event.venue);
   const [capacity, setCapacity] = useState(event.capacity != null ? String(event.capacity) : "");
+  const [latitude, setLatitude] = useState(String(event.latitude));
+  const [longitude, setLongitude] = useState(String(event.longitude));
+  const [geofenceRadiusM, setGeofenceRadiusM] = useState(String(event.geofenceRadiusM));
+  const [locating, setLocating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -361,6 +365,27 @@ function EditDetailsPanel({ event, onSaved }: { event: EventSummary; onSaved: ()
     setDescription(event.description ?? "");
     setVenue(event.venue);
     setCapacity(event.capacity != null ? String(event.capacity) : "");
+    setLatitude(String(event.latitude));
+    setLongitude(String(event.longitude));
+    setGeofenceRadiusM(String(event.geofenceRadiusM));
+  }
+
+  function useMyLocation() {
+    if (!navigator.geolocation) return;
+    setLocating(true);
+    setError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLatitude(pos.coords.latitude.toFixed(6));
+        setLongitude(pos.coords.longitude.toFixed(6));
+        setLocating(false);
+      },
+      (err) => {
+        setError(err.message);
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
   }
 
   async function save() {
@@ -375,6 +400,9 @@ function EditDetailsPanel({ event, onSaved }: { event: EventSummary; onSaved: ()
           description: description.trim() || null,
           venue,
           capacity: capacity.trim() ? Number(capacity) : null,
+          latitude: Number(latitude),
+          longitude: Number(longitude),
+          geofenceRadiusM: Number(geofenceRadiusM),
         }),
       });
       onSaved();
@@ -412,6 +440,39 @@ function EditDetailsPanel({ event, onSaved }: { event: EventSummary; onSaved: ()
         <div className="max-w-[12rem]">
           <Label htmlFor="edit-capacity">{t("eventNew.capacityLabel")}</Label>
           <Input id="edit-capacity" type="number" min={1} value={capacity} onChange={(e) => setCapacity(e.target.value)} />
+        </div>
+        <div className="border-t border-white/[0.06] pt-4">
+          <p className="mb-1 text-[11px] uppercase tracking-wider text-white/35">{t("eventControl.geofenceHeading")}</p>
+          <p className="mb-3 text-xs text-amber-300/70">{t("eventControl.geofenceEditWarning")}</p>
+          <div className="mb-3 flex flex-wrap items-center gap-3">
+            <Button type="button" variant="secondary" size="sm" loading={locating} onClick={useMyLocation}>
+              {locating ? t("eventNew.locating") : t("eventNew.useMyLocation")}
+            </Button>
+            <span className="text-sm text-white/45">
+              {latitude}, {longitude}
+            </span>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div>
+              <Label htmlFor="edit-lat">{t("eventNew.latitudeLabel")}</Label>
+              <Input id="edit-lat" value={latitude} onChange={(e) => setLatitude(e.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="edit-lng">{t("eventNew.longitudeLabel")}</Label>
+              <Input id="edit-lng" value={longitude} onChange={(e) => setLongitude(e.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="edit-radius">{t("eventNew.radiusLabel")}</Label>
+              <Input
+                id="edit-radius"
+                type="number"
+                min={10}
+                max={5000}
+                value={geofenceRadiusM}
+                onChange={(e) => setGeofenceRadiusM(e.target.value)}
+              />
+            </div>
+          </div>
         </div>
         {error && <ErrorBlock message={error} />}
         <div className="flex flex-wrap items-center gap-3">

@@ -257,6 +257,11 @@ const dict = {
     saveChanges: { en: "Save changes", ja: "変更を保存" },
     editSaved: { en: "Saved", ja: "保存しました" },
     editError: { en: "Failed to save changes", ja: "変更の保存に失敗しました" },
+    geofenceHeading: { en: "Venue location", ja: "会場の位置" },
+    geofenceEditWarning: {
+      en: "Changing this immediately moves the check-in boundary for everyone, including anyone checking in right now.",
+      ja: "変更するとチェックインの範囲がすぐに変わります。現在チェックイン中の人にも影響します。",
+    },
     editLockedHint: {
       en: "This event is completed or cancelled and can no longer be edited.",
       ja: "このイベントは終了または中止されているため、編集できません。",
