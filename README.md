@@ -44,15 +44,22 @@ event data.
 - Display a rotating, signed check-in QR code
 - Watch attendance happen live — no refresh needed
 - Search/filter attendees, manually override a check-in when needed
-- Export attendee lists as CSV or Excel
+- Export attendee lists as CSV or Excel (including waitlist status)
+- Manually mark someone present, or undo a check-in that was a wrong scan or misclick
+- Remove a registration, or run a capacity-aware waitlist that promotes the next person automatically when a spot opens
+- Duplicate an event, delete one outright, or delete the whole organization
+- Manage the team: invite by role, change an existing member's role inline, or remove them
+- Review an organization-wide activity log of who did what
 - See deterministic analytics (attendance rate, no-show rate, arrival timeline, peak arrival window) and rule-based anomaly flags
 - Generate AI-interpreted insights, an AI post-event report, and ask natural-language questions about their org's event history
 
 **Attendee side**
 - Browse published/active events
-- Register
+- Register (or join a waitlist once an event is full, with automatic promotion when a spot opens)
+- Verify their email address
 - Scan the organizer's QR (in-app camera scanner or by opening the code's deep link directly)
 - Share location once, see an honest distance readout, and get a confirmed/rejected check-in with a real reason
+- Cancel a registration, or delete their own account (blocked while they'd strand an organization as its sole owner)
 
 **Classrooms (teacher side)** — a second, parallel workflow for tracking a
 class's attendance over a semester rather than a one-off event:
@@ -63,11 +70,15 @@ class's attendance over a semester rather than a one-off event:
 - Get notified in real time the moment a student joins
 - Track both individual and whole-class attendance on a GitHub-contribution
   -style heatmap, with current/longest streaks
+- Nudge an at-risk student by email — automatically (weekly, cooldown-gated)
+  or manually on demand — and regenerate a classroom's join code, or delete
+  the classroom itself
 
 **Classrooms (student side)**
 - Join a class by typing its code
 - Check in the same QR + geofence way as an event
 - See their own attendance heatmap and streak for every class they're in
+- Leave a classroom themselves, without needing the teacher to remove them
 
 ---
 
@@ -292,14 +303,16 @@ logs the link server-side instead of emailing it).
 pnpm --filter server test
 ```
 
-43 tests (Vitest): geofence math (including accuracy-padding edge cases and
-invalid-coordinate rejection), QR token signing/verification (cross-event
-rejection, expiry, tamper resistance) for both events and classroom
-sessions, duplicate check-in prevention and geofence rejection against a
-real Postgres database, event lifecycle transition validity, join-code
-generation, streak computation, analytics correctness, and the auth session
-lifecycle (refresh non-rotation, logout revocation, password reset
-revoking every session).
+124 tests across 20 files (Vitest): geofence math (including accuracy-padding
+edge cases and invalid-coordinate rejection), QR token signing/verification
+(cross-event rejection, expiry, tamper resistance) for both events and
+classroom sessions, duplicate check-in prevention, geofence rejection, and
+attendance revocation against a real Postgres database, event lifecycle
+transition validity, join-code generation and regeneration, streak
+computation, analytics correctness, waitlist promotion under a
+transactional row lock, email verification token lifecycle, self-service
+account/classroom deletion guards, and the auth session lifecycle (refresh
+non-rotation, logout revocation, password reset revoking every session).
 
 Frontend: `pnpm --filter web build` runs a full production build with
 type-checking. The complete demo flow (register → org → event → publish →
@@ -407,8 +420,11 @@ All routes are under `/api`. Representative endpoints:
 | POST | `/api/orgs/:orgId/events` | Create event (role: ORGANIZER+) |
 | POST | `/api/events/:eventId/status` | Lifecycle transition |
 | GET | `/api/events/:eventId/qr` · `/api/qr/events/:eventId/qr-image` | Issue rotating check-in token / QR image |
-| POST | `/api/events/:eventId/register` | Attendee registers |
+| POST | `/api/events/:eventId/register` | Attendee registers (waitlists automatically once full) |
+| DELETE | `/api/events/:eventId/registrations/:userId` | Cancel a registration (promotes the next waitlisted person) |
 | POST | `/api/attendance/:eventId/checkin` | QR + geofence verified check-in |
+| POST | `/api/attendance/:eventId/override` · DELETE `/attendees/:userId` | Manual present / undo a check-in |
+| DELETE | `/api/orgs/:orgId` · `/api/classrooms/:id` | Delete an organization / classroom |
 | GET | `/api/analytics/events/:eventId` | Deterministic metrics |
 | GET | `/api/analytics/events/:eventId/anomalies` | Rule-based anomalies |
 | GET | `/api/ai/events/:eventId/insights` · `/report` | AI-interpreted insights / report |
