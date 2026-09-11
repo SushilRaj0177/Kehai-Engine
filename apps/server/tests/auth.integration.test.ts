@@ -92,4 +92,31 @@ describe("auth session lifecycle", () => {
     // The token can't be reused.
     await expect(authService.resetPassword(rawToken, "another-password-1")).rejects.toThrow(HttpError);
   });
+
+  it("updateProfile changes name and the notification preference", async () => {
+    const updated = await authService.updateProfile(userId, { name: "Renamed User", emailNotificationsEnabled: false });
+    expect(updated.name).toBe("Renamed User");
+    expect(updated.emailNotificationsEnabled).toBe(false);
+  });
+
+  it("changePassword rejects the wrong current password without touching anything", async () => {
+    await expect(authService.changePassword(userId, "definitely-wrong", "another-new-password-1")).rejects.toThrow(HttpError);
+    // The password from the reset test above must still work.
+    const stillWorks = await authService.login({ email, password: "new-password-1" });
+    expect(stillWorks.accessToken).toBeTruthy();
+  });
+
+  it("changePassword swaps the password and revokes every existing session", async () => {
+    const login = await authService.login({ email, password: "new-password-1" });
+
+    await authService.changePassword(userId, "new-password-1", "changed-password-1");
+
+    // Old password no longer works, new one does.
+    await expect(authService.login({ email, password: "new-password-1" })).rejects.toThrow(HttpError);
+    const relogin = await authService.login({ email, password: "changed-password-1" });
+    expect(relogin.accessToken).toBeTruthy();
+
+    // The session active before the change must be dead.
+    await expect(authService.refreshSession(login.refreshToken)).rejects.toThrow(HttpError);
+  });
 });
