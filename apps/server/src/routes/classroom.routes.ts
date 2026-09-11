@@ -13,6 +13,7 @@ import {
   classAttendanceOverrideSchema,
 } from "../validators/classroom.js";
 import * as classroomService from "../services/classroom.service.js";
+import { sendManualNudge } from "../services/nudge.service.js";
 import { env } from "../config/env.js";
 
 export const classroomRouter = Router();
@@ -126,6 +127,16 @@ classroomRouter.delete(
   requireAuth,
   asyncHandler(async (req, res) => {
     await classroomService.leaveClassroom(req.params.classroomId, req.user!.id);
+    res.status(204).end();
+  })
+);
+
+classroomRouter.post(
+  "/:classroomId/students/:studentId/nudge",
+  requireAuth,
+  requireClassroomTeacher(),
+  asyncHandler(async (req, res) => {
+    await sendManualNudge(req.params.classroomId, req.params.studentId);
     res.status(204).end();
   })
 );

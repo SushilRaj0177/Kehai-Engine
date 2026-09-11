@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import crypto from "node:crypto";
 import { prisma } from "../src/lib/prisma.js";
 import { createClassroom, createSession, closeSession, manualOverrideClassAttendance } from "../src/services/classroom.service.js";
-import { sendLowAttendanceNudges } from "../src/services/nudge.service.js";
+import { sendLowAttendanceNudges, sendManualNudge } from "../src/services/nudge.service.js";
 
 let teacherId: string;
 let atRiskStudentId: string;
@@ -86,5 +86,36 @@ describe("low-attendance nudges", () => {
     const eightDaysFromNow = new Date(Date.now() + 8 * 24 * 60 * 60 * 1000);
     const { sent } = await sendLowAttendanceNudges(eightDaysFromNow);
     expect(sent).toBe(1);
+  });
+});
+
+describe("manual, teacher-triggered nudge", () => {
+  it("sends immediately and stamps lastNudgedAt, ignoring the automated cooldown", async () => {
+    // The suite above already nudged this enrollment and set a cooldown
+    // (using a synthetic future "now", so its own lastNudgedAt can sit
+    // ahead of real time) — a manual nudge should still go through right
+    // away regardless, stamping a genuine current timestamp.
+    const beforeCall = Date.now();
+    await sendManualNudge(classroomId, atRiskStudentId);
+    const afterCall = Date.now();
+
+    const enrollment = await prisma.enrollment.findUniqueOrThrow({ where: { id: atRiskEnrollmentId } });
+    expect(enrollment.lastNudgedAt).not.toBeNull();
+    expect(enrollment.lastNudgedAt!.getTime()).toBeGreaterThanOrEqual(beforeCall);
+    expect(enrollment.lastNudgedAt!.getTime()).toBeLessThanOrEqual(afterCall);
+  });
+
+  it("rejects nudging a student who isn't enrolled", async () => {
+    const stranger = await prisma.user.create({
+      data: { name: "Nudge Stranger", email: `nudge-stranger-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
+    });
+    await expect(sendManualNudge(classroomId, stranger.id)).rejects.toThrow(/not enrolled/i);
+    await prisma.user.delete({ where: { id: stranger.id } });
+  });
+
+  it("rejects nudging a student who has unsubscribed from these emails", async () => {
+    await prisma.user.update({ where: { id: healthyStudentId }, data: { emailNotificationsEnabled: false } });
+    await expect(sendManualNudge(classroomId, healthyStudentId)).rejects.toThrow(/unsubscribed/i);
+    await prisma.user.update({ where: { id: healthyStudentId }, data: { emailNotificationsEnabled: true } });
   });
 });
