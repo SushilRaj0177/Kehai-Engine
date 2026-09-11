@@ -228,6 +228,7 @@ export default function EventControlRoomPage() {
               eventId={event.id}
               active={event.status === "PUBLISHED" || event.status === "ACTIVE"}
               editable={!!org}
+              eventName={event.name}
             />
             {org && <AiInsightsPanel eventId={event.id} orgId={org.id} />}
           </div>

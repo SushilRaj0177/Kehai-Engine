@@ -556,6 +556,8 @@ const dict = {
       ja: "このコードは自動的に更新されます。スクリーンショットは1回の更新周期以内に無効になり、すべてのスキャンはサーバー側で会場のジオフェンスと照合されます。",
     },
     refreshNow: { en: "Refresh now", ja: "今すぐ更新" },
+    fullscreenDisplay: { en: "Fullscreen display", ja: "全画面表示" },
+    exitFullscreen: { en: "Exit", ja: "終了" },
     changeRotation: { en: "Change rotation", ja: "更新間隔を変更" },
     closeSettings: { en: "Close", ja: "閉じる" },
     rotationIntervalLabel: { en: "Rotation interval", ja: "更新間隔" },
