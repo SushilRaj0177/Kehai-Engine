@@ -209,6 +209,7 @@ const dict = {
     noMembers: { en: "No members yet.", ja: "メンバーがいません。" },
     remove: { en: "Remove", ja: "削除" },
     removeError: { en: "Failed to remove member", ja: "メンバーの削除に失敗しました" },
+    roleChangeError: { en: "Failed to change role", ja: "役割の変更に失敗しました" },
     role_OWNER: { en: "Owner", ja: "オーナー" },
     role_ADMIN: { en: "Admin", ja: "管理者" },
     role_ORGANIZER: { en: "Organizer", ja: "運営者" },
