@@ -171,4 +171,30 @@ describe("event waitlist", () => {
     dRow = await prisma.registration.findUnique({ where: { eventId_userId: { eventId, userId: d.id } } });
     expect(dRow?.waitlisted).toBe(false);
   });
+
+  it("never promotes past capacity when two spots free up concurrently", async () => {
+    const a = await makeUser("a");
+    const b = await makeUser("b");
+    const c = await makeUser("c");
+    const d = await makeUser("d");
+    const e = await makeUser("e");
+    const f = await makeUser("f");
+
+    // capacity is 2: a and b confirmed, c/d/e/f waitlisted in that order.
+    await registerForEvent(eventId, a.id);
+    await registerForEvent(eventId, b.id);
+    await registerForEvent(eventId, c.id);
+    await registerForEvent(eventId, d.id);
+    await registerForEvent(eventId, e.id);
+    await registerForEvent(eventId, f.id);
+
+    // Both confirmed registrants cancel at effectively the same instant —
+    // without the row lock in promoteFromWaitlist, both promotion passes
+    // could read the same stale "0 confirmed" count and each promote 2
+    // people, landing at 4 active registrations against a capacity of 2.
+    await Promise.all([cancelMyRegistration(eventId, a.id), cancelMyRegistration(eventId, b.id)]);
+
+    const activeCount = await prisma.registration.count({ where: { eventId, waitlisted: false } });
+    expect(activeCount).toBe(2);
+  });
 });
