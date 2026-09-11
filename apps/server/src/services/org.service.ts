@@ -30,6 +30,39 @@ export async function inviteMember(organizationId: string, email: string, role: 
   });
 }
 
+const ROLE_RANK: Record<"VIEWER" | "ORGANIZER" | "ADMIN" | "OWNER", number> = {
+  VIEWER: 0,
+  ORGANIZER: 1,
+  ADMIN: 2,
+  OWNER: 3,
+};
+
+export async function removeMember(organizationId: string, userId: string, callerId: string, callerRole: keyof typeof ROLE_RANK) {
+  if (userId === callerId) throw HttpError.badRequest("You can't remove yourself from an organization here");
+
+  const membership = await prisma.membership.findUnique({
+    where: { userId_organizationId: { userId, organizationId } },
+  });
+  if (!membership) throw HttpError.notFound("This person isn't a member of this organization");
+
+  // An ADMIN can invite up to ADMIN (see inviteMemberSchema) but must not be
+  // able to remove a peer or superior — that would let an ADMIN unilaterally
+  // shrink the org's leadership, which only an OWNER should be able to do.
+  if (ROLE_RANK[membership.role] >= ROLE_RANK[callerRole]) {
+    throw HttpError.forbidden("You can't remove a member with an equal or higher role than your own");
+  }
+
+  // An org with no OWNER left has nobody able to manage its other members'
+  // roles — removing the last one would strand the organization rather than
+  // just shrink its team.
+  if (membership.role === "OWNER") {
+    const ownerCount = await prisma.membership.count({ where: { organizationId, role: "OWNER" } });
+    if (ownerCount <= 1) throw HttpError.badRequest("An organization must keep at least one owner");
+  }
+
+  await prisma.membership.delete({ where: { id: membership.id } });
+}
+
 // Plain "newest first" buried the one event an organizer most likely opened
 // this page to check — a live event needing attention — beneath any
 // further-future draft or published event, since a draft scheduled for

@@ -9,6 +9,18 @@ export interface Organization {
   role?: OrgRole;
 }
 
+export interface OrgMember {
+  id: string;
+  role: OrgRole;
+  createdAt: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl?: string | null;
+  };
+}
+
 export interface EventSummary {
   id: string;
   name: string;
