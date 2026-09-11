@@ -64,6 +64,14 @@ classroomRouter.get(
   })
 );
 
+classroomRouter.get(
+  "/:classroomId/my-attendance",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    res.json(await classroomService.getMyAttendanceHistory(req.params.classroomId, req.user!.id));
+  })
+);
+
 classroomRouter.patch(
   "/:classroomId",
   requireAuth,

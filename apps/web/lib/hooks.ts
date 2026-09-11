@@ -13,6 +13,7 @@ import type {
   EventInsights,
   EventSummary,
   HeatmapResponse,
+  MyAttendanceRow,
   MyRegistration,
   Organization,
   PostEventReport,
@@ -99,6 +100,12 @@ export function useClassroomRoster(id: string | undefined) {
 
 export function useClassroomSessions(id: string | undefined) {
   return useSWR<ClassSessionSummary[]>(id ? `/api/classrooms/${id}/sessions` : null, fetcher, {
+    refreshInterval: 8000,
+  });
+}
+
+export function useMyAttendanceHistory(id: string | undefined) {
+  return useSWR<MyAttendanceRow[]>(id ? `/api/classrooms/${id}/my-attendance` : null, fetcher, {
     refreshInterval: 8000,
   });
 }

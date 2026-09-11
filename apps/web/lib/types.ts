@@ -150,6 +150,16 @@ export interface ClassSessionSummary {
   presentCount: number;
 }
 
+export interface MyAttendanceRow {
+  id: string;
+  label: string | null;
+  date: string;
+  status: "OPEN" | "CLOSED";
+  present: boolean;
+  checkedInAt: string | null;
+  method: "QR_GEO" | "MANUAL_OVERRIDE" | null;
+}
+
 export interface RosterRow {
   student: { id: string; name: string; email: string; avatarUrl?: string | null };
   enrolledAt: string;
