@@ -23,6 +23,18 @@ export function ClickRippleLayer({ children, className = "" }: { children: React
   const nextId = useRef(0);
 
   function handleClick(e: React.MouseEvent<HTMLDivElement>) {
+    // Small stateful controls (toggle switches, checkboxes, radios) already
+    // show their own state change right at the click point — a full-size
+    // flash + glyph burst centered on the same spot visually clobbers that
+    // feedback instead of complementing it (e.g. a toggle's thumb color
+    // transition reads as corrupted when a red flash lands on top of it
+    // mid-animation). Skip the ripple for those; regular buttons/links have
+    // enough surrounding space for it to read as a flourish instead.
+    const target = e.target as HTMLElement;
+    if (target.closest('[role="switch"], [role="checkbox"], [role="radio"], input[type="checkbox"], input[type="radio"]')) {
+      return;
+    }
+
     const rect = e.currentTarget.getBoundingClientRect();
     const id = nextId.current++;
     const x = e.clientX - rect.left;
