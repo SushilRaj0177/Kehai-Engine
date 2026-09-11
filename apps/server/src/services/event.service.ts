@@ -193,38 +193,55 @@ export async function registerForEvent(eventId: string, userId: string) {
 // is removed/cancelled, or an organizer raises capacity. Safe to call when
 // nothing changed — it just promotes zero people.
 async function promoteFromWaitlist(eventId: string) {
-  const event = await prisma.event.findUnique({ where: { id: eventId } });
-  if (!event) return;
+  // Two calls racing here (two people cancelling a full event's
+  // registrations within milliseconds of each other, say) could otherwise
+  // both read the same pre-promotion active count before either commits,
+  // and each independently promote up to `openSpots` more people than
+  // actually freed up — overbooking the event past its capacity. Locking
+  // the event row first, the same way registerForEvent already does for
+  // the opposite direction, forces the second call to wait and see the
+  // first call's promotions before computing its own open-spot count.
+  const promoted = await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT id FROM "Event" WHERE id = ${eventId} FOR UPDATE`;
+    const event = await tx.event.findUnique({ where: { id: eventId } });
+    if (!event) return [];
 
-  let openSpots = Infinity;
-  if (event.capacity != null) {
-    const activeCount = await prisma.registration.count({ where: { eventId, waitlisted: false } });
-    openSpots = event.capacity - activeCount;
-  }
-  if (openSpots <= 0) return;
+    let openSpots = Infinity;
+    if (event.capacity != null) {
+      const activeCount = await tx.registration.count({ where: { eventId, waitlisted: false } });
+      openSpots = event.capacity - activeCount;
+    }
+    if (openSpots <= 0) return [];
 
-  const promotable = await prisma.registration.findMany({
-    where: { eventId, waitlisted: true },
-    orderBy: { createdAt: "asc" },
-    take: openSpots === Infinity ? undefined : openSpots,
-    include: { user: { select: { id: true, name: true, email: true, emailNotificationsEnabled: true } } },
+    const promotable = await tx.registration.findMany({
+      where: { eventId, waitlisted: true },
+      orderBy: { createdAt: "asc" },
+      take: openSpots === Infinity ? undefined : openSpots,
+      include: { user: { select: { id: true, name: true, email: true, emailNotificationsEnabled: true } } },
+    });
+
+    for (const registration of promotable) {
+      await tx.registration.update({ where: { id: registration.id }, data: { waitlisted: false } });
+    }
+
+    return promotable.map((r) => ({ ...r, eventName: event.name }));
   });
 
-  for (const registration of promotable) {
-    await prisma.registration.update({ where: { id: registration.id }, data: { waitlisted: false } });
-
-    if (registration.user.emailNotificationsEnabled) {
-      const link = `${env.WEB_ORIGIN}/events/${eventId}`;
-      const unsubscribeLink = `${env.API_ORIGIN}/api/notifications/unsubscribe?token=${signUnsubscribeToken(registration.user.id)}`;
-      await sendEmail(
-        registration.user.email,
-        `You're off the waitlist for ${event.name}`,
-        `<p>Hi ${registration.user.name},</p>
-         <p>A spot opened up in <strong>${event.name}</strong> and you've been moved from the waitlist to a confirmed registration.</p>
-         <p><a href="${link}">${link}</a></p>
-         <p style="margin-top:24px;color:#888;font-size:12px;"><a href="${unsubscribeLink}">Unsubscribe from these emails</a></p>`
-      );
-    }
+  // Sending mail outside the transaction — a slow or failed Resend call
+  // shouldn't hold the row lock open or roll back a promotion that already
+  // succeeded.
+  for (const registration of promoted) {
+    if (!registration.user.emailNotificationsEnabled) continue;
+    const link = `${env.WEB_ORIGIN}/events/${eventId}`;
+    const unsubscribeLink = `${env.API_ORIGIN}/api/notifications/unsubscribe?token=${signUnsubscribeToken(registration.user.id)}`;
+    await sendEmail(
+      registration.user.email,
+      `You're off the waitlist for ${registration.eventName}`,
+      `<p>Hi ${registration.user.name},</p>
+       <p>A spot opened up in <strong>${registration.eventName}</strong> and you've been moved from the waitlist to a confirmed registration.</p>
+       <p><a href="${link}">${link}</a></p>
+       <p style="margin-top:24px;color:#888;font-size:12px;"><a href="${unsubscribeLink}">Unsubscribe from these emails</a></p>`
+    );
   }
 }
 
