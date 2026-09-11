@@ -213,3 +213,50 @@ export async function changePassword(userId: string, currentPassword: string, ne
     }),
   ]);
 }
+
+// Deleting a user cascades cleanly through most of the schema (memberships,
+// registrations, attendance, refresh tokens, enrollments — all ON DELETE
+// CASCADE), but two relations don't: Classroom.teacher is CASCADE too
+// (so a taught classroom's entire history would vanish silently, which is
+// the one cascade here actually worth blocking on rather than allowing),
+// and Event.createdBy has no cascade at all (so it would just throw a raw
+// FK-violation instead of the account ever getting deleted). Rather than
+// silently wiping a classroom or hard-failing confusingly, refuse deletion
+// up front with a plain-language explanation of what to resolve first.
+export async function deleteAccount(userId: string, password: string | undefined) {
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+
+  if (user.passwordHash) {
+    if (!password) throw HttpError.badRequest("Enter your password to confirm account deletion");
+    const valid = await bcrypt.compare(password, user.passwordHash);
+    if (!valid) throw HttpError.unauthorized("Password is incorrect");
+  }
+
+  const [soleOwnerships, taughtClassrooms, createdEvents] = await Promise.all([
+    prisma.membership.findMany({
+      where: { userId, role: "OWNER" },
+      include: { organization: { select: { name: true, _count: { select: { memberships: { where: { role: "OWNER" } } } } } } },
+    }),
+    prisma.classroom.count({ where: { teacherId: userId } }),
+    prisma.event.count({ where: { createdById: userId } }),
+  ]);
+  const soleOwnedOrgs = soleOwnerships.filter((m) => m.organization._count.memberships <= 1);
+
+  const blockers: string[] = [];
+  if (soleOwnedOrgs.length) {
+    blockers.push(
+      `you're the only owner of ${soleOwnedOrgs.length === 1 ? soleOwnedOrgs[0].organization.name : `${soleOwnedOrgs.length} organizations`} — transfer ownership or delete ${soleOwnedOrgs.length === 1 ? "it" : "them"} first`
+    );
+  }
+  if (taughtClassrooms > 0) {
+    blockers.push(`you teach ${taughtClassrooms} classroom${taughtClassrooms === 1 ? "" : "s"} — delete or hand ${taughtClassrooms === 1 ? "it" : "them"} off first`);
+  }
+  if (createdEvents > 0) {
+    blockers.push(`you created ${createdEvents} event${createdEvents === 1 ? "" : "s"} — delete ${createdEvents === 1 ? "it" : "them"} first`);
+  }
+  if (blockers.length) {
+    throw HttpError.badRequest(`Can't delete your account yet: ${blockers.join("; ")}.`);
+  }
+
+  await prisma.user.delete({ where: { id: userId } });
+}

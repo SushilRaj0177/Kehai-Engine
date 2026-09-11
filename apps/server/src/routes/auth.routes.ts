@@ -11,6 +11,7 @@ import {
   resetPasswordSchema,
   updateProfileSchema,
   changePasswordSchema,
+  deleteAccountSchema,
 } from "../validators/auth.js";
 import * as authService from "../services/auth.service.js";
 import { prisma } from "../lib/prisma.js";
@@ -138,6 +139,17 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
     await authService.changePassword(req.user!.id, currentPassword, newPassword);
+    res.status(204).end();
+  })
+);
+
+authRouter.delete(
+  "/me",
+  requireAuth,
+  authRateLimit,
+  asyncHandler(async (req, res) => {
+    const { password } = deleteAccountSchema.parse(req.body);
+    await authService.deleteAccount(req.user!.id, password);
     res.status(204).end();
   })
 );

@@ -770,6 +770,15 @@ const dict = {
     newPasswordLabel: { en: "New password", ja: "新しいパスワード" },
     changePassword: { en: "Change password", ja: "パスワードを変更" },
     passwordError: { en: "Failed to change password", ja: "パスワードの変更に失敗しました" },
+    dangerZoneHeading: { en: "Danger zone", ja: "危険な操作" },
+    deleteAccountLabel: { en: "Delete account", ja: "アカウントを削除" },
+    deleteAccountHint: {
+      en: "Permanently deletes your account and everything tied to it — registrations, classroom enrollments, attendance history. This can't be undone.",
+      ja: "アカウントと、それに紐づく登録情報・クラス参加・出席履歴などがすべて完全に削除されます。この操作は取り消せません。",
+    },
+    confirmPasswordToDelete: { en: "Enter your password to confirm", ja: "確認のためパスワードを入力してください" },
+    deleteAccountConfirm: { en: "Permanently delete my account", ja: "アカウントを完全に削除する" },
+    deleteAccountError: { en: "Failed to delete account", ja: "アカウントの削除に失敗しました" },
   },
   unsubscribed: {
     title: { en: "You're unsubscribed", ja: "配信を停止しました" },
