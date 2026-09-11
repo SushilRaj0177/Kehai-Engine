@@ -16,6 +16,7 @@ import type {
   MyAttendanceRow,
   MyRegistration,
   Organization,
+  OrgMember,
   OrgOverview,
   PostEventReport,
   RosterRow,
@@ -79,6 +80,10 @@ export function useAiStatus() {
 
 export function useOrgOverview(orgId: string | undefined) {
   return useSWR<OrgOverview>(orgId ? `/api/analytics/orgs/${orgId}/overview` : null, fetcher);
+}
+
+export function useOrgMembers(orgId: string | undefined) {
+  return useSWR<OrgMember[]>(orgId ? `/api/orgs/${orgId}/members` : null, fetcher);
 }
 
 export function useMyClassrooms() {

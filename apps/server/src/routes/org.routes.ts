@@ -79,3 +79,13 @@ orgRouter.post(
     res.status(201).json(membership);
   })
 );
+
+orgRouter.delete(
+  "/:orgId/members/:userId",
+  requireOrgRole("ADMIN"),
+  asyncHandler(async (req, res) => {
+    const callerRole = (req as any).membership.role;
+    await orgService.removeMember(req.params.orgId, req.params.userId, req.user!.id, callerRole);
+    res.status(204).end();
+  })
+);

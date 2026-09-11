@@ -14,6 +14,7 @@ import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
 import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { OrgAttendanceTrendChart } from "@/components/charts/OrgAttendanceTrendChart";
+import { OrgMembers } from "@/components/OrgMembers";
 import { useMyOrganizations, useOrgEvents, useOrgOverview } from "@/lib/hooks";
 import { formatDateRange } from "@/lib/format";
 import { useLocale } from "@/lib/i18n";
@@ -138,6 +139,15 @@ export default function OrgPage() {
               ))}
             </div>
           )}
+        </div>
+
+        <div className="relative mt-16">
+          <h2 className="mb-6 font-display text-xl font-bold text-white/70">{t("orgMembers.heading")}</h2>
+          <Card>
+            <CardBody>
+              <OrgMembers orgId={org.id} callerRole={org.role} />
+            </CardBody>
+          </Card>
         </div>
       </div>
     </ClickRippleLayer>
