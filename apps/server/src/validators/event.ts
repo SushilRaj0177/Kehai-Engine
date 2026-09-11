@@ -3,7 +3,12 @@ import { z } from "zod";
 export const createEventSchema = z
   .object({
     name: z.string().trim().min(2).max(150),
-    description: z.string().trim().max(5000).optional(),
+    // Nullable, not just optional — the create form never sends null (it
+    // simply omits the field), but the edit panel needs to be able to
+    // clear a previously-set description, which only an explicit `null`
+    // can express: omitting the key from a PATCH leaves the old value
+    // untouched.
+    description: z.string().trim().max(5000).optional().nullable(),
     venue: z.string().trim().min(2).max(200),
     startsAt: z.coerce.date(),
     endsAt: z.coerce.date(),

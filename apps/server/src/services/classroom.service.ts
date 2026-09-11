@@ -11,8 +11,8 @@ import { emitClassroomJoin, emitClassAttendanceUpdate } from "../realtime/socket
 
 export interface CreateClassroomInput {
   name: string;
-  courseCode?: string;
-  semesterLabel?: string;
+  courseCode?: string | null;
+  semesterLabel?: string | null;
   latitude?: number;
   longitude?: number;
   geofenceRadiusM?: number;
