@@ -65,7 +65,16 @@ export async function register(input: { name: string; email: string; password: s
     data: { name: input.name, email: input.email, passwordHash, provider: "PASSWORD" },
   });
 
-  await sendVerificationEmail(user.id, user.email, user.name);
+  // Unlike resendVerificationEmail (where sending the email IS the point of
+  // the call, so a failure should surface), this is incidental to account
+  // creation — a mailer outage shouldn't turn a successful registration
+  // into a 500 with the user's account already committed but no session
+  // handed back. They can always request a fresh link once mail is back.
+  try {
+    await sendVerificationEmail(user.id, user.email, user.name);
+  } catch (err) {
+    console.error("[auth] Failed to send verification email during registration:", err);
+  }
 
   const session = await issueSession(user.id, user.email, user.name);
   return { user: sanitizeUser(user), ...session };
