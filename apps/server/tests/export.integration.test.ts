@@ -56,3 +56,34 @@ describe("CSV export formula injection guard", () => {
     expect(content).toContain("'=HYPERLINK");
   });
 });
+
+describe("CSV export waitlist column", () => {
+  it("marks a waitlisted registrant as Yes and a confirmed one as No", async () => {
+    // Plain names with no embedded commas or quotes, so the row can be
+    // split on "," directly without needing a real CSV parser — the
+    // pre-existing formula-injection registrant's quoted, comma-containing
+    // name would make naive splitting unreliable for that row.
+    const waitlistedUser = await prisma.user.create({
+      data: { name: "Waitlisted Exportee", email: `export-waitlisted-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
+    });
+    const confirmedUser = await prisma.user.create({
+      data: { name: "Confirmed Exportee", email: `export-confirmed-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
+    });
+    await prisma.registration.create({ data: { eventId, userId: waitlistedUser.id, waitlisted: true } });
+    await prisma.registration.create({ data: { eventId, userId: confirmedUser.id, waitlisted: false } });
+
+    const { content } = await exportAttendeesCsv(eventId);
+    const lines = content.split("\n");
+    const header = lines[0].split(",");
+    const waitlistedCol = header.indexOf("Waitlisted");
+    expect(waitlistedCol).toBeGreaterThan(-1);
+
+    const waitlistedLine = lines.find((l) => l.includes("Waitlisted Exportee"));
+    const confirmedLine = lines.find((l) => l.includes("Confirmed Exportee"));
+    expect(waitlistedLine?.split(",")[waitlistedCol]).toBe("Yes");
+    expect(confirmedLine?.split(",")[waitlistedCol]).toBe("No");
+
+    await prisma.registration.deleteMany({ where: { eventId, userId: { in: [waitlistedUser.id, confirmedUser.id] } } });
+    await prisma.user.deleteMany({ where: { id: { in: [waitlistedUser.id, confirmedUser.id] } } });
+  });
+});
