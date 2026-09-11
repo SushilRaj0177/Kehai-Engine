@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import crypto from "node:crypto";
 import { prisma } from "../src/lib/prisma.js";
-import { checkIn } from "../src/services/attendance.service.js";
+import { checkIn, manualOverride, revokeAttendance } from "../src/services/attendance.service.js";
 import { issueQrToken } from "../src/utils/qrToken.js";
 import { transitionEventStatus } from "../src/services/event.service.js";
 
@@ -166,5 +166,37 @@ describe("event lifecycle transitions", () => {
 
     await expect(transitionEventStatus(draft.id, "COMPLETED")).rejects.toThrow(/Cannot move event/);
     await prisma.event.delete({ where: { id: draft.id } });
+  });
+});
+
+describe("revoking attendance", () => {
+  it("deletes the attendance record, letting the person be checked in again", async () => {
+    const attendee = await prisma.user.create({
+      data: { name: "Revoke Attendee", email: `revoke-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
+    });
+
+    await manualOverride(eventId, attendee.id, userId);
+    let attendance = await prisma.attendanceRecord.findUnique({ where: { eventId_userId: { eventId, userId: attendee.id } } });
+    expect(attendance).not.toBeNull();
+
+    await revokeAttendance(eventId, attendee.id, userId);
+    attendance = await prisma.attendanceRecord.findUnique({ where: { eventId_userId: { eventId, userId: attendee.id } } });
+    expect(attendance).toBeNull();
+
+    // The person can be marked present again after the revoke.
+    await manualOverride(eventId, attendee.id, userId);
+    attendance = await prisma.attendanceRecord.findUnique({ where: { eventId_userId: { eventId, userId: attendee.id } } });
+    expect(attendance).not.toBeNull();
+
+    await prisma.attendanceRecord.deleteMany({ where: { eventId, userId: attendee.id } });
+    await prisma.user.delete({ where: { id: attendee.id } });
+  });
+
+  it("rejects revoking attendance for someone who hasn't checked in", async () => {
+    const stranger = await prisma.user.create({
+      data: { name: "Never Checked In", email: `never-checked-in-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
+    });
+    await expect(revokeAttendance(eventId, stranger.id, userId)).rejects.toThrow(/hasn't checked in/i);
+    await prisma.user.delete({ where: { id: stranger.id } });
   });
 });
