@@ -90,3 +90,11 @@ orgRouter.delete(
     res.status(204).end();
   })
 );
+
+orgRouter.get(
+  "/:orgId/audit-log",
+  requireOrgRole("ADMIN"),
+  asyncHandler(async (req, res) => {
+    res.json(await orgService.getAuditLog(req.params.orgId));
+  })
+);

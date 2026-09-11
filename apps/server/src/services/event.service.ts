@@ -236,16 +236,26 @@ async function promoteFromWaitlist(eventId: string) {
 // an actual check-in has the manual-override path's mirror image to reach
 // for instead — this is specifically for "this person shouldn't be on the
 // list at all yet".
-export async function removeRegistration(eventId: string, userId: string) {
+export async function removeRegistration(eventId: string, userId: string, actorId: string) {
   const registration = await prisma.registration.findUnique({
     where: { eventId_userId: { eventId, userId } },
-    include: { attendance: true },
+    include: { attendance: true, event: { select: { organizationId: true } } },
   });
   if (!registration) throw HttpError.notFound("This registration doesn't exist");
   if (registration.attendance) {
     throw HttpError.badRequest("This attendee has already checked in — their registration can't be removed");
   }
   await prisma.registration.delete({ where: { id: registration.id } });
+
+  await prisma.auditLog.create({
+    data: {
+      organizationId: registration.event.organizationId,
+      eventId,
+      actorUserId: actorId,
+      action: "registration.removed",
+      metadata: { targetUserId: userId },
+    },
+  });
 
   // Only freed up a spot if the removed registration was actually counted
   // against capacity — removing someone already on the waitlist doesn't.

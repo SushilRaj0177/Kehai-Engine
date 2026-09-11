@@ -52,7 +52,7 @@ describe("removing a registration from an event", () => {
     });
 
     await registerForEvent(eventId, attendee.id);
-    await removeRegistration(eventId, attendee.id);
+    await removeRegistration(eventId, attendee.id, organizerId);
 
     const registration = await prisma.registration.findUnique({
       where: { eventId_userId: { eventId, userId: attendee.id } },
@@ -66,7 +66,7 @@ describe("removing a registration from an event", () => {
     const stranger = await prisma.user.create({
       data: { name: "Never Registered", email: `never-registered-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
     });
-    await expect(removeRegistration(eventId, stranger.id)).rejects.toThrow(/doesn't exist/i);
+    await expect(removeRegistration(eventId, stranger.id, organizerId)).rejects.toThrow(/doesn't exist/i);
     await prisma.user.delete({ where: { id: stranger.id } });
   });
 
@@ -77,7 +77,7 @@ describe("removing a registration from an event", () => {
     await registerForEvent(eventId, attendee.id);
     await manualOverride(eventId, attendee.id, organizerId);
 
-    await expect(removeRegistration(eventId, attendee.id)).rejects.toThrow(/already checked in/i);
+    await expect(removeRegistration(eventId, attendee.id, organizerId)).rejects.toThrow(/already checked in/i);
 
     await prisma.attendanceRecord.deleteMany({ where: { eventId, userId: attendee.id } });
     await prisma.registration.deleteMany({ where: { eventId, userId: attendee.id } });

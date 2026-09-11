@@ -89,7 +89,7 @@ describe("event waitlist", () => {
     await registerForEvent(eventId, b.id);
     await registerForEvent(eventId, c.id);
 
-    await removeRegistration(eventId, a.id);
+    await removeRegistration(eventId, a.id, organizerId);
 
     const promoted = await prisma.registration.findUnique({
       where: { eventId_userId: { eventId, userId: c.id } },
@@ -108,7 +108,7 @@ describe("event waitlist", () => {
     await registerForEvent(eventId, c.id);
     await registerForEvent(eventId, d.id);
 
-    await removeRegistration(eventId, c.id); // waitlisted — removing it frees nothing
+    await removeRegistration(eventId, c.id, organizerId); // waitlisted — removing it frees nothing
 
     const stillWaitlisted = await prisma.registration.findUnique({
       where: { eventId_userId: { eventId, userId: d.id } },
