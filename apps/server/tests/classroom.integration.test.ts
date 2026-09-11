@@ -1,7 +1,14 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import crypto from "node:crypto";
 import { prisma } from "../src/lib/prisma.js";
-import { createClassroom, createSession, closeSession, manualOverrideClassAttendance, getMyAttendanceHistory } from "../src/services/classroom.service.js";
+import {
+  createClassroom,
+  createSession,
+  closeSession,
+  manualOverrideClassAttendance,
+  getMyAttendanceHistory,
+  removeStudent,
+} from "../src/services/classroom.service.js";
 
 let teacherId: string;
 let studentId: string;
@@ -60,6 +67,42 @@ describe("student attendance history", () => {
       data: { name: "Stranger", email: `stranger-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
     });
     await expect(getMyAttendanceHistory(classroomId, stranger.id)).rejects.toThrow(/not enrolled/i);
+    await prisma.user.delete({ where: { id: stranger.id } });
+  });
+});
+
+describe("removing a student from a classroom", () => {
+  it("deletes the enrollment and cascades to their attendance history", async () => {
+    const leaver = await prisma.user.create({
+      data: { name: "Leaving Student", email: `leaver-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
+    });
+    await prisma.enrollment.create({ data: { classroomId, studentId: leaver.id } });
+
+    const session = await createSession(classroomId, "Session Before Removal");
+    await manualOverrideClassAttendance(classroomId, session.id, leaver.id, teacherId);
+    await closeSession(classroomId, session.id);
+
+    await removeStudent(classroomId, leaver.id);
+
+    const enrollment = await prisma.enrollment.findUnique({
+      where: { classroomId_studentId: { classroomId, studentId: leaver.id } },
+    });
+    expect(enrollment).toBeNull();
+
+    const attendance = await prisma.classAttendance.findUnique({
+      where: { sessionId_studentId: { sessionId: session.id, studentId: leaver.id } },
+    });
+    expect(attendance).toBeNull();
+
+    await prisma.classSession.delete({ where: { id: session.id } });
+    await prisma.user.delete({ where: { id: leaver.id } });
+  });
+
+  it("rejects removing a student who was never enrolled", async () => {
+    const stranger = await prisma.user.create({
+      data: { name: "Never Enrolled", email: `never-enrolled-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
+    });
+    await expect(removeStudent(classroomId, stranger.id)).rejects.toThrow(/not enrolled/i);
     await prisma.user.delete({ where: { id: stranger.id } });
   });
 });

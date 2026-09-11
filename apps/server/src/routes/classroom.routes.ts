@@ -101,6 +101,16 @@ classroomRouter.get(
   })
 );
 
+classroomRouter.delete(
+  "/:classroomId/students/:studentId",
+  requireAuth,
+  requireClassroomTeacher(),
+  asyncHandler(async (req, res) => {
+    await classroomService.removeStudent(req.params.classroomId, req.params.studentId);
+    res.status(204).end();
+  })
+);
+
 classroomRouter.get(
   "/:classroomId/heatmap",
   requireAuth,

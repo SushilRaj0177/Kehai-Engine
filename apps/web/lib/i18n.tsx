@@ -716,6 +716,9 @@ const dict = {
     present: { en: "Present", ja: "出席済み" },
     markPresent: { en: "Mark present", ja: "出席にする" },
     overrideError: { en: "Failed to mark student present", ja: "出席の記録に失敗しました" },
+    removeStudent: { en: "Remove", ja: "削除" },
+    confirmRemove: { en: "Remove for good?", ja: "完全に削除しますか？" },
+    removeError: { en: "Failed to remove student", ja: "学生の削除に失敗しました" },
   },
   atRisk: {
     heading: { en: "Attendance risk", ja: "出席リスク" },
