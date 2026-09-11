@@ -6,6 +6,11 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(4000),
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   WEB_ORIGIN: z.string().default("http://localhost:3000"),
+  // The API's own public URL — needed for links (like an email's
+  // unsubscribe link) that must hit this server directly rather than the
+  // web frontend. Defaults to the local dev API port; production sets this
+  // explicitly to the deployed API's URL (e.g. the Render service).
+  API_ORIGIN: z.string().default("http://localhost:4000"),
 
   JWT_ACCESS_SECRET: z.string().min(16, "JWT_ACCESS_SECRET must be set"),
   JWT_REFRESH_SECRET: z.string().min(16, "JWT_REFRESH_SECRET must be set"),

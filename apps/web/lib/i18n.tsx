@@ -717,6 +717,19 @@ const dict = {
     presentOf: { en: "{present}/{total} sessions", ja: "{total}回中{present}回出席" },
     viewRoster: { en: "View full roster →", ja: "全員の名簿を見る →" },
   },
+  unsubscribed: {
+    title: { en: "You're unsubscribed", ja: "配信を停止しました" },
+    body: {
+      en: "You won't get any more event reminder or attendance nudge emails. Transactional emails (like password resets) are unaffected.",
+      ja: "今後、イベントのリマインダーや出席に関する通知メールは届きません。パスワード再設定などの取引メールには影響しません。",
+    },
+    failedTitle: { en: "That link didn't work", ja: "このリンクは無効です" },
+    failedBody: {
+      en: "This unsubscribe link is invalid or has already been used.",
+      ja: "この配信停止リンクは無効か、すでに使用されています。",
+    },
+    backHome: { en: "Back to Kehai Engine", ja: "Kehai Engineに戻る" },
+  },
   legal: {
     kicker: { en: "Legal", ja: "法的情報" },
     title: { en: "Privacy & terms", ja: "プライバシーと利用規約" },

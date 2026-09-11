@@ -32,6 +32,11 @@ model User {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
+  // One-click unsubscribe from the reminder/nudge emails (see
+  // notifications.routes.ts) — never affects transactional mail like
+  // password resets, only the scheduler's own recurring sends.
+  emailNotificationsEnabled Boolean @default(true)
+
   memberships   Membership[]
   registrations Registration[]
   attendances   AttendanceRecord[]

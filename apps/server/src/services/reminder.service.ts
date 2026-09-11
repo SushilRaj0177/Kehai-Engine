@@ -1,5 +1,6 @@
 import { prisma } from "../lib/prisma.js";
 import { sendEmail } from "../utils/mailer.js";
+import { signUnsubscribeToken } from "../utils/unsubscribeToken.js";
 import { env } from "../config/env.js";
 
 // How far ahead of an event's start to send the "starts soon" reminder.
@@ -21,13 +22,14 @@ export async function sendEventReminders(now: Date = new Date()): Promise<{ sent
   const registrations = await prisma.registration.findMany({
     where: {
       reminderSentAt: null,
+      user: { emailNotificationsEnabled: true },
       event: {
         status: { in: ["PUBLISHED", "ACTIVE"] },
         startsAt: { gte: now, lte: windowEnd },
       },
     },
     include: {
-      user: { select: { name: true, email: true } },
+      user: { select: { id: true, name: true, email: true } },
       event: { select: { id: true, name: true, venue: true, startsAt: true } },
     },
   });
@@ -41,12 +43,14 @@ export async function sendEventReminders(now: Date = new Date()): Promise<{ sent
       timeZone: "UTC",
     });
 
+    const unsubscribeLink = `${env.API_ORIGIN}/api/notifications/unsubscribe?token=${signUnsubscribeToken(registration.user.id)}`;
     await sendEmail(
       registration.user.email,
       `${registration.event.name} starts soon`,
       `<p>Hi ${registration.user.name},</p>
        <p><strong>${registration.event.name}</strong> starts ${startsAt} UTC at ${registration.event.venue} — coming up within the next day.</p>
-       <p>Have your QR check-in ready: <a href="${link}">${link}</a></p>`
+       <p>Have your QR check-in ready: <a href="${link}">${link}</a></p>
+       <p style="margin-top:24px;color:#888;font-size:12px;"><a href="${unsubscribeLink}">Unsubscribe from these reminders</a></p>`
     );
 
     // Marked sent right after this one email, not batched at the end — if
