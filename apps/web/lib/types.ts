@@ -68,6 +68,24 @@ export interface EventAnalytics {
   averageDistanceMeters: number | null;
 }
 
+export interface OrgOverview {
+  totalEvents: number;
+  completedEvents: number;
+  totalRegistrations: number;
+  totalAttendance: number;
+  averageAttendanceRate: number;
+  recurringAttendeeRate: number;
+  events: {
+    id: string;
+    name: string;
+    startsAt: string;
+    status: string;
+    registrations: number;
+    attendance: number;
+    attendanceRate: number;
+  }[];
+}
+
 export interface Anomaly {
   type: string;
   severity: "info" | "warning" | "critical";
