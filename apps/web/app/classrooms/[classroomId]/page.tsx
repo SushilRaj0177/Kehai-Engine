@@ -7,6 +7,7 @@ import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import { Input, Label } from "@/components/ui/Input";
 import { LoadingBlock, ErrorBlock, EmptyState } from "@/components/ui/States";
 import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
@@ -21,6 +22,8 @@ import { SessionTrendChart } from "@/components/charts/SessionTrendChart";
 import { LiveIndicator } from "@/components/ui/LiveIndicator";
 import { useClassroom, useClassroomHeatmap, useClassroomRoster, useClassroomSessions } from "@/lib/hooks";
 import { subscribeToClassroom } from "@/lib/realtime";
+import { apiFetch, ApiError } from "@/lib/api";
+import type { ClassroomDetail } from "@/lib/types";
 import { useLocale } from "@/lib/i18n";
 
 export default function ClassroomDetailPage() {
@@ -113,6 +116,11 @@ export default function ClassroomDetailPage() {
               {[classroom.courseCode, classroom.semesterLabel].filter(Boolean).join(" · ")}
               {classroom.openSession && ` · ${classroom.openSession.label || t("classroomDetail.untitledSession")}`}
             </p>
+            {classroom.isTeacher && (
+              <div className="mt-3">
+                <EditClassroomDetailsPanel classroom={classroom} onSaved={() => mutate()} />
+              </div>
+            )}
           </div>
 
           {!classroom.isTeacher && classroom.openSession && (
@@ -214,6 +222,89 @@ export default function ClassroomDetailPage() {
         )}
       </div>
     </ClickRippleLayer>
+  );
+}
+
+// Name, course code, and semester label were all editable through the API
+// (updateClassroomSchema covers them) but had no UI — a teacher who typo'd
+// the classroom name or is reusing it for a new semester had no path short
+// of calling the API directly. Geofence lat/long/radius stay out of scope,
+// same reasoning as the event edit panel: relocating where check-in is
+// physically anchored deserves the map picker the creation form has.
+function EditClassroomDetailsPanel({ classroom, onSaved }: { classroom: ClassroomDetail; onSaved: () => void }) {
+  const { t } = useLocale();
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState(classroom.name);
+  const [courseCode, setCourseCode] = useState(classroom.courseCode ?? "");
+  const [semesterLabel, setSemesterLabel] = useState(classroom.semesterLabel ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  function toggle() {
+    setOpen((o) => !o);
+    setError(null);
+    setSaved(false);
+    setName(classroom.name);
+    setCourseCode(classroom.courseCode ?? "");
+    setSemesterLabel(classroom.semesterLabel ?? "");
+  }
+
+  async function save() {
+    setSaving(true);
+    setError(null);
+    setSaved(false);
+    try {
+      await apiFetch(`/api/classrooms/${classroom.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ name, courseCode: courseCode.trim() || undefined, semesterLabel: semesterLabel.trim() || undefined }),
+      });
+      onSaved();
+      setSaved(true);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t("classroomDetail.editError"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <Button variant="ghost" size="sm" onClick={toggle}>
+        {t("classroomDetail.editDetails")}
+      </Button>
+    );
+  }
+
+  return (
+    <Card className="max-w-lg">
+      <CardBody className="space-y-4">
+        <div>
+          <Label htmlFor="edit-classroom-name">{t("classroomHub.nameLabel")}</Label>
+          <Input id="edit-classroom-name" required value={name} onChange={(e) => setName(e.target.value)} />
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <Label htmlFor="edit-classroom-course">{t("classroomHub.courseCodeLabel")}</Label>
+            <Input id="edit-classroom-course" value={courseCode} onChange={(e) => setCourseCode(e.target.value)} />
+          </div>
+          <div>
+            <Label htmlFor="edit-classroom-semester">{t("classroomHub.semesterLabelLabel")}</Label>
+            <Input id="edit-classroom-semester" value={semesterLabel} onChange={(e) => setSemesterLabel(e.target.value)} />
+          </div>
+        </div>
+        {error && <ErrorBlock message={error} />}
+        <div className="flex flex-wrap items-center gap-3">
+          <Button size="sm" loading={saving} onClick={save}>
+            {t("classroomDetail.saveChanges")}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={toggle}>
+            {t("common.cancel")}
+          </Button>
+          {saved && <span className="text-sm text-kehai-400">✓ {t("classroomDetail.editSaved")}</span>}
+        </div>
+      </CardBody>
+    </Card>
   );
 }
 
