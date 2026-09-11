@@ -40,3 +40,13 @@ attendanceRouter.post(
     res.status(201).json(attendance);
   })
 );
+
+attendanceRouter.delete(
+  "/:eventId/attendees/:userId",
+  requireAuth,
+  requireOrgRole("ORGANIZER"),
+  asyncHandler(async (req, res) => {
+    await attendanceService.revokeAttendance(req.params.eventId, req.params.userId, req.user!.id);
+    res.status(204).end();
+  })
+);

@@ -186,6 +186,34 @@ export async function manualOverride(eventId: string, targetUserId: string, over
   return attendance;
 }
 
+// Undoes a check-in or manual override — the wrong person got scanned, an
+// override was a misclick, or a flagged-fraudulent record needs clearing
+// before the organizer re-checks the attendee in properly. Deleting the
+// AttendanceRecord doesn't touch the Registration at all (the FK runs the
+// other way, registrationId -> Registration, ON DELETE SET NULL only
+// matters when the Registration itself is deleted) — the person just goes
+// back to "registered but not yet attended".
+export async function revokeAttendance(eventId: string, targetUserId: string, actorId: string) {
+  const attendance = await prisma.attendanceRecord.findUnique({
+    where: { eventId_userId: { eventId, userId: targetUserId } },
+  });
+  if (!attendance) throw HttpError.notFound("This attendee hasn't checked in");
+
+  const event = await prisma.event.findUniqueOrThrow({ where: { id: eventId } });
+
+  await prisma.attendanceRecord.delete({ where: { id: attendance.id } });
+
+  await prisma.auditLog.create({
+    data: {
+      organizationId: event.organizationId,
+      eventId,
+      actorUserId: actorId,
+      action: "attendance.revoked",
+      metadata: { targetUserId, originalMethod: attendance.method },
+    },
+  });
+}
+
 function round(n: number, decimals: number) {
   const factor = 10 ** decimals;
   return Math.round(n * factor) / factor;
