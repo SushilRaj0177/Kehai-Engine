@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
@@ -158,6 +159,13 @@ export default function EventControlRoomPage() {
               </Button>
             ))}
             {org && <ExportButtons eventId={event.id} />}
+            {org && (
+              <Link href={`/orgs/${org.slug}/events/new?from=${event.id}`}>
+                <Button variant="secondary" size="sm">
+                  {t("eventControl.duplicate")}
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
         {statusError && <ErrorBlock message={statusError} className="relative mt-3" />}

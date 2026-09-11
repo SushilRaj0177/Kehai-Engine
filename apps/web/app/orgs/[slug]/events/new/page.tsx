@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
@@ -11,7 +11,7 @@ import { ErrorBlock, LoadingBlock } from "@/components/ui/States";
 import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
 import { ClickRippleLayer } from "@/components/ui/ClickRipple";
-import { useMyOrganizations } from "@/lib/hooks";
+import { useMyOrganizations, useEvent } from "@/lib/hooks";
 import { apiFetch, ApiError } from "@/lib/api";
 import { toLocalDatetimeInputValue } from "@/lib/format";
 import { useLocale } from "@/lib/i18n";
@@ -31,6 +31,10 @@ export default function NewEventPage() {
   const { data: orgs, isLoading } = useMyOrganizations();
   const org = orgs?.find((o) => o.slug === slug);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const duplicateFromId = searchParams.get("from") ?? undefined;
+  const { data: sourceEvent } = useEvent(duplicateFromId);
+  const [prefilled, setPrefilled] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -55,6 +59,27 @@ export default function NewEventPage() {
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
   }
+
+  // Copies everything except dates and registrations/attendance (which
+  // wouldn't make sense to carry over) — the organizer still picks a new
+  // date, so we deliberately leave the default tomorrow-start in place
+  // rather than reusing the source event's now-likely-past dates.
+  useEffect(() => {
+    if (!sourceEvent || prefilled) return;
+    setForm((f) => ({
+      ...f,
+      name: `${sourceEvent.name} (copy)`,
+      description: sourceEvent.description ?? "",
+      venue: sourceEvent.venue,
+      latitude: String(sourceEvent.latitude),
+      longitude: String(sourceEvent.longitude),
+      geofenceRadiusM: String(sourceEvent.geofenceRadiusM),
+      capacity: sourceEvent.capacity != null ? String(sourceEvent.capacity) : "",
+      qrRotationSeconds: String(sourceEvent.qrRotationSeconds),
+    }));
+    setLocationSet(true);
+    setPrefilled(true);
+  }, [sourceEvent, prefilled]);
 
   function useMyLocation() {
     if (!navigator.geolocation) return;
