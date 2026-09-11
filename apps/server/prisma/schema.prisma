@@ -180,6 +180,11 @@ model Registration {
   userId    String
   createdAt DateTime @default(now())
 
+  // Set once a "your event starts soon" reminder has gone out — the
+  // reminder scheduler's own idempotency guard, so a registrant is never
+  // emailed twice even though the scheduler re-scans on every tick.
+  reminderSentAt DateTime?
+
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
