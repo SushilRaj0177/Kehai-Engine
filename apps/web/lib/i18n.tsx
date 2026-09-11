@@ -450,6 +450,9 @@ const dict = {
     colDistance: { en: "Distance", ja: "距離" },
     markPresent: { en: "Mark present", ja: "出席にする" },
     overrideError: { en: "Failed to mark attendee present", ja: "出席の記録に失敗しました" },
+    removeRegistration: { en: "Remove", ja: "削除" },
+    confirmRemove: { en: "Remove for good?", ja: "完全に削除しますか？" },
+    removeError: { en: "Failed to remove registration", ja: "登録の削除に失敗しました" },
     flaggedTitle: { en: "Flagged for review", ja: "確認が必要としてマークされました" },
     flagReason_impossible_travel: {
       en: "Checked in somewhere they couldn't have physically reached in time since their last check-in",

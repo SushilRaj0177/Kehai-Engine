@@ -150,6 +150,16 @@ eventRouter.post(
   })
 );
 
+eventRouter.delete(
+  "/:eventId/registrations/:userId",
+  requireAuth,
+  requireOrgRole("ORGANIZER"),
+  asyncHandler(async (req, res) => {
+    await eventService.removeRegistration(req.params.eventId, req.params.userId);
+    res.status(204).end();
+  })
+);
+
 eventRouter.get(
   "/:eventId/qr",
   requireAuth,
