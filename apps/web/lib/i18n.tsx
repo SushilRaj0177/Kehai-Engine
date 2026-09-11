@@ -660,6 +660,13 @@ const dict = {
     heatmapHeading: { en: "Attendance", ja: "出席状況" },
     trendHeading: { en: "Attendance trend", ja: "出席率の推移" },
     myAttendanceHeading: { en: "My attendance", ja: "自分の出席記録" },
+    leaveClassroomLabel: { en: "Leave classroom", ja: "クラスを退出" },
+    leaveClassroomHint: {
+      en: "Removes you from this classroom's roster and its attendance history. You'd need the join code to rejoin.",
+      ja: "このクラスの名簿と出席履歴から削除されます。再度参加するには参加コードが必要です。",
+    },
+    confirmLeave: { en: "Yes, leave classroom", ja: "はい、クラスを退出する" },
+    leaveError: { en: "Failed to leave classroom", ja: "クラスの退出に失敗しました" },
     checkInNow: { en: "Check in now", ja: "今すぐチェックイン" },
     noOpenSessionHint: {
       en: "No session is open right now — check back once your teacher starts one.",
