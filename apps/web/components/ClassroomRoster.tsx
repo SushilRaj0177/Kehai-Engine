@@ -16,6 +16,8 @@ export function ClassroomRoster({ classroomId, openSessionId }: { classroomId: s
   const [expanded, setExpanded] = useState<string | null>(null);
   const [overridingId, setOverridingId] = useState<string | null>(null);
   const [overrideError, setOverrideError] = useState<string | null>(null);
+  const [confirmingRemoveId, setConfirmingRemoveId] = useState<string | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
   const { data, isLoading, mutate } = useClassroomRoster(classroomId);
 
   const filtered = data?.filter((row) => {
@@ -38,6 +40,25 @@ export function ClassroomRoster({ classroomId, openSessionId }: { classroomId: s
       setOverrideError(err instanceof ApiError ? err.message : t("classroomRoster.overrideError"));
     } finally {
       setOverridingId(null);
+    }
+  }
+
+  async function removeStudent(studentId: string) {
+    if (confirmingRemoveId !== studentId) {
+      setOverrideError(null);
+      setConfirmingRemoveId(studentId);
+      return;
+    }
+    setOverrideError(null);
+    setRemovingId(studentId);
+    try {
+      await apiFetch(`/api/classrooms/${classroomId}/students/${studentId}`, { method: "DELETE" });
+      setConfirmingRemoveId(null);
+      await mutate();
+    } catch (err) {
+      setOverrideError(err instanceof ApiError ? err.message : t("classroomRoster.removeError"));
+    } finally {
+      setRemovingId(null);
     }
   }
 
@@ -73,6 +94,10 @@ export function ClassroomRoster({ classroomId, openSessionId }: { classroomId: s
                 canOverride={!!openSessionId && !row.checkedInOpenSession}
                 overriding={overridingId === row.student.id}
                 onMarkPresent={() => markPresent(row.student.id)}
+                confirmingRemove={confirmingRemoveId === row.student.id}
+                removing={removingId === row.student.id}
+                onRemove={() => removeStudent(row.student.id)}
+                onCancelRemove={() => setConfirmingRemoveId(null)}
               />
             ))}
           </div>
@@ -88,6 +113,7 @@ export function ClassroomRoster({ classroomId, openSessionId }: { classroomId: s
                   <th className="px-4 py-2.5 font-medium">{t("classroomRoster.colRate")}</th>
                   <th className="px-4 py-2.5 font-medium">{t("classroomRoster.colLastAttended")}</th>
                   {openSessionId && <th className="px-4 py-2.5 font-medium">{t("classroomRoster.colToday")}</th>}
+                  <th className="px-4 py-2.5 font-medium" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/6">
@@ -103,6 +129,10 @@ export function ClassroomRoster({ classroomId, openSessionId }: { classroomId: s
                     canOverride={!!openSessionId && !row.checkedInOpenSession}
                     overriding={overridingId === row.student.id}
                     onMarkPresent={() => markPresent(row.student.id)}
+                    confirmingRemove={confirmingRemoveId === row.student.id}
+                    removing={removingId === row.student.id}
+                    onRemove={() => removeStudent(row.student.id)}
+                    onCancelRemove={() => setConfirmingRemoveId(null)}
                   />
                 ))}
               </tbody>
@@ -123,9 +153,26 @@ type RosterItemProps = {
   canOverride: boolean;
   overriding: boolean;
   onMarkPresent: () => void;
+  confirmingRemove: boolean;
+  removing: boolean;
+  onRemove: () => void;
+  onCancelRemove: () => void;
 };
 
-function RosterCardItem({ classroomId, row, locale, expanded, onToggle, canOverride, overriding, onMarkPresent }: RosterItemProps) {
+function RosterCardItem({
+  classroomId,
+  row,
+  locale,
+  expanded,
+  onToggle,
+  canOverride,
+  overriding,
+  onMarkPresent,
+  confirmingRemove,
+  removing,
+  onRemove,
+  onCancelRemove,
+}: RosterItemProps) {
   const { t } = useLocale();
   const { data: heatmap } = useClassroomHeatmap(expanded ? classroomId : undefined, row.student.id);
 
@@ -163,6 +210,45 @@ function RosterCardItem({ classroomId, row, locale, expanded, onToggle, canOverr
           </Button>
         </div>
       )}
+      <div className="flex items-center gap-2 border-t border-white/[0.06] px-3.5 py-2.5">
+        {confirmingRemove ? (
+          <>
+            <span className="text-xs text-white/50">{t("classroomRoster.confirmRemove")}</span>
+            <Button
+              variant="danger"
+              size="sm"
+              loading={removing}
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemove();
+              }}
+            >
+              {t("classroomRoster.removeStudent")}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onCancelRemove();
+              }}
+            >
+              {t("common.cancel")}
+            </Button>
+          </>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove();
+            }}
+          >
+            {t("classroomRoster.removeStudent")}
+          </Button>
+        )}
+      </div>
       {expanded && (
         <div className="border-t border-white/[0.06] px-3.5 py-3">
           {heatmap ? <AttendanceHeatmap data={heatmap} /> : <LoadingBlock />}
@@ -182,9 +268,14 @@ function RosterRowItem({
   canOverride,
   overriding,
   onMarkPresent,
+  confirmingRemove,
+  removing,
+  onRemove,
+  onCancelRemove,
 }: RosterItemProps & { showTodayColumn: boolean }) {
   const { t } = useLocale();
   const { data: heatmap } = useClassroomHeatmap(expanded ? classroomId : undefined, row.student.id);
+  const actionsColSpan = showTodayColumn ? 8 : 7;
 
   return (
     <>
@@ -216,10 +307,48 @@ function RosterRowItem({
             ) : null}
           </td>
         )}
+        <td className="px-4 py-2.5">
+          {confirmingRemove ? (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="danger"
+                size="sm"
+                loading={removing}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemove();
+                }}
+              >
+                {t("classroomRoster.removeStudent")}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCancelRemove();
+                }}
+              >
+                {t("common.cancel")}
+              </Button>
+            </div>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemove();
+              }}
+            >
+              {t("classroomRoster.removeStudent")}
+            </Button>
+          )}
+        </td>
       </tr>
       {expanded && (
         <tr>
-          <td colSpan={showTodayColumn ? 7 : 6} className="bg-white/[0.02] px-4 py-4">
+          <td colSpan={actionsColSpan} className="bg-white/[0.02] px-4 py-4">
             {heatmap ? <AttendanceHeatmap data={heatmap} /> : <LoadingBlock />}
           </td>
         </tr>

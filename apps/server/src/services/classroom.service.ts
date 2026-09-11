@@ -236,6 +236,20 @@ export async function getClassroomDetail(classroomId: string, userId: string) {
   };
 }
 
+// Removing an enrollment cascades to every ClassAttendance row tied to it
+// (see schema: ClassAttendance.enrollment has onDelete: Cascade) — this is
+// deliberately destructive, same as deleting a session, for the same
+// reasons: a student added by mistake or who dropped the class shouldn't
+// leave an orphaned attendance history behind, and the frontend gates this
+// behind its own confirmation step before calling it.
+export async function removeStudent(classroomId: string, studentId: string) {
+  const enrollment = await prisma.enrollment.findUnique({
+    where: { classroomId_studentId: { classroomId, studentId } },
+  });
+  if (!enrollment) throw HttpError.notFound("This student is not enrolled in this classroom");
+  await prisma.enrollment.delete({ where: { id: enrollment.id } });
+}
+
 export async function getRoster(classroomId: string) {
   const enrollments = await prisma.enrollment.findMany({
     where: { classroomId },
