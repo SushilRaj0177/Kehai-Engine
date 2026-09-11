@@ -262,6 +262,9 @@ const dict = {
       en: "Changing this immediately moves the check-in boundary for everyone, including anyone checking in right now.",
       ja: "変更するとチェックインの範囲がすぐに変わります。現在チェックイン中の人にも影響します。",
     },
+    geofenceInvalidLat: { en: "Enter a valid latitude between -90 and 90.", ja: "-90〜90の範囲で有効な緯度を入力してください。" },
+    geofenceInvalidLng: { en: "Enter a valid longitude between -180 and 180.", ja: "-180〜180の範囲で有効な経度を入力してください。" },
+    geofenceInvalidRadius: { en: "Enter a radius between 10 and 5000 meters.", ja: "10〜5000メートルの範囲で半径を入力してください。" },
     editLockedHint: {
       en: "This event is completed or cancelled and can no longer be edited.",
       ja: "このイベントは終了または中止されているため、編集できません。",

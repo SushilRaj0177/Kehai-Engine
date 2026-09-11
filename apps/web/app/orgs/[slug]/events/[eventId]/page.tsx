@@ -389,9 +389,31 @@ function EditDetailsPanel({ event, onSaved }: { event: EventSummary; onSaved: ()
   }
 
   async function save() {
-    setSaving(true);
     setError(null);
     setSaved(false);
+
+    // Number("") is 0 and Number("abc") is NaN, both of which would
+    // otherwise sail through JSON.stringify (NaN silently becomes null,
+    // then the server's z.coerce.number() turns that back into 0) and
+    // quietly relocate the live check-in boundary to (0, 0) with no error
+    // anywhere in the chain. Catch it here instead.
+    const lat = Number(latitude);
+    const lng = Number(longitude);
+    const radius = Number(geofenceRadiusM);
+    if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
+      setError(t("eventControl.geofenceInvalidLat"));
+      return;
+    }
+    if (!Number.isFinite(lng) || lng < -180 || lng > 180) {
+      setError(t("eventControl.geofenceInvalidLng"));
+      return;
+    }
+    if (!Number.isFinite(radius) || radius < 10 || radius > 5000) {
+      setError(t("eventControl.geofenceInvalidRadius"));
+      return;
+    }
+
+    setSaving(true);
     try {
       await apiFetch(`/api/events/${event.id}`, {
         method: "PATCH",
@@ -400,9 +422,9 @@ function EditDetailsPanel({ event, onSaved }: { event: EventSummary; onSaved: ()
           description: description.trim() || null,
           venue,
           capacity: capacity.trim() ? Number(capacity) : null,
-          latitude: Number(latitude),
-          longitude: Number(longitude),
-          geofenceRadiusM: Number(geofenceRadiusM),
+          latitude: lat,
+          longitude: lng,
+          geofenceRadiusM: radius,
         }),
       });
       onSaved();
