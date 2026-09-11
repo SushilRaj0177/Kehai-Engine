@@ -149,8 +149,8 @@ function NotificationsSection() {
             }`}
           >
             <span
-              className={`absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full transition-transform ${
-                enabled ? "translate-x-6 bg-kehai-400" : "translate-x-1 bg-white/40"
+              className={`absolute left-1 top-1/2 h-5 w-5 -translate-y-1/2 rounded-full transition-transform ${
+                enabled ? "translate-x-5 bg-kehai-400" : "translate-x-0 bg-white/40"
               }`}
             />
           </button>
