@@ -250,6 +250,17 @@ export async function removeStudent(classroomId: string, studentId: string) {
   await prisma.enrollment.delete({ where: { id: enrollment.id } });
 }
 
+// Self-service mirror of removeStudent — a student leaving on their own
+// rather than a teacher removing them. Same effect (enrollment deleted,
+// attendance history cascades with it), different caller and error copy.
+export async function leaveClassroom(classroomId: string, studentId: string) {
+  const enrollment = await prisma.enrollment.findUnique({
+    where: { classroomId_studentId: { classroomId, studentId } },
+  });
+  if (!enrollment) throw HttpError.notFound("You aren't enrolled in this classroom");
+  await prisma.enrollment.delete({ where: { id: enrollment.id } });
+}
+
 export async function getRoster(classroomId: string) {
   const enrollments = await prisma.enrollment.findMany({
     where: { classroomId },

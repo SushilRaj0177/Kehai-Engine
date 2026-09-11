@@ -111,6 +111,15 @@ classroomRouter.delete(
   })
 );
 
+classroomRouter.delete(
+  "/:classroomId/enrollment",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    await classroomService.leaveClassroom(req.params.classroomId, req.user!.id);
+    res.status(204).end();
+  })
+);
+
 classroomRouter.get(
   "/:classroomId/heatmap",
   requireAuth,

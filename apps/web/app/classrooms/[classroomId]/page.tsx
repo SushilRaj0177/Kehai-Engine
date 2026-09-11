@@ -34,6 +34,9 @@ export default function ClassroomDetailPage() {
   const studentParam = searchParams.get("student") ?? undefined;
 
   const { data: classroom, error: classroomError, isLoading, mutate } = useClassroom(classroomId);
+  const [confirmingLeave, setConfirmingLeave] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const [leaveError, setLeaveError] = useState<string | null>(null);
   const { mutate: mutateRoster } = useClassroomRoster(classroomId);
   const { data: heatmap } = useClassroomHeatmap(classroomId, classroom?.isTeacher ? studentParam : undefined);
   const { data: sessions } = useClassroomSessions(classroom?.isTeacher ? classroomId : undefined);
@@ -64,6 +67,24 @@ export default function ClassroomDetailPage() {
     const timer = setTimeout(() => setToast(null), 4000);
     return () => clearTimeout(timer);
   }, [toast]);
+
+  async function leaveClassroom() {
+    if (!confirmingLeave) {
+      setLeaveError(null);
+      setConfirmingLeave(true);
+      return;
+    }
+    setLeaveError(null);
+    setLeaving(true);
+    try {
+      await apiFetch(`/api/classrooms/${classroomId}/enrollment`, { method: "DELETE" });
+      router.push("/classrooms");
+    } catch (err) {
+      setLeaveError(err instanceof ApiError ? err.message : t("classroomDetail.leaveError"));
+    } finally {
+      setLeaving(false);
+    }
+  }
 
   if (isLoading) return <LoadingBlock label={t("states.loadingClassroom")} />;
 
@@ -216,6 +237,30 @@ export default function ClassroomDetailPage() {
               </CardHeader>
               <CardBody>
                 <MyAttendanceHistory classroomId={classroomId} />
+              </CardBody>
+            </Card>
+
+            <Card className="border-shu-500/20">
+              <CardBody className="space-y-3">
+                <div>
+                  <p className="text-sm font-medium text-white/85">{t("classroomDetail.leaveClassroomLabel")}</p>
+                  <p className="mt-1 text-xs text-white/40">{t("classroomDetail.leaveClassroomHint")}</p>
+                </div>
+                {leaveError && <ErrorBlock message={leaveError} />}
+                {confirmingLeave ? (
+                  <div className="flex items-center gap-3">
+                    <Button variant="danger" size="sm" loading={leaving} onClick={leaveClassroom}>
+                      {t("classroomDetail.confirmLeave")}
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setConfirmingLeave(false)}>
+                      {t("common.cancel")}
+                    </Button>
+                  </div>
+                ) : (
+                  <Button variant="danger" size="sm" onClick={leaveClassroom}>
+                    {t("classroomDetail.leaveClassroomLabel")}
+                  </Button>
+                )}
               </CardBody>
             </Card>
           </div>

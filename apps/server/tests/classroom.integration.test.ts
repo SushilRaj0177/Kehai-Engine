@@ -8,6 +8,7 @@ import {
   manualOverrideClassAttendance,
   getMyAttendanceHistory,
   removeStudent,
+  leaveClassroom,
 } from "../src/services/classroom.service.js";
 
 let teacherId: string;
@@ -103,6 +104,32 @@ describe("removing a student from a classroom", () => {
       data: { name: "Never Enrolled", email: `never-enrolled-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
     });
     await expect(removeStudent(classroomId, stranger.id)).rejects.toThrow(/not enrolled/i);
+    await prisma.user.delete({ where: { id: stranger.id } });
+  });
+});
+
+describe("a student leaving a classroom on their own", () => {
+  it("deletes their own enrollment", async () => {
+    const leaver = await prisma.user.create({
+      data: { name: "Self-Leaving Student", email: `self-leaver-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
+    });
+    await prisma.enrollment.create({ data: { classroomId, studentId: leaver.id } });
+
+    await leaveClassroom(classroomId, leaver.id);
+
+    const enrollment = await prisma.enrollment.findUnique({
+      where: { classroomId_studentId: { classroomId, studentId: leaver.id } },
+    });
+    expect(enrollment).toBeNull();
+
+    await prisma.user.delete({ where: { id: leaver.id } });
+  });
+
+  it("rejects leaving a classroom you were never enrolled in", async () => {
+    const stranger = await prisma.user.create({
+      data: { name: "Never Enrolled Self", email: `never-enrolled-self-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
+    });
+    await expect(leaveClassroom(classroomId, stranger.id)).rejects.toThrow(/aren't enrolled/i);
     await prisma.user.delete({ where: { id: stranger.id } });
   });
 });
