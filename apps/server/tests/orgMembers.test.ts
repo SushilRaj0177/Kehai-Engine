@@ -21,13 +21,13 @@ beforeAll(async () => {
     data: { name: "Org Admin", email: `org-admin-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
   });
   adminId = admin.id;
-  await inviteMember(orgId, admin.email, "ADMIN");
+  await inviteMember(orgId, admin.email, "ADMIN", "OWNER");
 
   const organizer = await prisma.user.create({
     data: { name: "Org Organizer", email: `org-organizer-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
   });
   organizerId = organizer.id;
-  await inviteMember(orgId, organizer.email, "ORGANIZER");
+  await inviteMember(orgId, organizer.email, "ORGANIZER", "OWNER");
 });
 
 afterAll(async () => {
@@ -46,7 +46,7 @@ describe("removing an organization member", () => {
     const secondAdmin = await prisma.user.create({
       data: { name: "Second Admin", email: `second-admin-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
     });
-    await inviteMember(orgId, secondAdmin.email, "ADMIN");
+    await inviteMember(orgId, secondAdmin.email, "ADMIN", "OWNER");
 
     await expect(removeMember(orgId, secondAdmin.id, adminId, "ADMIN")).rejects.toThrow(/equal or higher role/i);
 
@@ -54,8 +54,27 @@ describe("removing an organization member", () => {
     await prisma.user.delete({ where: { id: secondAdmin.id } });
   });
 
-  it("rejects removing the last owner", async () => {
+  it("rejects an ADMIN removing an OWNER", async () => {
     await expect(removeMember(orgId, ownerId, adminId, "ADMIN")).rejects.toThrow(/equal or higher role/i);
+  });
+
+  it("lets an OWNER remove another OWNER when more than one owner exists", async () => {
+    const secondOwner = await prisma.user.create({
+      data: { name: "Second Owner", email: `second-owner-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
+    });
+    await inviteMember(orgId, secondOwner.email, "ADMIN", "OWNER");
+    await prisma.membership.update({
+      where: { userId_organizationId: { userId: secondOwner.id, organizationId: orgId } },
+      data: { role: "OWNER" },
+    });
+
+    await removeMember(orgId, secondOwner.id, ownerId, "OWNER");
+    const membership = await prisma.membership.findUnique({
+      where: { userId_organizationId: { userId: secondOwner.id, organizationId: orgId } },
+    });
+    expect(membership).toBeNull();
+
+    await prisma.user.delete({ where: { id: secondOwner.id } });
   });
 
   it("lets an ADMIN remove an ORGANIZER", async () => {
@@ -72,5 +91,31 @@ describe("removing an organization member", () => {
     });
     await expect(removeMember(orgId, stranger.id, ownerId, "OWNER")).rejects.toThrow(/isn't a member/i);
     await prisma.user.delete({ where: { id: stranger.id } });
+  });
+});
+
+describe("inviting an organization member", () => {
+  it("rejects an ADMIN re-inviting an existing OWNER at a lower role", async () => {
+    await expect(inviteMember(orgId, "org-owner-does-not-matter@example.com", "ADMIN", "ADMIN")).rejects.toThrow(/no user found/i);
+
+    // Real case: re-inviting the actual owner's email.
+    const ownerUser = await prisma.user.findUniqueOrThrow({ where: { id: ownerId } });
+    await expect(inviteMember(orgId, ownerUser.email, "ADMIN", "ADMIN")).rejects.toThrow(/change an owner's role/i);
+
+    const stillOwner = await prisma.membership.findUnique({
+      where: { userId_organizationId: { userId: ownerId, organizationId: orgId } },
+    });
+    expect(stillOwner?.role).toBe("OWNER");
+  });
+
+  it("lets an OWNER change another member's role via re-invite", async () => {
+    const membership = await inviteMember(orgId, (await prisma.user.findUniqueOrThrow({ where: { id: adminId } })).email, "VIEWER", "OWNER");
+    expect(membership.role).toBe("VIEWER");
+
+    // restore for other tests' sake
+    await prisma.membership.update({
+      where: { userId_organizationId: { userId: adminId, organizationId: orgId } },
+      data: { role: "ADMIN" },
+    });
   });
 });

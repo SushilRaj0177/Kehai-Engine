@@ -75,7 +75,8 @@ orgRouter.post(
   requireOrgRole("ADMIN"),
   asyncHandler(async (req, res) => {
     const input = inviteMemberSchema.parse(req.body);
-    const membership = await orgService.inviteMember(req.params.orgId, input.email, input.role);
+    const callerRole = (req as any).membership.role;
+    const membership = await orgService.inviteMember(req.params.orgId, input.email, input.role, callerRole);
     res.status(201).json(membership);
   })
 );

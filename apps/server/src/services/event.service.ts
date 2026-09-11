@@ -32,6 +32,44 @@ export async function createEvent(organizationId: string, createdById: string, i
   });
 }
 
+// A DRAFT is the one status an organizer expects to stay private until they
+// publish it — every other status is already visible on the public
+// discovery/browse routes, so only DRAFT needs a membership check here.
+export async function getEventForViewer(eventId: string, viewerUserId: string | undefined) {
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    include: {
+      organization: { select: { id: true, name: true, slug: true } },
+      _count: { select: { registrations: true, attendances: true } },
+    },
+  });
+  if (!event) throw HttpError.notFound("Event not found");
+
+  if (event.status === "DRAFT") {
+    const membership = viewerUserId
+      ? await prisma.membership.findUnique({
+          where: { userId_organizationId: { userId: viewerUserId, organizationId: event.organizationId } },
+        })
+      : null;
+    if (!membership) throw HttpError.notFound("Event not found");
+  }
+
+  let isRegistered = false;
+  let hasAttended = false;
+  if (viewerUserId) {
+    const [reg, att] = await Promise.all([
+      prisma.registration.findUnique({ where: { eventId_userId: { eventId: event.id, userId: viewerUserId } } }),
+      prisma.attendanceRecord.findUnique({ where: { eventId_userId: { eventId: event.id, userId: viewerUserId } } }),
+    ]);
+    isRegistered = !!reg;
+    hasAttended = !!att;
+  }
+
+  // Never leak the QR signing secret to clients
+  const { qrSecret, ...safeEvent } = event;
+  return { ...safeEvent, isRegistered, hasAttended };
+}
+
 export async function updateEvent(eventId: string, input: Partial<CreateEventInput>) {
   const event = await prisma.event.findUnique({ where: { id: eventId } });
   if (!event) throw HttpError.notFound("Event not found");
