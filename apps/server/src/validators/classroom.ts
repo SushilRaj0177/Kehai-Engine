@@ -59,3 +59,7 @@ export const classCheckInSchema = z.object({
   longitude: z.coerce.number().min(-180).max(180).optional(),
   accuracyMeters: z.coerce.number().min(0).max(100000).optional(),
 });
+
+export const classAttendanceOverrideSchema = z.object({
+  studentId: z.string().min(1),
+});

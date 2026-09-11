@@ -686,6 +686,10 @@ const dict = {
     colLastAttended: { en: "Last attended", ja: "最終出席" },
     viewHeatmap: { en: "View heatmap", ja: "ヒートマップを見る" },
     never: { en: "Never", ja: "なし" },
+    colToday: { en: "Today", ja: "本日" },
+    present: { en: "Present", ja: "出席済み" },
+    markPresent: { en: "Mark present", ja: "出席にする" },
+    overrideError: { en: "Failed to mark student present", ja: "出席の記録に失敗しました" },
   },
   legal: {
     kicker: { en: "Legal", ja: "法的情報" },

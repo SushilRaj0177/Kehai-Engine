@@ -151,13 +151,13 @@ export interface ClassSessionSummary {
 }
 
 export interface RosterRow {
-  enrollmentId: string;
   student: { id: string; name: string; email: string; avatarUrl?: string | null };
-  joinedAt: string;
+  enrolledAt: string;
   presentDays: number;
   totalDays: number;
   attendanceRate: number;
   lastAttendedAt: string | null;
+  checkedInOpenSession: boolean;
 }
 
 export interface HeatmapDay {

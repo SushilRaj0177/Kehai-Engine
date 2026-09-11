@@ -2,23 +2,44 @@
 
 import { useState } from "react";
 import { Input } from "./ui/Input";
+import { Button } from "./ui/Button";
 import { LoadingBlock } from "./ui/States";
 import { AttendanceHeatmap } from "./AttendanceHeatmap";
 import { useClassroomRoster, useClassroomHeatmap } from "@/lib/hooks";
+import { apiFetch, ApiError } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import { useLocale } from "@/lib/i18n";
 
-export function ClassroomRoster({ classroomId }: { classroomId: string }) {
+export function ClassroomRoster({ classroomId, openSessionId }: { classroomId: string; openSessionId?: string | null }) {
   const { t, locale } = useLocale();
   const [q, setQ] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
-  const { data, isLoading } = useClassroomRoster(classroomId);
+  const [overridingId, setOverridingId] = useState<string | null>(null);
+  const [overrideError, setOverrideError] = useState<string | null>(null);
+  const { data, isLoading, mutate } = useClassroomRoster(classroomId);
 
   const filtered = data?.filter((row) => {
     if (!q) return true;
     const needle = q.toLowerCase();
     return row.student.name.toLowerCase().includes(needle) || row.student.email.toLowerCase().includes(needle);
   });
+
+  async function markPresent(studentId: string) {
+    if (!openSessionId) return;
+    setOverrideError(null);
+    setOverridingId(studentId);
+    try {
+      await apiFetch(`/api/classrooms/${classroomId}/sessions/${openSessionId}/override`, {
+        method: "POST",
+        body: JSON.stringify({ studentId }),
+      });
+      await mutate();
+    } catch (err) {
+      setOverrideError(err instanceof ApiError ? err.message : t("classroomRoster.overrideError"));
+    } finally {
+      setOverridingId(null);
+    }
+  }
 
   return (
     <div>
@@ -32,6 +53,8 @@ export function ClassroomRoster({ classroomId }: { classroomId: string }) {
         />
       </div>
 
+      {overrideError && <p className="mb-3 text-sm text-shu-400">{overrideError}</p>}
+
       {isLoading ? (
         <LoadingBlock />
       ) : !filtered?.length ? (
@@ -41,12 +64,15 @@ export function ClassroomRoster({ classroomId }: { classroomId: string }) {
           <div className="scroll-thin max-h-96 space-y-2 overflow-auto sm:hidden">
             {filtered.map((row) => (
               <RosterCardItem
-                key={row.enrollmentId}
+                key={row.student.id}
                 classroomId={classroomId}
                 row={row}
                 locale={locale}
-                expanded={expanded === row.enrollmentId}
-                onToggle={() => setExpanded((cur) => (cur === row.enrollmentId ? null : row.enrollmentId))}
+                expanded={expanded === row.student.id}
+                onToggle={() => setExpanded((cur) => (cur === row.student.id ? null : row.student.id))}
+                canOverride={!!openSessionId && !row.checkedInOpenSession}
+                overriding={overridingId === row.student.id}
+                onMarkPresent={() => markPresent(row.student.id)}
               />
             ))}
           </div>
@@ -61,17 +87,22 @@ export function ClassroomRoster({ classroomId }: { classroomId: string }) {
                   <th className="px-4 py-2.5 font-medium">{t("classroomRoster.colTotal")}</th>
                   <th className="px-4 py-2.5 font-medium">{t("classroomRoster.colRate")}</th>
                   <th className="px-4 py-2.5 font-medium">{t("classroomRoster.colLastAttended")}</th>
+                  {openSessionId && <th className="px-4 py-2.5 font-medium">{t("classroomRoster.colToday")}</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/6">
                 {filtered.map((row) => (
                   <RosterRowItem
-                    key={row.enrollmentId}
+                    key={row.student.id}
                     classroomId={classroomId}
                     row={row}
                     locale={locale}
-                    expanded={expanded === row.enrollmentId}
-                    onToggle={() => setExpanded((cur) => (cur === row.enrollmentId ? null : row.enrollmentId))}
+                    expanded={expanded === row.student.id}
+                    onToggle={() => setExpanded((cur) => (cur === row.student.id ? null : row.student.id))}
+                    showTodayColumn={!!openSessionId}
+                    canOverride={!!openSessionId && !row.checkedInOpenSession}
+                    overriding={overridingId === row.student.id}
+                    onMarkPresent={() => markPresent(row.student.id)}
                   />
                 ))}
               </tbody>
@@ -83,19 +114,18 @@ export function ClassroomRoster({ classroomId }: { classroomId: string }) {
   );
 }
 
-function RosterCardItem({
-  classroomId,
-  row,
-  locale,
-  expanded,
-  onToggle,
-}: {
+type RosterItemProps = {
   classroomId: string;
   row: NonNullable<ReturnType<typeof useClassroomRoster>["data"]>[number];
   locale: "en" | "ja";
   expanded: boolean;
   onToggle: () => void;
-}) {
+  canOverride: boolean;
+  overriding: boolean;
+  onMarkPresent: () => void;
+};
+
+function RosterCardItem({ classroomId, row, locale, expanded, onToggle, canOverride, overriding, onMarkPresent }: RosterItemProps) {
   const { t } = useLocale();
   const { data: heatmap } = useClassroomHeatmap(expanded ? classroomId : undefined, row.student.id);
 
@@ -118,6 +148,21 @@ function RosterCardItem({
           </span>
         </div>
       </button>
+      {canOverride && (
+        <div className="border-t border-white/[0.06] px-3.5 py-2.5">
+          <Button
+            variant="ghost"
+            size="sm"
+            loading={overriding}
+            onClick={(e) => {
+              e.stopPropagation();
+              onMarkPresent();
+            }}
+          >
+            {t("classroomRoster.markPresent")}
+          </Button>
+        </div>
+      )}
       {expanded && (
         <div className="border-t border-white/[0.06] px-3.5 py-3">
           {heatmap ? <AttendanceHeatmap data={heatmap} /> : <LoadingBlock />}
@@ -133,13 +178,11 @@ function RosterRowItem({
   locale,
   expanded,
   onToggle,
-}: {
-  classroomId: string;
-  row: NonNullable<ReturnType<typeof useClassroomRoster>["data"]>[number];
-  locale: "en" | "ja";
-  expanded: boolean;
-  onToggle: () => void;
-}) {
+  showTodayColumn,
+  canOverride,
+  overriding,
+  onMarkPresent,
+}: RosterItemProps & { showTodayColumn: boolean }) {
   const { t } = useLocale();
   const { data: heatmap } = useClassroomHeatmap(expanded ? classroomId : undefined, row.student.id);
 
@@ -154,10 +197,29 @@ function RosterRowItem({
         <td className="px-4 py-2.5 text-white/50">
           {row.lastAttendedAt ? formatDate(row.lastAttendedAt, locale) : t("classroomRoster.never")}
         </td>
+        {showTodayColumn && (
+          <td className="px-4 py-2.5">
+            {row.checkedInOpenSession ? (
+              <span className="text-xs font-semibold text-kehai-400">{t("classroomRoster.present")}</span>
+            ) : canOverride ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                loading={overriding}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMarkPresent();
+                }}
+              >
+                {t("classroomRoster.markPresent")}
+              </Button>
+            ) : null}
+          </td>
+        )}
       </tr>
       {expanded && (
         <tr>
-          <td colSpan={6} className="bg-white/[0.02] px-4 py-4">
+          <td colSpan={showTodayColumn ? 7 : 6} className="bg-white/[0.02] px-4 py-4">
             {heatmap ? <AttendanceHeatmap data={heatmap} /> : <LoadingBlock />}
           </td>
         </tr>
