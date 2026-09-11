@@ -9,6 +9,7 @@ import {
   refreshSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  verifyEmailSchema,
   updateProfileSchema,
   changePasswordSchema,
   deleteAccountSchema,
@@ -89,6 +90,26 @@ authRouter.post(
   })
 );
 
+authRouter.post(
+  "/verify-email",
+  authRateLimit,
+  asyncHandler(async (req, res) => {
+    const input = verifyEmailSchema.parse(req.body);
+    await authService.verifyEmail(input.token);
+    res.status(200).json({ status: "ok" });
+  })
+);
+
+authRouter.post(
+  "/resend-verification",
+  requireAuth,
+  authRateLimit,
+  asyncHandler(async (req, res) => {
+    await authService.resendVerificationEmail(req.user!.id);
+    res.status(200).json({ status: "ok" });
+  })
+);
+
 authRouter.get(
   "/me",
   requireAuth,
@@ -106,6 +127,7 @@ authRouter.get(
         avatarUrl: user.avatarUrl,
         provider: user.provider,
         emailNotificationsEnabled: user.emailNotificationsEnabled,
+        emailVerifiedAt: user.emailVerifiedAt,
       },
       memberships: memberships.map((m) => ({
         role: m.role,

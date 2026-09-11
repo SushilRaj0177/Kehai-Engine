@@ -17,6 +17,7 @@ let userId: string;
 afterAll(async () => {
   if (userId) {
     await prisma.passwordResetToken.deleteMany({ where: { userId } });
+    await prisma.emailVerificationToken.deleteMany({ where: { userId } });
     await prisma.refreshToken.deleteMany({ where: { userId } });
     await prisma.user.delete({ where: { id: userId } });
   }

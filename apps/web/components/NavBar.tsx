@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useLocale } from "@/lib/i18n";
+import { apiFetch, ApiError } from "@/lib/api";
 import { Button } from "./ui/Button";
 
 export function NavBar() {
@@ -167,6 +168,7 @@ export function NavBar() {
           )}
         </div>
       )}
+      {user && !user.emailVerifiedAt && <VerifyEmailBanner />}
     </header>
   );
 }
@@ -273,5 +275,42 @@ function NavLink({ href, active, children }: { href: string; active?: boolean; c
     >
       {children}
     </Link>
+  );
+}
+
+function VerifyEmailBanner() {
+  const { t } = useLocale();
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function resend() {
+    setError(null);
+    setSending(true);
+    try {
+      await apiFetch("/api/auth/resend-verification", { method: "POST" });
+      setSent(true);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t("verifyEmail.resendError"));
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="mx-auto mt-2 flex max-w-6xl flex-wrap items-center justify-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/10 px-4 py-2 text-xs text-amber-200">
+      <span>{sent ? t("verifyEmail.bannerSent") : t("verifyEmail.bannerMessage")}</span>
+      {!sent && (
+        <button
+          type="button"
+          onClick={resend}
+          disabled={sending}
+          className="font-semibold text-amber-300 underline decoration-amber-300/40 underline-offset-2 hover:text-amber-200 disabled:opacity-50"
+        >
+          {sending ? t("verifyEmail.resending") : t("verifyEmail.resendLink")}
+        </button>
+      )}
+      {error && <span className="text-shu-300">{error}</span>}
+    </div>
   );
 }
