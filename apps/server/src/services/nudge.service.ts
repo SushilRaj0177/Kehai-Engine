@@ -1,5 +1,6 @@
 import { prisma } from "../lib/prisma.js";
 import { sendEmail } from "../utils/mailer.js";
+import { signUnsubscribeToken } from "../utils/unsubscribeToken.js";
 import { env } from "../config/env.js";
 
 // Same threshold and minimum-sessions gate as the "Attendance risk" panel
@@ -30,8 +31,9 @@ export async function sendLowAttendanceNudges(now: Date = new Date()): Promise<{
       where: {
         classroomId: classroom.id,
         OR: [{ lastNudgedAt: null }, { lastNudgedAt: { lt: cooldownCutoff } }],
+        student: { emailNotificationsEnabled: true },
       },
-      include: { student: { select: { name: true, email: true } } },
+      include: { student: { select: { id: true, name: true, email: true } } },
     });
     if (enrollments.length === 0) continue;
 
@@ -48,13 +50,15 @@ export async function sendLowAttendanceNudges(now: Date = new Date()): Promise<{
       if (rate >= RISK_THRESHOLD) continue;
 
       const link = `${env.WEB_ORIGIN}/classrooms/${classroom.id}`;
+      const unsubscribeLink = `${env.API_ORIGIN}/api/notifications/unsubscribe?token=${signUnsubscribeToken(enrollment.student.id)}`;
       await sendEmail(
         enrollment.student.email,
         `Your attendance in ${classroom.name}`,
         `<p>Hi ${enrollment.student.name},</p>
          <p>You've attended ${present} of ${totalSessions} sessions in <strong>${classroom.name}</strong>
          (${Math.round(rate * 100)}%) — below the usual bar for staying on track.</p>
-         <p>If something's come up, it's worth a word with your teacher: <a href="${link}">${link}</a></p>`
+         <p>If something's come up, it's worth a word with your teacher: <a href="${link}">${link}</a></p>
+         <p style="margin-top:24px;color:#888;font-size:12px;"><a href="${unsubscribeLink}">Unsubscribe from these nudges</a></p>`
       );
 
       await prisma.enrollment.update({ where: { id: enrollment.id }, data: { lastNudgedAt: now } });
