@@ -19,6 +19,20 @@ export async function createOrganization(ownerId: string, name: string) {
   });
 }
 
+// Cascades through every event, membership, and audit log the org owns
+// (see schema.prisma — all ON DELETE CASCADE from Organization), so this is
+// the one place a user with a sole ownership blocking their own account
+// deletion can actually clear that blocker. Same "not while something's
+// live" guard as deleteEvent, for the same reason: an ACTIVE event usually
+// means people are mid check-in right now.
+export async function deleteOrganization(organizationId: string) {
+  const activeEvent = await prisma.event.findFirst({ where: { organizationId, status: "ACTIVE" } });
+  if (activeEvent) {
+    throw HttpError.badRequest(`Cannot delete this organization while "${activeEvent.name}" is active — cancel or complete it first`);
+  }
+  await prisma.organization.delete({ where: { id: organizationId } });
+}
+
 export async function inviteMember(
   organizationId: string,
   email: string,

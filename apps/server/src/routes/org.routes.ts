@@ -40,6 +40,15 @@ orgRouter.get(
   })
 );
 
+orgRouter.delete(
+  "/:orgId",
+  requireOrgRole("OWNER"),
+  asyncHandler(async (req, res) => {
+    await orgService.deleteOrganization(req.params.orgId);
+    res.status(204).end();
+  })
+);
+
 orgRouter.get(
   "/:orgId/events",
   requireOrgRole("VIEWER"),

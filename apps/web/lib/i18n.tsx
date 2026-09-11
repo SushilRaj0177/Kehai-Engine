@@ -191,6 +191,15 @@ const dict = {
     createEvent: { en: "Create an event", ja: "イベントを作成" },
     registeredCount: { en: "{count} registered", ja: "登録 {count} 件" },
     attendedCount: { en: "{count} attended", ja: "出席 {count} 件" },
+    dangerZoneHeading: { en: "Danger zone", ja: "危険な操作" },
+    deleteOrgLabel: { en: "Delete organization", ja: "組織を削除" },
+    deleteOrgHint: {
+      en: "Permanently deletes this organization and everything under it — every event, registration, and attendance record. This can't be undone.",
+      ja: "この組織と、そのすべてのイベント・登録情報・出席記録が完全に削除されます。この操作は取り消せません。",
+    },
+    typeNameToConfirm: { en: "Type \"{name}\" to confirm", ja: "確認のため「{name}」と入力してください" },
+    deleteOrgConfirm: { en: "Permanently delete this organization", ja: "この組織を完全に削除する" },
+    deleteOrgError: { en: "Failed to delete organization", ja: "組織の削除に失敗しました" },
   },
   orgMembers: {
     heading: { en: "Team", ja: "チーム" },
