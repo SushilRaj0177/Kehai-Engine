@@ -810,6 +810,9 @@ const dict = {
     heading: { en: "Attendance risk", ja: "出席リスク" },
     presentOf: { en: "{present}/{total} sessions", ja: "{total}回中{present}回出席" },
     viewRoster: { en: "View full roster →", ja: "全員の名簿を見る →" },
+    sendNudge: { en: "Nudge now", ja: "今すぐ通知" },
+    nudgeSent: { en: "Sent", ja: "送信済み" },
+    nudgeError: { en: "Failed to send", ja: "送信に失敗しました" },
   },
   settings: {
     kicker: { en: "Account", ja: "アカウント" },

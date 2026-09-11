@@ -1,7 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useClassroomRoster } from "@/lib/hooks";
+import { apiFetch, ApiError } from "@/lib/api";
+import { Button } from "./ui/Button";
 import { useLocale } from "@/lib/i18n";
 
 // A threshold, not a hard rule — flags students worth a teacher's attention
@@ -17,6 +20,10 @@ export function AtRiskStudents({ classroomId }: { classroomId: string }) {
   // network round-trip, just reads the shared cache.
   const { data } = useClassroomRoster(classroomId);
 
+  const [nudgingId, setNudgingId] = useState<string | null>(null);
+  const [nudgedId, setNudgedId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
   if (!data) return null;
 
   const atRisk = data
@@ -26,17 +33,32 @@ export function AtRiskStudents({ classroomId }: { classroomId: string }) {
 
   if (atRisk.length === 0) return null;
 
+  async function sendNudge(studentId: string) {
+    setError(null);
+    setNudgedId(null);
+    setNudgingId(studentId);
+    try {
+      await apiFetch(`/api/classrooms/${classroomId}/students/${studentId}/nudge`, { method: "POST" });
+      setNudgedId(studentId);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t("atRisk.nudgeError"));
+    } finally {
+      setNudgingId(null);
+    }
+  }
+
   return (
     <div className="space-y-2.5">
       <div className="flex items-center gap-2">
         <span className="h-1.5 w-1.5 rounded-full bg-shu-500" />
         <span className="text-xs font-semibold uppercase tracking-wider text-white/40">{t("atRisk.heading")}</span>
       </div>
+      {error && <p className="text-xs text-shu-400">{error}</p>}
       <ul className="space-y-1.5">
         {atRisk.map((row) => (
           <li
             key={row.student.id}
-            className="flex items-center justify-between gap-3 rounded-lg border border-shu-500/20 bg-shu-500/[0.05] px-3 py-2 text-sm"
+            className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-shu-500/20 bg-shu-500/[0.05] px-3 py-2 text-sm"
           >
             <div className="min-w-0">
               <p className="truncate font-medium text-white/85">{row.student.name}</p>
@@ -44,7 +66,21 @@ export function AtRiskStudents({ classroomId }: { classroomId: string }) {
                 {t("atRisk.presentOf", { present: row.presentDays, total: row.totalDays })}
               </p>
             </div>
-            <span className="shrink-0 font-mono text-sm font-bold text-shu-400">{Math.round(row.attendanceRate * 100)}%</span>
+            <div className="flex shrink-0 items-center gap-2">
+              <span className="font-mono text-sm font-bold text-shu-400">{Math.round(row.attendanceRate * 100)}%</span>
+              {nudgedId === row.student.id ? (
+                <span className="text-xs text-kehai-400">✓ {t("atRisk.nudgeSent")}</span>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  loading={nudgingId === row.student.id}
+                  onClick={() => sendNudge(row.student.id)}
+                >
+                  {t("atRisk.sendNudge")}
+                </Button>
+              )}
+            </div>
           </li>
         ))}
       </ul>
