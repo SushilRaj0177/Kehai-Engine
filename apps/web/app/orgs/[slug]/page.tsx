@@ -2,14 +2,14 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { TiltCard } from "@/components/ui/TiltCard";
 import { Badge } from "@/components/ui/Badge";
-import { Input } from "@/components/ui/Input";
-import { EmptyState, LoadingBlock } from "@/components/ui/States";
+import { Input, Label } from "@/components/ui/Input";
+import { EmptyState, LoadingBlock, ErrorBlock } from "@/components/ui/States";
 import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
 import { ClickRippleLayer } from "@/components/ui/ClickRipple";
@@ -17,6 +17,7 @@ import { OrgAttendanceTrendChart } from "@/components/charts/OrgAttendanceTrendC
 import { OrgMembers } from "@/components/OrgMembers";
 import { AuditLogPanel } from "@/components/AuditLogPanel";
 import { useMyOrganizations, useOrgEvents, useOrgOverview } from "@/lib/hooks";
+import { apiFetch, ApiError } from "@/lib/api";
 import { formatDateRange } from "@/lib/format";
 import { useLocale } from "@/lib/i18n";
 
@@ -161,8 +162,69 @@ export default function OrgPage() {
             </Card>
           </div>
         )}
+
+        {org.role === "OWNER" && (
+          <div className="relative mt-16">
+            <h2 className="mb-6 font-display text-xl font-bold text-shu-400">{t("orgDetail.dangerZoneHeading")}</h2>
+            <DeleteOrgSection org={org} />
+          </div>
+        )}
       </div>
     </ClickRippleLayer>
+  );
+}
+
+function DeleteOrgSection({ org }: { org: NonNullable<ReturnType<typeof useMyOrganizations>["data"]>[number] }) {
+  const { t } = useLocale();
+  const router = useRouter();
+  const [confirming, setConfirming] = useState(false);
+  const [typedName, setTypedName] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function confirmDelete() {
+    setError(null);
+    setDeleting(true);
+    try {
+      await apiFetch(`/api/orgs/${org.id}`, { method: "DELETE" });
+      router.push("/dashboard");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t("orgDetail.deleteOrgError"));
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  return (
+    <Card className="border-shu-500/20">
+      <CardBody className="space-y-4">
+        <div>
+          <p className="text-sm font-medium text-white/85">{t("orgDetail.deleteOrgLabel")}</p>
+          <p className="mt-1 text-xs text-white/40">{t("orgDetail.deleteOrgHint")}</p>
+        </div>
+        {error && <ErrorBlock message={error} />}
+        {confirming ? (
+          <div className="space-y-3 rounded-lg border border-shu-500/20 bg-shu-500/5 p-4">
+            <div>
+              <Label htmlFor="delete-org-confirm">{t("orgDetail.typeNameToConfirm", { name: org.name })}</Label>
+              <Input id="delete-org-confirm" value={typedName} onChange={(e) => setTypedName(e.target.value)} />
+            </div>
+            <div className="flex items-center gap-3">
+              <Button variant="danger" size="sm" loading={deleting} onClick={confirmDelete} disabled={typedName !== org.name}>
+                {t("orgDetail.deleteOrgConfirm")}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setConfirming(false)}>
+                {t("common.cancel")}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button variant="danger" size="sm" onClick={() => setConfirming(true)}>
+            {t("orgDetail.deleteOrgLabel")}
+          </Button>
+        )}
+      </CardBody>
+    </Card>
   );
 }
 
