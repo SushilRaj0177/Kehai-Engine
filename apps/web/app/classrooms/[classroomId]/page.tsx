@@ -216,7 +216,7 @@ export default function ClassroomDetailPage() {
                   {t("classroomDetail.shareHeading")}
                 </CardHeader>
                 <CardBody>
-                  <ShareJoinCode joinCode={classroom.joinCode} />
+                  <ShareJoinCode classroomId={classroomId} joinCode={classroom.joinCode} onRegenerated={() => mutate()} />
                 </CardBody>
               </Card>
 
@@ -416,9 +416,20 @@ function DeleteClassroomSection({ classroomId, classroomName }: { classroomId: s
   );
 }
 
-function ShareJoinCode({ joinCode }: { joinCode?: string }) {
+function ShareJoinCode({
+  classroomId,
+  joinCode,
+  onRegenerated,
+}: {
+  classroomId: string;
+  joinCode?: string;
+  onRegenerated: () => void;
+}) {
   const { t } = useLocale();
   const [copied, setCopied] = useState<"code" | "link" | null>(null);
+  const [confirmingRegenerate, setConfirmingRegenerate] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!joinCode) return null;
   const link = typeof window !== "undefined" ? `${window.location.origin}/classrooms/join?code=${joinCode}` : "";
@@ -429,6 +440,25 @@ function ShareJoinCode({ joinCode }: { joinCode?: string }) {
       .then(() => setCopied(which))
       .catch(() => setCopied(null));
     setTimeout(() => setCopied((cur) => (cur === which ? null : cur)), 1800);
+  }
+
+  async function regenerate() {
+    if (!confirmingRegenerate) {
+      setError(null);
+      setConfirmingRegenerate(true);
+      return;
+    }
+    setError(null);
+    setRegenerating(true);
+    try {
+      await apiFetch(`/api/classrooms/${classroomId}/join-code/regenerate`, { method: "POST" });
+      setConfirmingRegenerate(false);
+      onRegenerated();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t("classroomHub.regenerateError"));
+    } finally {
+      setRegenerating(false);
+    }
   }
 
   return (
@@ -445,6 +475,22 @@ function ShareJoinCode({ joinCode }: { joinCode?: string }) {
           {copied === "link" ? t("classroomHub.copied") : t("classroomHub.copyLink")}
         </Button>
       </div>
+      {error && <p className="text-xs text-shu-400">{error}</p>}
+      {confirmingRegenerate ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-white/50">{t("classroomHub.confirmRegenerate")}</span>
+          <Button variant="danger" size="sm" loading={regenerating} onClick={regenerate}>
+            {t("classroomHub.regenerateCode")}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setConfirmingRegenerate(false)}>
+            {t("common.cancel")}
+          </Button>
+        </div>
+      ) : (
+        <Button variant="ghost" size="sm" onClick={regenerate}>
+          {t("classroomHub.regenerateCode")}
+        </Button>
+      )}
     </div>
   );
 }

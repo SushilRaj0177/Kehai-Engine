@@ -31,16 +31,21 @@ function toDateKey(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-export async function createClassroom(teacherId: string, input: CreateClassroomInput) {
+// Retry loop mirroring org.service.ts's slug-collision handling — a 6-char
+// code from a 33-character alphabet has ~39B combinations, so collisions
+// are rare, but this still guards against them explicitly.
+async function generateUniqueJoinCode(): Promise<string> {
   let joinCode = generateJoinCode();
-  // Retry loop mirroring org.service.ts's slug-collision handling — a
-  // 6-char code from a 33-character alphabet has ~39B combinations, so
-  // collisions are rare, but we still guard against them explicitly.
   for (let attempts = 0; attempts < 10; attempts++) {
     const existing = await prisma.classroom.findUnique({ where: { joinCode } });
     if (!existing) break;
     joinCode = generateJoinCode();
   }
+  return joinCode;
+}
+
+export async function createClassroom(teacherId: string, input: CreateClassroomInput) {
+  const joinCode = await generateUniqueJoinCode();
 
   return prisma.classroom.create({
     data: {
@@ -66,6 +71,17 @@ export async function deleteClassroom(classroomId: string) {
   const classroom = await prisma.classroom.findUnique({ where: { id: classroomId } });
   if (!classroom) throw HttpError.notFound("Classroom not found");
   await prisma.classroom.delete({ where: { id: classroomId } });
+}
+
+// Invalidates the old code immediately — anyone who still has it (a leaked
+// screenshot, a wrong group chat) can no longer join with it, but neither
+// can a student who copied the old code and hasn't joined yet. Already-
+// enrolled students are unaffected; this only changes how new people join.
+export async function regenerateJoinCode(classroomId: string) {
+  const classroom = await prisma.classroom.findUnique({ where: { id: classroomId } });
+  if (!classroom) throw HttpError.notFound("Classroom not found");
+  const joinCode = await generateUniqueJoinCode();
+  return prisma.classroom.update({ where: { id: classroomId }, data: { joinCode } });
 }
 
 export async function joinClassroom(code: string, studentId: string) {

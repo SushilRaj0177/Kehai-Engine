@@ -630,6 +630,12 @@ const dict = {
     copyCode: { en: "Copy code", ja: "コードをコピー" },
     copyLink: { en: "Copy link", ja: "リンクをコピー" },
     copied: { en: "Copied!", ja: "コピーしました！" },
+    regenerateCode: { en: "Regenerate code", ja: "コードを再発行" },
+    confirmRegenerate: {
+      en: "The old code will stop working immediately. Sure?",
+      ja: "古いコードはすぐに使えなくなります。よろしいですか？",
+    },
+    regenerateError: { en: "Failed to regenerate join code", ja: "参加コードの再発行に失敗しました" },
     enrolledHeading: { en: "Your classes", ja: "受講中のクラス" },
     enrolledEmptyTitle: { en: "Not enrolled in any classroom", ja: "受講中のクラスはありません" },
     enrolledEmptyDescription: {
