@@ -39,6 +39,7 @@ export interface EventSummary {
   organization?: { id: string; name: string; slug: string };
   _count: { registrations: number; attendances: number };
   isRegistered?: boolean;
+  isWaitlisted?: boolean;
   hasAttended?: boolean;
 }
 
@@ -47,6 +48,7 @@ export interface MyRegistration {
   registeredAt: string;
   attended: boolean;
   checkedInAt: string | null;
+  waitlisted: boolean;
 }
 
 export interface AttendeeRow {
@@ -59,6 +61,7 @@ export interface AttendeeRow {
   method: string | null;
   flagged: boolean;
   flagReasons: string[];
+  waitlisted: boolean;
 }
 
 export interface EventAnalytics {

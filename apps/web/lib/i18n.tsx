@@ -129,6 +129,7 @@ const dict = {
     attended: { en: "Attended", ja: "出席済み" },
     pending: { en: "Pending", ja: "未出席" },
     registered: { en: "Registered", ja: "登録済み" },
+    waitlisted: { en: "Waitlisted", ja: "キャンセル待ち" },
     registrationClosed: { en: "Registration closed", ja: "受付終了" },
     attendanceConfirmed: { en: "Attendance confirmed", ja: "出席確認済み" },
     checkedIn: { en: "Checked in", ja: "チェックイン済み" },
@@ -334,6 +335,14 @@ const dict = {
       ja: "チェックインするには、この場所から約{radius}m以内（デバイスのGPS誤差を含む）にいる必要があります。",
     },
     registrationFailed: { en: "Registration failed", ja: "登録に失敗しました" },
+    waitlistedHint: {
+      en: "This event is at capacity — you'll be automatically registered if a spot opens up.",
+      ja: "このイベントは定員に達しています。空きが出た場合は自動的に登録されます。",
+    },
+    leaveWaitlist: { en: "Leave waitlist", ja: "キャンセル待ちをやめる" },
+    cancelRegistration: { en: "Cancel registration", ja: "登録をキャンセル" },
+    confirmCancel: { en: "Are you sure?", ja: "よろしいですか？" },
+    cancelFailed: { en: "Failed to cancel", ja: "キャンセルに失敗しました" },
   },
   myEvents: {
     kicker: { en: "Your presence, tracked", ja: "あなたの出席記録" },

@@ -29,6 +29,8 @@ export default function EventDetailPage() {
   const { data: event, error: eventError, isLoading, mutate } = useEvent(eventId);
   const [error, setError] = useState<string | null>(null);
   const [registering, setRegistering] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
 
   if (isLoading) return <LoadingBlock label={t("states.loadingEvent")} />;
 
@@ -58,6 +60,25 @@ export default function EventDetailPage() {
       setError(err instanceof ApiError ? err.message : t("eventDetail.registrationFailed"));
     } finally {
       setRegistering(false);
+    }
+  }
+
+  async function cancelRegistration() {
+    if (!confirmingCancel) {
+      setError(null);
+      setConfirmingCancel(true);
+      return;
+    }
+    setError(null);
+    setCancelling(true);
+    try {
+      await apiFetch(`/api/events/${eventId}/register`, { method: "DELETE" });
+      setConfirmingCancel(false);
+      await mutate();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t("eventDetail.cancelFailed"));
+    } finally {
+      setCancelling(false);
     }
   }
 
@@ -104,6 +125,26 @@ export default function EventDetailPage() {
         <div className="relative z-20 mt-8 flex flex-wrap items-center gap-4">
           {event.hasAttended ? (
             <Badge status="COMPLETED">{t("badge.attendanceConfirmed")}</Badge>
+          ) : event.isRegistered && event.isWaitlisted ? (
+            <div className="flex flex-col gap-2">
+              <Badge>{t("badge.waitlisted")}</Badge>
+              <p className="text-xs text-white/40">{t("eventDetail.waitlistedHint")}</p>
+              {confirmingCancel ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-white/50">{t("eventDetail.confirmCancel")}</span>
+                  <Button variant="danger" size="sm" loading={cancelling} onClick={cancelRegistration}>
+                    {t("eventDetail.leaveWaitlist")}
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setConfirmingCancel(false)}>
+                    {t("common.cancel")}
+                  </Button>
+                </div>
+              ) : (
+                <Button variant="ghost" size="sm" onClick={cancelRegistration}>
+                  {t("eventDetail.leaveWaitlist")}
+                </Button>
+              )}
+            </div>
           ) : event.isRegistered ? (
             isOpen ? (
               <div className="flex flex-col gap-2">
@@ -118,6 +159,21 @@ export default function EventDetailPage() {
                       ? t("attend.windowNotOpenBody", { time: formatDateTime(checkInWindow.opensAt, locale) })
                       : t("attend.windowClosedBody", { time: formatDateTime(checkInWindow.closesAt, locale) })}
                   </span>
+                )}
+                {confirmingCancel ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-white/50">{t("eventDetail.confirmCancel")}</span>
+                    <Button variant="danger" size="sm" loading={cancelling} onClick={cancelRegistration}>
+                      {t("eventDetail.cancelRegistration")}
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setConfirmingCancel(false)}>
+                      {t("common.cancel")}
+                    </Button>
+                  </div>
+                ) : (
+                  <Button variant="ghost" size="sm" onClick={cancelRegistration}>
+                    {t("eventDetail.cancelRegistration")}
+                  </Button>
                 )}
               </div>
             ) : (

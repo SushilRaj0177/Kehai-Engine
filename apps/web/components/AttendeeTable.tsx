@@ -116,6 +116,7 @@ export function AttendeeTable({ eventId }: { eventId: string }) {
                   </div>
                   <div className="flex shrink-0 items-center gap-1.5">
                     <FlagBadge reasons={row.flagReasons} t={t} />
+                    {row.waitlisted && <Badge>{t("badge.waitlisted")}</Badge>}
                     {row.attended ? <Badge status="COMPLETED">{t("badge.attended")}</Badge> : <Badge>{t("badge.pending")}</Badge>}
                   </div>
                 </div>
@@ -179,6 +180,7 @@ export function AttendeeTable({ eventId }: { eventId: string }) {
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-1.5">
                         {row.attended ? <Badge status="COMPLETED">{t("badge.attended")}</Badge> : <Badge>{t("badge.pending")}</Badge>}
+                        {row.waitlisted && <Badge>{t("badge.waitlisted")}</Badge>}
                         <FlagBadge reasons={row.flagReasons} t={t} />
                       </div>
                     </td>
