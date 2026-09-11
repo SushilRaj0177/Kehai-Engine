@@ -394,7 +394,14 @@ function DeleteClassroomSection({ classroomId, classroomName }: { classroomId: s
               <Button variant="danger" size="sm" loading={deleting} onClick={confirmDelete} disabled={typedName !== classroomName}>
                 {t("classroomDetail.deleteClassroomConfirm")}
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => setConfirming(false)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setConfirming(false);
+                  setTypedName("");
+                }}
+              >
                 {t("common.cancel")}
               </Button>
             </div>

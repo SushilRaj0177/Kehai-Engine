@@ -213,7 +213,14 @@ function DeleteOrgSection({ org }: { org: NonNullable<ReturnType<typeof useMyOrg
               <Button variant="danger" size="sm" loading={deleting} onClick={confirmDelete} disabled={typedName !== org.name}>
                 {t("orgDetail.deleteOrgConfirm")}
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => setConfirming(false)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setConfirming(false);
+                  setTypedName("");
+                }}
+              >
                 {t("common.cancel")}
               </Button>
             </div>

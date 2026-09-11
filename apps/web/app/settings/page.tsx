@@ -304,7 +304,14 @@ function DeleteAccountSection() {
               >
                 {t("settings.deleteAccountConfirm")}
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => setConfirming(false)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setConfirming(false);
+                  setPassword("");
+                }}
+              >
                 {t("common.cancel")}
               </Button>
             </div>
