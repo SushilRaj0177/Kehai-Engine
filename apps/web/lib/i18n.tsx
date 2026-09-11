@@ -516,6 +516,9 @@ const dict = {
     removeRegistration: { en: "Remove", ja: "削除" },
     confirmRemove: { en: "Remove for good?", ja: "完全に削除しますか？" },
     removeError: { en: "Failed to remove registration", ja: "登録の削除に失敗しました" },
+    revokeAttendance: { en: "Undo check-in", ja: "チェックインを取り消す" },
+    confirmRevoke: { en: "Undo this check-in?", ja: "このチェックインを取り消しますか？" },
+    revokeError: { en: "Failed to undo check-in", ja: "チェックインの取り消しに失敗しました" },
     flaggedTitle: { en: "Flagged for review", ja: "確認が必要としてマークされました" },
     flagReason_impossible_travel: {
       en: "Checked in somewhere they couldn't have physically reached in time since their last check-in",

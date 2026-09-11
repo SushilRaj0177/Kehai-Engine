@@ -42,6 +42,8 @@ export function AttendeeTable({ eventId }: { eventId: string }) {
   const [overrideError, setOverrideError] = useState<string | null>(null);
   const [confirmingRemoveId, setConfirmingRemoveId] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [confirmingRevokeId, setConfirmingRevokeId] = useState<string | null>(null);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
 
   async function markPresent(userId: string) {
     setOverrideError(null);
@@ -56,6 +58,25 @@ export function AttendeeTable({ eventId }: { eventId: string }) {
       setOverrideError(err instanceof ApiError ? err.message : t("attendeeTable.overrideError"));
     } finally {
       setOverridingId(null);
+    }
+  }
+
+  async function revokeAttendance(userId: string) {
+    if (confirmingRevokeId !== userId) {
+      setOverrideError(null);
+      setConfirmingRevokeId(userId);
+      return;
+    }
+    setOverrideError(null);
+    setRevokingId(userId);
+    try {
+      await apiFetch(`/api/attendance/${eventId}/attendees/${userId}`, { method: "DELETE" });
+      setConfirmingRevokeId(null);
+      await mutate();
+    } catch (err) {
+      setOverrideError(err instanceof ApiError ? err.message : t("attendeeTable.revokeError"));
+    } finally {
+      setRevokingId(null);
     }
   }
 
@@ -129,7 +150,7 @@ export function AttendeeTable({ eventId }: { eventId: string }) {
                     {t("attendeeTable.colDistance")}: {row.distanceMeters != null ? `${row.distanceMeters}m` : "—"}
                   </span>
                 </div>
-                {!row.attended && (
+                {!row.attended ? (
                   <div className="mt-2.5 flex flex-wrap items-center gap-2 border-t border-white/[0.06] pt-2.5">
                     <Button variant="ghost" size="sm" loading={overridingId === row.user.id} onClick={() => markPresent(row.user.id)}>
                       {t("attendeeTable.markPresent")}
@@ -152,6 +173,29 @@ export function AttendeeTable({ eventId }: { eventId: string }) {
                     ) : (
                       <Button variant="ghost" size="sm" onClick={() => removeRegistration(row.user.id)}>
                         {t("attendeeTable.removeRegistration")}
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="mt-2.5 flex flex-wrap items-center gap-2 border-t border-white/[0.06] pt-2.5">
+                    {confirmingRevokeId === row.user.id ? (
+                      <>
+                        <span className="text-xs text-white/50">{t("attendeeTable.confirmRevoke")}</span>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          loading={revokingId === row.user.id}
+                          onClick={() => revokeAttendance(row.user.id)}
+                        >
+                          {t("attendeeTable.revokeAttendance")}
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => setConfirmingRevokeId(null)}>
+                          {t("common.cancel")}
+                        </Button>
+                      </>
+                    ) : (
+                      <Button variant="ghost" size="sm" onClick={() => revokeAttendance(row.user.id)}>
+                        {t("attendeeTable.revokeAttendance")}
                       </Button>
                     )}
                   </div>
@@ -189,7 +233,7 @@ export function AttendeeTable({ eventId }: { eventId: string }) {
                     </td>
                     <td className="px-4 py-2.5 text-white/50">{row.distanceMeters != null ? `${row.distanceMeters}m` : "—"}</td>
                     <td className="px-4 py-2.5">
-                      {!row.attended && (
+                      {!row.attended ? (
                         <div className="flex flex-wrap items-center gap-2">
                           <Button
                             variant="ghost"
@@ -216,6 +260,28 @@ export function AttendeeTable({ eventId }: { eventId: string }) {
                           ) : (
                             <Button variant="ghost" size="sm" onClick={() => removeRegistration(row.user.id)}>
                               {t("attendeeTable.removeRegistration")}
+                            </Button>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap items-center gap-2">
+                          {confirmingRevokeId === row.user.id ? (
+                            <>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                loading={revokingId === row.user.id}
+                                onClick={() => revokeAttendance(row.user.id)}
+                              >
+                                {t("attendeeTable.revokeAttendance")}
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => setConfirmingRevokeId(null)}>
+                                {t("common.cancel")}
+                              </Button>
+                            </>
+                          ) : (
+                            <Button variant="ghost" size="sm" onClick={() => revokeAttendance(row.user.id)}>
+                              {t("attendeeTable.revokeAttendance")}
                             </Button>
                           )}
                         </div>
