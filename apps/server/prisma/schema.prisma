@@ -284,6 +284,12 @@ model Enrollment {
   studentId   String
   createdAt   DateTime @default(now())
 
+  // Last time a "your attendance has slipped" nudge went out for this
+  // enrollment — the nudge scheduler's own cooldown, so a student under the
+  // risk threshold gets emailed at most once a week, not every scheduler
+  // tick that happens to still find them under it.
+  lastNudgedAt DateTime?
+
   classroom Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
   student   User      @relation("StudentEnrollments", fields: [studentId], references: [id], onDelete: Cascade)
 
