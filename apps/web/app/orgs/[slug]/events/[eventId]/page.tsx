@@ -363,7 +363,7 @@ function EditDetailsPanel({ event, onSaved }: { event: EventSummary; onSaved: ()
         method: "PATCH",
         body: JSON.stringify({
           name,
-          description: description.trim() || undefined,
+          description: description.trim() || null,
           venue,
           capacity: capacity.trim() ? Number(capacity) : null,
         }),

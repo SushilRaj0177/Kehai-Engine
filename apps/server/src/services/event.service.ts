@@ -6,7 +6,7 @@ import type { EventStatus } from "@prisma/client";
 
 export interface CreateEventInput {
   name: string;
-  description?: string;
+  description?: string | null;
   venue: string;
   startsAt: Date;
   endsAt: Date;

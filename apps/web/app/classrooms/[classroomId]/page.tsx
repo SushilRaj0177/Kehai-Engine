@@ -257,7 +257,7 @@ function EditClassroomDetailsPanel({ classroom, onSaved }: { classroom: Classroo
     try {
       await apiFetch(`/api/classrooms/${classroom.id}`, {
         method: "PATCH",
-        body: JSON.stringify({ name, courseCode: courseCode.trim() || undefined, semesterLabel: semesterLabel.trim() || undefined }),
+        body: JSON.stringify({ name, courseCode: courseCode.trim() || null, semesterLabel: semesterLabel.trim() || null }),
       });
       onSaved();
       setSaved(true);

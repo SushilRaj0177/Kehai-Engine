@@ -28,8 +28,12 @@ export const createClassroomSchema = z
 export const updateClassroomSchema = z
   .object({
     name: z.string().trim().min(2).max(150).optional(),
-    courseCode: z.string().trim().max(40).optional(),
-    semesterLabel: z.string().trim().max(60).optional(),
+    // Nullable, not just optional — the edit panel needs to be able to
+    // clear a previously-set course code or semester label, which only an
+    // explicit `null` can express: omitting the key from a PATCH leaves
+    // the old value untouched.
+    courseCode: z.string().trim().max(40).optional().nullable(),
+    semesterLabel: z.string().trim().max(60).optional().nullable(),
     latitude: z.coerce.number().min(-90).max(90).optional(),
     longitude: z.coerce.number().min(-180).max(180).optional(),
     geofenceRadiusM: z.coerce.number().int().min(10).max(5000).optional(),
