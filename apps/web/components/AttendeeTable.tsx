@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import useSWR from "swr";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, ApiError } from "@/lib/api";
 import type { AttendeeRow } from "@/lib/types";
 import { Input } from "./ui/Input";
+import { Button } from "./ui/Button";
 import { Badge } from "./ui/Badge";
-import { LoadingBlock } from "./ui/States";
+import { LoadingBlock, ErrorBlock } from "./ui/States";
 import { useLocale } from "@/lib/i18n";
 
 function FlagBadge({ reasons, t }: { reasons: string[]; t: (path: string) => string }) {
@@ -31,14 +32,34 @@ export function AttendeeTable({ eventId }: { eventId: string }) {
   if (q) qs.set("q", q);
   if (status) qs.set("status", status);
 
-  const { data, isLoading } = useSWR<AttendeeRow[]>(
+  const { data, isLoading, mutate } = useSWR<AttendeeRow[]>(
     `/api/events/${eventId}/attendees${qs.toString() ? `?${qs}` : ""}`,
     (path) => apiFetch(path),
     { refreshInterval: 8000 }
   );
 
+  const [overridingId, setOverridingId] = useState<string | null>(null);
+  const [overrideError, setOverrideError] = useState<string | null>(null);
+
+  async function markPresent(userId: string) {
+    setOverrideError(null);
+    setOverridingId(userId);
+    try {
+      await apiFetch(`/api/attendance/${eventId}/override`, {
+        method: "POST",
+        body: JSON.stringify({ userId }),
+      });
+      await mutate();
+    } catch (err) {
+      setOverrideError(err instanceof ApiError ? err.message : t("attendeeTable.overrideError"));
+    } finally {
+      setOverridingId(null);
+    }
+  }
+
   return (
     <div>
+      {overrideError && <ErrorBlock message={overrideError} className="mb-3" />}
       <div className="mb-3 flex flex-wrap gap-2">
         <Input
           placeholder={t("attendeeTable.searchPlaceholder")}
@@ -86,6 +107,13 @@ export function AttendeeTable({ eventId }: { eventId: string }) {
                     {t("attendeeTable.colDistance")}: {row.distanceMeters != null ? `${row.distanceMeters}m` : "—"}
                   </span>
                 </div>
+                {!row.attended && (
+                  <div className="mt-2.5 border-t border-white/[0.06] pt-2.5">
+                    <Button variant="ghost" size="sm" loading={overridingId === row.user.id} onClick={() => markPresent(row.user.id)}>
+                      {t("attendeeTable.markPresent")}
+                    </Button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -99,6 +127,7 @@ export function AttendeeTable({ eventId }: { eventId: string }) {
                   <th className="px-4 py-2.5 font-medium">{t("attendeeTable.colStatus")}</th>
                   <th className="px-4 py-2.5 font-medium">{t("attendeeTable.colCheckedIn")}</th>
                   <th className="px-4 py-2.5 font-medium">{t("attendeeTable.colDistance")}</th>
+                  <th className="px-4 py-2.5 font-medium" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/6">
@@ -116,6 +145,18 @@ export function AttendeeTable({ eventId }: { eventId: string }) {
                       {row.checkedInAt ? new Date(row.checkedInAt).toLocaleTimeString(locale === "ja" ? "ja-JP" : "en-US") : "—"}
                     </td>
                     <td className="px-4 py-2.5 text-white/50">{row.distanceMeters != null ? `${row.distanceMeters}m` : "—"}</td>
+                    <td className="px-4 py-2.5">
+                      {!row.attended && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          loading={overridingId === row.user.id}
+                          onClick={() => markPresent(row.user.id)}
+                        >
+                          {t("attendeeTable.markPresent")}
+                        </Button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
