@@ -17,7 +17,7 @@ import { ArrivalTimelineChart } from "@/components/charts/ArrivalTimelineChart";
 import { AttendeeTable } from "@/components/AttendeeTable";
 import { AiInsightsPanel } from "@/components/AiInsightsPanel";
 import { ExportButtons } from "@/components/ExportButtons";
-import { Input, Label } from "@/components/ui/Input";
+import { Input, Label, Textarea } from "@/components/ui/Input";
 import { useEvent, useEventAnalytics, useMyOrganizations } from "@/lib/hooks";
 import { apiFetch, ApiError } from "@/lib/api";
 import { formatDateRange, formatDateTime, toLocalDatetimeInputValue } from "@/lib/format";
@@ -163,8 +163,11 @@ export default function EventControlRoomPage() {
         {statusError && <ErrorBlock message={statusError} className="relative mt-3" />}
 
         {org && event.status !== "COMPLETED" && event.status !== "CANCELLED" && (
-          <div className="relative z-20 mt-4">
-            <EditTimingPanel event={event} onSaved={() => mutate()} />
+          <div className="relative z-20 mt-4 flex flex-col gap-3">
+            <div className="flex flex-wrap gap-2">
+              <EditTimingPanel event={event} onSaved={() => mutate()} />
+              <EditDetailsPanel event={event} onSaved={() => mutate()} />
+            </div>
           </div>
         )}
 
@@ -278,7 +281,7 @@ function EditTimingPanel({ event, onSaved }: { event: EventSummary; onSaved: () 
   }
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardBody className="space-y-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
@@ -306,6 +309,101 @@ function EditTimingPanel({ event, onSaved }: { event: EventSummary; onSaved: () 
           />
           {t("eventNew.noEndTime")}
         </label>
+        {error && <ErrorBlock message={error} />}
+        <div className="flex flex-wrap items-center gap-3">
+          <Button size="sm" loading={saving} onClick={save}>
+            {t("eventControl.saveChanges")}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={toggle}>
+            {t("common.cancel")}
+          </Button>
+          {saved && <span className="text-sm text-kehai-400">✓ {t("eventControl.editSaved")}</span>}
+        </div>
+      </CardBody>
+    </Card>
+  );
+}
+
+// Name, description, venue, capacity were all editable through the API
+// (updateEventSchema covers the full create schema) but had no UI at
+// all — an organizer with a typo'd venue or a capacity that needs
+// bumping had no path short of calling the API directly. Geofence
+// lat/long/radius stay out of scope here: editing where check-in is
+// physically anchored deserves the map picker the creation form has,
+// not a bare number field, and is a bigger, riskier change.
+function EditDetailsPanel({ event, onSaved }: { event: EventSummary; onSaved: () => void }) {
+  const { t } = useLocale();
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState(event.name);
+  const [description, setDescription] = useState(event.description ?? "");
+  const [venue, setVenue] = useState(event.venue);
+  const [capacity, setCapacity] = useState(event.capacity != null ? String(event.capacity) : "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  function toggle() {
+    setOpen((o) => !o);
+    setError(null);
+    setSaved(false);
+    // Re-sync from the latest server values each time it's opened, same
+    // reasoning as EditTimingPanel.
+    setName(event.name);
+    setDescription(event.description ?? "");
+    setVenue(event.venue);
+    setCapacity(event.capacity != null ? String(event.capacity) : "");
+  }
+
+  async function save() {
+    setSaving(true);
+    setError(null);
+    setSaved(false);
+    try {
+      await apiFetch(`/api/events/${event.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          name,
+          description: description.trim() || undefined,
+          venue,
+          capacity: capacity.trim() ? Number(capacity) : null,
+        }),
+      });
+      onSaved();
+      setSaved(true);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t("eventControl.editError"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <Button variant="ghost" size="sm" onClick={toggle}>
+        {t("eventControl.editDetails")}
+      </Button>
+    );
+  }
+
+  return (
+    <Card className="w-full">
+      <CardBody className="space-y-4">
+        <div>
+          <Label htmlFor="edit-name">{t("eventNew.eventNameLabel")}</Label>
+          <Input id="edit-name" required value={name} onChange={(e) => setName(e.target.value)} />
+        </div>
+        <div>
+          <Label htmlFor="edit-venue">{t("eventNew.venueLabel")}</Label>
+          <Input id="edit-venue" required value={venue} onChange={(e) => setVenue(e.target.value)} />
+        </div>
+        <div>
+          <Label htmlFor="edit-description">{t("eventNew.descriptionLabel")}</Label>
+          <Textarea id="edit-description" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
+        </div>
+        <div className="max-w-[12rem]">
+          <Label htmlFor="edit-capacity">{t("eventNew.capacityLabel")}</Label>
+          <Input id="edit-capacity" type="number" min={1} value={capacity} onChange={(e) => setCapacity(e.target.value)} />
+        </div>
         {error && <ErrorBlock message={error} />}
         <div className="flex flex-wrap items-center gap-3">
           <Button size="sm" loading={saving} onClick={save}>
