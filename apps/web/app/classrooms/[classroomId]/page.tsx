@@ -16,8 +16,9 @@ import { ClassroomRoster } from "@/components/ClassroomRoster";
 import { ClassroomExportButtons } from "@/components/ExportButtons";
 import { AtRiskStudents } from "@/components/AtRiskStudents";
 import { AttendanceHeatmap } from "@/components/AttendanceHeatmap";
+import { SessionTrendChart } from "@/components/charts/SessionTrendChart";
 import { LiveIndicator } from "@/components/ui/LiveIndicator";
-import { useClassroom, useClassroomHeatmap, useClassroomRoster } from "@/lib/hooks";
+import { useClassroom, useClassroomHeatmap, useClassroomRoster, useClassroomSessions } from "@/lib/hooks";
 import { subscribeToClassroom } from "@/lib/realtime";
 import { useLocale } from "@/lib/i18n";
 
@@ -31,6 +32,7 @@ export default function ClassroomDetailPage() {
   const { data: classroom, error: classroomError, isLoading, mutate } = useClassroom(classroomId);
   const { mutate: mutateRoster } = useClassroomRoster(classroomId);
   const { data: heatmap } = useClassroomHeatmap(classroomId, classroom?.isTeacher ? studentParam : undefined);
+  const { data: sessions } = useClassroomSessions(classroom?.isTeacher ? classroomId : undefined);
 
   const [liveConnected, setLiveConnected] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -141,6 +143,21 @@ export default function ClassroomDetailPage() {
                   {heatmap ? <AttendanceHeatmap data={heatmap} /> : <LoadingBlock />}
                 </CardBody>
               </Card>
+
+              {!viewingStudent && (
+                <Card>
+                  <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">
+                    {t("classroomDetail.trendHeading")}
+                  </CardHeader>
+                  <CardBody>
+                    {sessions ? (
+                      <SessionTrendChart sessions={sessions} studentCount={classroom.studentCount} />
+                    ) : (
+                      <LoadingBlock />
+                    )}
+                  </CardBody>
+                </Card>
+              )}
 
               <Card id="roster">
                 <CardHeader className="flex flex-wrap items-center justify-between gap-3">

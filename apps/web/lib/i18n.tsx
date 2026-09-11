@@ -441,6 +441,8 @@ const dict = {
     colStatus: { en: "Status", ja: "ステータス" },
     colCheckedIn: { en: "Checked in", ja: "チェックイン時刻" },
     colDistance: { en: "Distance", ja: "距離" },
+    markPresent: { en: "Mark present", ja: "出席にする" },
+    overrideError: { en: "Failed to mark attendee present", ja: "出席の記録に失敗しました" },
     flaggedTitle: { en: "Flagged for review", ja: "確認が必要としてマークされました" },
     flagReason_impossible_travel: {
       en: "Checked in somewhere they couldn't have physically reached in time since their last check-in",
@@ -514,6 +516,8 @@ const dict = {
     start: { en: "start", ja: "開始" },
     checkins: { en: "{count} check-ins", ja: "{count} 件のチェックイン" },
     minutesFromStart: { en: "{signed} min from start", ja: "開始から{signed}分" },
+    needMoreSessions: { en: "Trend appears after a couple of sessions.", ja: "セッションが2回以上たまるとトレンドが表示されます。" },
+    presentOfEnrolled: { en: "{present}/{total} enrolled present", ja: "在籍{total}名中{present}名出席" },
   },
   classroomHub: {
     kicker: { en: "Recurring attendance", ja: "継続的な出席管理" },
@@ -606,6 +610,7 @@ const dict = {
     shareHeading: { en: "Share join access", ja: "参加コードの共有" },
     rosterHeading: { en: "Roster", ja: "受講者一覧" },
     heatmapHeading: { en: "Attendance", ja: "出席状況" },
+    trendHeading: { en: "Attendance trend", ja: "出席率の推移" },
     checkInNow: { en: "Check in now", ja: "今すぐチェックイン" },
     noOpenSessionHint: {
       en: "No session is open right now — check back once your teacher starts one.",
