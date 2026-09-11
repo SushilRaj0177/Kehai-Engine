@@ -133,6 +133,26 @@ export async function registerForEvent(eventId: string, userId: string) {
   }
 }
 
+// Only for a registrant who hasn't checked in yet — once there's a real
+// AttendanceRecord, deleting the Registration would just null out its
+// registrationId (the FK is ON DELETE SET NULL) and leave an orphaned
+// attendance row behind, which reads as "attended but never registered"
+// everywhere the two get joined together. An organizer who needs to undo
+// an actual check-in has the manual-override path's mirror image to reach
+// for instead — this is specifically for "this person shouldn't be on the
+// list at all yet".
+export async function removeRegistration(eventId: string, userId: string) {
+  const registration = await prisma.registration.findUnique({
+    where: { eventId_userId: { eventId, userId } },
+    include: { attendance: true },
+  });
+  if (!registration) throw HttpError.notFound("This registration doesn't exist");
+  if (registration.attendance) {
+    throw HttpError.badRequest("This attendee has already checked in — their registration can't be removed");
+  }
+  await prisma.registration.delete({ where: { id: registration.id } });
+}
+
 /**
  * Issues a fresh, short-lived signed QR token for an active event. Called
  * repeatedly by the organizer's display (every qrRotationSeconds) so the
