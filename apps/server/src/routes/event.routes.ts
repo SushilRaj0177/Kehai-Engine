@@ -58,6 +58,7 @@ eventRouter.get(
           registeredAt: r.createdAt,
           attended: !!r.attendance,
           checkedInAt: r.attendance?.checkedInAt ?? null,
+          waitlisted: r.waitlisted,
         };
       })
     );
@@ -138,6 +139,15 @@ eventRouter.delete(
   })
 );
 
+eventRouter.delete(
+  "/:eventId/register",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    await eventService.cancelMyRegistration(req.params.eventId, req.user!.id);
+    res.status(204).end();
+  })
+);
+
 eventRouter.get(
   "/:eventId/qr",
   requireAuth,
@@ -193,6 +203,7 @@ eventRouter.get(
         method: r.attendance?.method ?? null,
         flagged: r.attendance?.flagged ?? false,
         flagReasons: r.attendance?.flagReasons ?? [],
+        waitlisted: r.waitlisted,
       }))
     );
   })

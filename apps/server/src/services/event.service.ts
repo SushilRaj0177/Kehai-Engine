@@ -2,6 +2,9 @@ import crypto from "node:crypto";
 import { prisma } from "../lib/prisma.js";
 import { HttpError } from "../lib/http-error.js";
 import { issueQrToken } from "../utils/qrToken.js";
+import { sendEmail } from "../utils/mailer.js";
+import { signUnsubscribeToken } from "../utils/unsubscribeToken.js";
+import { env } from "../config/env.js";
 import type { EventStatus } from "@prisma/client";
 
 export interface CreateEventInput {
@@ -55,6 +58,7 @@ export async function getEventForViewer(eventId: string, viewerUserId: string | 
   }
 
   let isRegistered = false;
+  let isWaitlisted = false;
   let hasAttended = false;
   if (viewerUserId) {
     const [reg, att] = await Promise.all([
@@ -62,12 +66,13 @@ export async function getEventForViewer(eventId: string, viewerUserId: string | 
       prisma.attendanceRecord.findUnique({ where: { eventId_userId: { eventId: event.id, userId: viewerUserId } } }),
     ]);
     isRegistered = !!reg;
+    isWaitlisted = !!reg?.waitlisted;
     hasAttended = !!att;
   }
 
   // Never leak the QR signing secret to clients
   const { qrSecret, ...safeEvent } = event;
-  return { ...safeEvent, isRegistered, hasAttended };
+  return { ...safeEvent, isRegistered, isWaitlisted, hasAttended };
 }
 
 export async function updateEvent(eventId: string, input: Partial<CreateEventInput>) {
@@ -76,7 +81,15 @@ export async function updateEvent(eventId: string, input: Partial<CreateEventInp
   if (event.status === "COMPLETED" || event.status === "CANCELLED") {
     throw HttpError.badRequest("Cannot edit a completed or cancelled event");
   }
-  return prisma.event.update({ where: { id: eventId }, data: input });
+  const updated = await prisma.event.update({ where: { id: eventId }, data: input });
+
+  // Raising capacity (or removing the cap) can open spots for anyone
+  // already on the waitlist — check whenever capacity was part of this
+  // edit, not just when it went up, since promoteFromWaitlist is a no-op
+  // when there's nothing to promote.
+  if ("capacity" in input) await promoteFromWaitlist(eventId);
+
+  return updated;
 }
 
 const VALID_TRANSITIONS: Record<EventStatus, EventStatus[]> = {
@@ -160,14 +173,58 @@ export async function registerForEvent(eventId: string, userId: string) {
       // is guaranteed to see the first registration.
       if (event.capacity != null) {
         await tx.$executeRaw`SELECT id FROM "Event" WHERE id = ${eventId} FOR UPDATE`;
-        const count = await tx.registration.count({ where: { eventId } });
-        if (count >= event.capacity) throw HttpError.conflict("This event is at capacity");
+        // Waitlisted registrations don't count against capacity — they're
+        // the overflow a full event is already carrying.
+        const count = await tx.registration.count({ where: { eventId, waitlisted: false } });
+        if (count >= event.capacity) {
+          return await tx.registration.create({ data: { eventId, userId, waitlisted: true } });
+        }
       }
       return await tx.registration.create({ data: { eventId, userId } });
     });
   } catch (err: any) {
     if (err?.code === "P2002") throw HttpError.conflict("Already registered for this event");
     throw err;
+  }
+}
+
+// Promotes as many waitlisted registrations as the event now has room for,
+// oldest first. Called any time a spot might have opened up: a registration
+// is removed/cancelled, or an organizer raises capacity. Safe to call when
+// nothing changed — it just promotes zero people.
+async function promoteFromWaitlist(eventId: string) {
+  const event = await prisma.event.findUnique({ where: { id: eventId } });
+  if (!event) return;
+
+  let openSpots = Infinity;
+  if (event.capacity != null) {
+    const activeCount = await prisma.registration.count({ where: { eventId, waitlisted: false } });
+    openSpots = event.capacity - activeCount;
+  }
+  if (openSpots <= 0) return;
+
+  const promotable = await prisma.registration.findMany({
+    where: { eventId, waitlisted: true },
+    orderBy: { createdAt: "asc" },
+    take: openSpots === Infinity ? undefined : openSpots,
+    include: { user: { select: { id: true, name: true, email: true, emailNotificationsEnabled: true } } },
+  });
+
+  for (const registration of promotable) {
+    await prisma.registration.update({ where: { id: registration.id }, data: { waitlisted: false } });
+
+    if (registration.user.emailNotificationsEnabled) {
+      const link = `${env.WEB_ORIGIN}/events/${eventId}`;
+      const unsubscribeLink = `${env.API_ORIGIN}/api/notifications/unsubscribe?token=${signUnsubscribeToken(registration.user.id)}`;
+      await sendEmail(
+        registration.user.email,
+        `You're off the waitlist for ${event.name}`,
+        `<p>Hi ${registration.user.name},</p>
+         <p>A spot opened up in <strong>${event.name}</strong> and you've been moved from the waitlist to a confirmed registration.</p>
+         <p><a href="${link}">${link}</a></p>
+         <p style="margin-top:24px;color:#888;font-size:12px;"><a href="${unsubscribeLink}">Unsubscribe from these emails</a></p>`
+      );
+    }
   }
 }
 
@@ -189,6 +246,27 @@ export async function removeRegistration(eventId: string, userId: string) {
     throw HttpError.badRequest("This attendee has already checked in — their registration can't be removed");
   }
   await prisma.registration.delete({ where: { id: registration.id } });
+
+  // Only freed up a spot if the removed registration was actually counted
+  // against capacity — removing someone already on the waitlist doesn't.
+  if (!registration.waitlisted) await promoteFromWaitlist(eventId);
+}
+
+// Self-service mirror of removeRegistration, for the registrant themselves
+// rather than an organizer — same "not yet checked in" restriction, same
+// waitlist-promotion side effect once a spot frees up.
+export async function cancelMyRegistration(eventId: string, userId: string) {
+  const registration = await prisma.registration.findUnique({
+    where: { eventId_userId: { eventId, userId } },
+    include: { attendance: true },
+  });
+  if (!registration) throw HttpError.notFound("You aren't registered for this event");
+  if (registration.attendance) {
+    throw HttpError.badRequest("You've already checked in — this registration can't be cancelled");
+  }
+  await prisma.registration.delete({ where: { id: registration.id } });
+
+  if (!registration.waitlisted) await promoteFromWaitlist(eventId);
 }
 
 /**

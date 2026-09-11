@@ -190,6 +190,12 @@ model Registration {
   // emailed twice even though the scheduler re-scans on every tick.
   reminderSentAt DateTime?
 
+  // true when this registration was created after the event hit capacity.
+  // Doesn't count against capacity itself — a waitlisted registrant is
+  // promoted (flipped to false) the moment a spot opens up, in createdAt
+  // order, so the waitlist behaves as a simple FIFO queue.
+  waitlisted Boolean @default(false)
+
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 

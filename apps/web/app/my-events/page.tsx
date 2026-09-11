@@ -113,6 +113,7 @@ function RegistrationGroup({
                     {t("badge.checkedIn")}
                   </span>
                 )}
+                {r.waitlisted && <Badge>{t("badge.waitlisted")}</Badge>}
               </div>
               <p className="mt-1.5 text-sm text-white/50">
                 {r.event.organization?.name} · {formatDateRange(r.event.startsAt, r.event.endsAt, locale)}
