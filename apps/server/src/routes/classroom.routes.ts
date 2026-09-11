@@ -92,6 +92,16 @@ classroomRouter.delete(
   })
 );
 
+classroomRouter.post(
+  "/:classroomId/join-code/regenerate",
+  requireAuth,
+  requireClassroomTeacher(),
+  asyncHandler(async (req, res) => {
+    const classroom = await classroomService.regenerateJoinCode(req.params.classroomId);
+    res.json({ joinCode: classroom.joinCode });
+  })
+);
+
 classroomRouter.get(
   "/:classroomId/roster",
   requireAuth,

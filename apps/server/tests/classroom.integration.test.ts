@@ -9,6 +9,8 @@ import {
   getMyAttendanceHistory,
   removeStudent,
   leaveClassroom,
+  regenerateJoinCode,
+  joinClassroom,
 } from "../src/services/classroom.service.js";
 
 let teacherId: string;
@@ -131,5 +133,36 @@ describe("a student leaving a classroom on their own", () => {
     });
     await expect(leaveClassroom(classroomId, stranger.id)).rejects.toThrow(/aren't enrolled/i);
     await prisma.user.delete({ where: { id: stranger.id } });
+  });
+});
+
+describe("regenerating a classroom's join code", () => {
+  it("issues a new code and invalidates the old one immediately", async () => {
+    const before = await prisma.classroom.findUniqueOrThrow({ where: { id: classroomId } });
+    const oldCode = before.joinCode;
+
+    const updated = await regenerateJoinCode(classroomId);
+    expect(updated.joinCode).not.toBe(oldCode);
+    expect(updated.joinCode).toHaveLength(6);
+
+    const latecomer = await prisma.user.create({
+      data: { name: "Late Joiner", email: `late-joiner-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
+    });
+    await expect(joinClassroom(oldCode, latecomer.id)).rejects.toThrow(/no classroom found/i);
+
+    const joined = await joinClassroom(updated.joinCode, latecomer.id);
+    expect(joined.classroom.id).toBe(classroomId);
+
+    await prisma.enrollment.deleteMany({ where: { classroomId, studentId: latecomer.id } });
+    await prisma.user.delete({ where: { id: latecomer.id } });
+  });
+
+  it("does not affect students already enrolled before the regeneration", async () => {
+    // studentId (the suite-wide enrolled student from beforeAll) should
+    // still be a member after any join-code churn from the test above.
+    const enrollment = await prisma.enrollment.findUnique({
+      where: { classroomId_studentId: { classroomId, studentId } },
+    });
+    expect(enrollment).not.toBeNull();
   });
 });
