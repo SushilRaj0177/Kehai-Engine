@@ -187,3 +187,29 @@ export async function resetPassword(rawToken: string, newPassword: string) {
 function sanitizeUser(user: { id: string; email: string; name: string; avatarUrl: string | null }) {
   return { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl };
 }
+
+export async function updateProfile(userId: string, input: { name?: string; emailNotificationsEnabled?: boolean }) {
+  return prisma.user.update({ where: { id: userId }, data: input });
+}
+
+export async function changePassword(userId: string, currentPassword: string, newPassword: string) {
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+  if (!user.passwordHash) {
+    throw HttpError.badRequest("This account signs in with Google — there's no password to change.");
+  }
+
+  const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!valid) throw HttpError.unauthorized("Current password is incorrect");
+
+  const passwordHash = await bcrypt.hash(newPassword, 12);
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: userId }, data: { passwordHash } }),
+    // Same "changing the password ends every session, everywhere" guarantee
+    // as the forgot-password reset flow — including the session making this
+    // very request, so the client needs to redirect to login afterward.
+    prisma.refreshToken.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    }),
+  ]);
+}

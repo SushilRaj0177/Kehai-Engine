@@ -9,6 +9,8 @@ import {
   refreshSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  updateProfileSchema,
+  changePasswordSchema,
 } from "../validators/auth.js";
 import * as authService from "../services/auth.service.js";
 import { prisma } from "../lib/prisma.js";
@@ -96,11 +98,46 @@ authRouter.get(
       include: { organization: true },
     });
     res.json({
-      user: { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl },
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        avatarUrl: user.avatarUrl,
+        provider: user.provider,
+        emailNotificationsEnabled: user.emailNotificationsEnabled,
+      },
       memberships: memberships.map((m) => ({
         role: m.role,
         organization: { id: m.organization.id, name: m.organization.name, slug: m.organization.slug },
       })),
     });
+  })
+);
+
+authRouter.patch(
+  "/me",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const input = updateProfileSchema.parse(req.body);
+    const user = await authService.updateProfile(req.user!.id, input);
+    res.json({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      avatarUrl: user.avatarUrl,
+      provider: user.provider,
+      emailNotificationsEnabled: user.emailNotificationsEnabled,
+    });
+  })
+);
+
+authRouter.post(
+  "/change-password",
+  requireAuth,
+  authRateLimit,
+  asyncHandler(async (req, res) => {
+    const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
+    await authService.changePassword(req.user!.id, currentPassword, newPassword);
+    res.status(204).end();
   })
 );

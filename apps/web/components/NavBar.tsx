@@ -79,7 +79,12 @@ export function NavBar() {
                   cluster," so the name is a nice-to-have that yields first
                   as the bar narrows, rather than fighting the brackets for
                   room down to the last few px. */}
-              <span className="hidden truncate text-sm text-white/50 md:inline md:max-w-[10rem]">{user.name}</span>
+              <Link
+                href="/settings"
+                className="hidden truncate text-sm text-white/50 transition-colors hover:text-white/80 md:inline md:max-w-[10rem]"
+              >
+                {user.name}
+              </Link>
               <Button
                 variant="secondary"
                 size="sm"
@@ -148,6 +153,11 @@ export function NavBar() {
           {user && (
             <MobileMenuLink href={primaryOrg ? `/orgs/${primaryOrg.slug}` : "/dashboard"} onNavigate={() => setMenuOpen(false)}>
               {t("nav.console")}
+            </MobileMenuLink>
+          )}
+          {user && (
+            <MobileMenuLink href="/settings" onNavigate={() => setMenuOpen(false)}>
+              {t("nav.settings")}
             </MobileMenuLink>
           )}
           {!user && (
