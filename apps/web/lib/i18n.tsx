@@ -219,6 +219,7 @@ const dict = {
     transitionCancel: { en: "Cancel", ja: "中止する" },
     transitionRestart: { en: "Restart", ja: "再開" },
     statusUpdateError: { en: "Failed to update event status", ja: "イベントのステータス更新に失敗しました" },
+    duplicate: { en: "Duplicate", ja: "複製" },
     windowWarningNotOpen: {
       en: "This event is marked live, but check-in doesn't open until {time} — attendees will see \"check-in has not opened yet\" until then.",
       ja: "このイベントはライブと表示されていますが、チェックインは{time}まで開始されません — それまで参加者には「チェックインはまだ開始されていません」と表示されます。",
