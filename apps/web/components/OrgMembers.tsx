@@ -26,6 +26,11 @@ export function OrgMembers({ orgId, callerRole }: { orgId: string; callerRole: O
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [removeError, setRemoveError] = useState<string | null>(null);
 
+  // Keyed per-member — changing one person's role must not disturb another
+  // row's in-flight state or already-shown error.
+  const [changingRoleId, setChangingRoleId] = useState<string | null>(null);
+  const [roleErrors, setRoleErrors] = useState<Record<string, string>>({});
+
   async function invite(e: React.FormEvent) {
     e.preventDefault();
     setInviteError(null);
@@ -41,6 +46,33 @@ export function OrgMembers({ orgId, callerRole }: { orgId: string; callerRole: O
       setInviteError(err instanceof ApiError ? err.message : t("orgMembers.inviteError"));
     } finally {
       setInviting(false);
+    }
+  }
+
+  async function changeRole(userId: string, email: string, newRole: OrgRole) {
+    setRoleErrors((prev) => {
+      const next = { ...prev };
+      delete next[userId];
+      return next;
+    });
+    setChangingRoleId(userId);
+    try {
+      // The invite endpoint upserts on (userId, organizationId), so
+      // re-"inviting" an existing member with a new role just changes it —
+      // no separate role-change endpoint needed, and the server's
+      // ADMIN-can't-touch-OWNER guard applies here for free too.
+      await apiFetch(`/api/orgs/${orgId}/members`, {
+        method: "POST",
+        body: JSON.stringify({ email, role: newRole }),
+      });
+      await mutate();
+    } catch (err) {
+      setRoleErrors((prev) => ({
+        ...prev,
+        [userId]: err instanceof ApiError ? err.message : t("orgMembers.roleChangeError"),
+      }));
+    } finally {
+      setChangingRoleId(null);
     }
   }
 
@@ -112,10 +144,26 @@ export function OrgMembers({ orgId, callerRole }: { orgId: string; callerRole: O
                 <p className="truncate font-medium text-white">{member.user.name}</p>
                 <p className="truncate text-xs text-white/45">{member.user.email}</p>
               </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wider text-white/50">
-                  {t(`orgMembers.role_${member.role}`)}
-                </span>
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                <div className="flex items-center gap-2">
+                  {canManage && callerRole && ROLE_RANK[member.role] < ROLE_RANK[callerRole] ? (
+                    <select
+                      value={member.role}
+                      disabled={changingRoleId === member.user.id}
+                      onChange={(e) => changeRole(member.user.id, member.user.email, e.target.value as OrgRole)}
+                      className="rounded-full border border-white/10 bg-void-900/80 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wider text-white/70 outline-none focus:border-shu-500/60 disabled:opacity-50"
+                    >
+                      {INVITABLE_ROLES.map((r) => (
+                        <option key={r} value={r}>
+                          {t(`orgMembers.role_${r}`)}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wider text-white/50">
+                      {t(`orgMembers.role_${member.role}`)}
+                    </span>
+                  )}
                 {canManage &&
                   callerRole &&
                   ROLE_RANK[member.role] < ROLE_RANK[callerRole] &&
@@ -138,6 +186,8 @@ export function OrgMembers({ orgId, callerRole }: { orgId: string; callerRole: O
                       {t("orgMembers.remove")}
                     </Button>
                   ))}
+                </div>
+                {roleErrors[member.user.id] && <p className="text-xs text-shu-400">{roleErrors[member.user.id]}</p>}
               </div>
             </div>
           ))}
