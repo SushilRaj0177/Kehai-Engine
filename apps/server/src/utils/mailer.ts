@@ -10,7 +10,13 @@ import { env, emailEnabled } from "../config/env.js";
  */
 export async function sendEmail(to: string, subject: string, html: string): Promise<void> {
   if (!emailEnabled) {
-    console.warn(`[mailer] RESEND_API_KEY not set — skipping send. Would have emailed ${to}: ${subject}`);
+    // Without this, a misconfigured deployment (no RESEND_API_KEY) has no
+    // way to recover a verification/reset link at all — the request
+    // "succeeds" from the caller's point of view, and the only trace was a
+    // subject line with no link in it. Logging the body means an admin can
+    // still hand a user their link by hand while the real fix (setting the
+    // key in Render) is pending.
+    console.warn(`[mailer] RESEND_API_KEY not set — skipping send to ${to}: ${subject}\n${html}`);
     return;
   }
 
