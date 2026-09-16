@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import crypto from "node:crypto";
 import { prisma } from "../src/lib/prisma.js";
 import { checkIn, manualOverride, revokeAttendance } from "../src/services/attendance.service.js";
@@ -198,5 +198,66 @@ describe("revoking attendance", () => {
     });
     await expect(revokeAttendance(eventId, stranger.id, userId)).rejects.toThrow(/hasn't checked in/i);
     await prisma.user.delete({ where: { id: stranger.id } });
+  });
+});
+
+describe("check-in webhook notifications", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("pings the organization's webhook URL on a successful check-in", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await prisma.organization.update({ where: { id: orgId }, data: { webhookUrl: "https://discord.com/api/webhooks/test" } });
+
+    const attendee = await prisma.user.create({
+      data: { name: "Webhook Attendee", email: `webhook-attendee-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
+    });
+    const { token } = issueQrToken(eventId, qrSecret, 30);
+    await checkIn({
+      eventId,
+      userId: attendee.id,
+      qrToken: token,
+      latitude: VENUE.latitude,
+      longitude: VENUE.longitude,
+      accuracyMeters: 10,
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://discord.com/api/webhooks/test",
+      expect.objectContaining({ method: "POST" })
+    );
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.content).toContain("Webhook Attendee");
+    expect(body.content).toContain("Integration Test Event");
+
+    await prisma.attendanceRecord.deleteMany({ where: { eventId, userId: attendee.id } });
+    await prisma.user.delete({ where: { id: attendee.id } });
+    await prisma.organization.update({ where: { id: orgId }, data: { webhookUrl: null } });
+  });
+
+  it("does not call fetch at all when no webhook URL is configured", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const attendee = await prisma.user.create({
+      data: { name: "No Webhook Attendee", email: `no-webhook-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
+    });
+    const { token } = issueQrToken(eventId, qrSecret, 30);
+    await checkIn({
+      eventId,
+      userId: attendee.id,
+      qrToken: token,
+      latitude: VENUE.latitude,
+      longitude: VENUE.longitude,
+      accuracyMeters: 10,
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    await prisma.attendanceRecord.deleteMany({ where: { eventId, userId: attendee.id } });
+    await prisma.user.delete({ where: { id: attendee.id } });
   });
 });

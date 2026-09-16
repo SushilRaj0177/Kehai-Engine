@@ -4,6 +4,7 @@ import { verifyQrToken } from "../utils/qrToken.js";
 import { checkGeofence } from "../utils/geo.js";
 import { checkImpossibleTravel, isDuplicateLocation, hasZeroAccuracy, type FlagReason } from "../utils/fraud.js";
 import { emitAttendanceUpdate } from "../realtime/socket.js";
+import { sendWebhookMessage } from "../utils/webhook.js";
 
 export interface CheckInInput {
   eventId: string;
@@ -127,10 +128,11 @@ export async function checkIn(input: CheckInInput): Promise<CheckInResult> {
     },
   });
 
-  const [totalAttendance, totalRegistrations, user] = await Promise.all([
+  const [totalAttendance, totalRegistrations, user, organization] = await Promise.all([
     prisma.attendanceRecord.count({ where: { eventId: event.id } }),
     prisma.registration.count({ where: { eventId: event.id } }),
     prisma.user.findUnique({ where: { id: input.userId } }),
+    prisma.organization.findUnique({ where: { id: event.organizationId }, select: { webhookUrl: true } }),
   ]);
 
   emitAttendanceUpdate(event.id, {
@@ -141,6 +143,17 @@ export async function checkIn(input: CheckInInput): Promise<CheckInResult> {
     totalRegistrations,
     attendanceRate: totalRegistrations > 0 ? Math.min(1, totalAttendance / totalRegistrations) : 0,
   });
+
+  // Fire-and-forget — a club that's set a webhook gets a live ping in their
+  // own Discord/Slack without anyone needing the dashboard open. Never
+  // awaited: a slow or dead webhook endpoint must not add latency to (or
+  // ever fail) the attendee's own check-in response.
+  if (organization?.webhookUrl) {
+    void sendWebhookMessage(
+      organization.webhookUrl,
+      `✅ **${user?.name ?? "Someone"}** checked in to **${event.name}** (${totalAttendance}/${totalRegistrations})`
+    );
+  }
 
   return { attendance, distanceMeters: geofence.distanceMeters, confidence: geofence.confidence };
 }

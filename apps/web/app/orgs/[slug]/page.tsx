@@ -163,6 +163,13 @@ export default function OrgPage() {
           </div>
         )}
 
+        {(org.role === "ADMIN" || org.role === "OWNER") && (
+          <div className="relative mt-16">
+            <h2 className="mb-6 font-display text-xl font-bold text-white/70">{t("orgDetail.webhookHeading")}</h2>
+            <WebhookSection org={org} />
+          </div>
+        )}
+
         {org.role === "OWNER" && (
           <div className="relative mt-16">
             <h2 className="mb-6 font-display text-xl font-bold text-shu-400">{t("orgDetail.dangerZoneHeading")}</h2>
@@ -171,6 +178,54 @@ export default function OrgPage() {
         )}
       </div>
     </ClickRippleLayer>
+  );
+}
+
+function WebhookSection({ org }: { org: NonNullable<ReturnType<typeof useMyOrganizations>["data"]>[number] }) {
+  const { t } = useLocale();
+  const { mutate } = useMyOrganizations();
+  const [url, setUrl] = useState(org.webhookUrl ?? "");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function save() {
+    setError(null);
+    setSaved(false);
+    setSaving(true);
+    try {
+      await apiFetch(`/api/orgs/${org.id}/webhook`, { method: "PATCH", body: JSON.stringify({ webhookUrl: url.trim() }) });
+      await mutate();
+      setSaved(true);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t("orgDetail.webhookError"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardBody className="space-y-4">
+        <div>
+          <p className="text-sm font-medium text-white/85">{t("orgDetail.webhookLabel")}</p>
+          <p className="mt-1 text-xs text-white/40">{t("orgDetail.webhookHint")}</p>
+        </div>
+        <Input
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder={t("orgDetail.webhookPlaceholder")}
+          underline={false}
+        />
+        {error && <ErrorBlock message={error} />}
+        <div className="flex items-center gap-3">
+          <Button size="sm" loading={saving} onClick={save}>
+            {t("settings.saveChanges")}
+          </Button>
+          {saved && <span className="text-sm text-kehai-400">✓ {t("settings.saved")}</span>}
+        </div>
+      </CardBody>
+    </Card>
   );
 }
 
