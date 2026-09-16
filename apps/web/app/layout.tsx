@@ -17,10 +17,25 @@ const notoJp = Noto_Sans_JP({ subsets: ["latin"], weight: ["500", "700", "900"],
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
 
+const title = "Kehai Engine — Attendance & Event Intelligence";
+const description =
+  "Geospatial, QR-verified attendance and event intelligence platform. Secure check-ins, live dashboards, and AI-grounded analytics.";
+
 export const metadata: Metadata = {
-  title: "Kehai Engine — Attendance & Event Intelligence",
-  description:
-    "Geospatial, QR-verified attendance and event intelligence platform. Secure check-ins, live dashboards, and AI-grounded analytics.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://kehai-engine-web.vercel.app"),
+  title,
+  description,
+  openGraph: {
+    title,
+    description,
+    siteName: "Kehai Engine",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
+  },
 };
 
 // Forces every page under this layout to render per-request rather than
