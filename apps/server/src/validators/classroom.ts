@@ -40,12 +40,21 @@ export const updateClassroomSchema = z
   })
   .refine(geofenceAllOrNothing, GEOFENCE_REFINE);
 
+export const gradeYearEnum = z.enum(["YEAR_1", "YEAR_2", "YEAR_3", "YEAR_4", "GRADUATE", "ALUMNI"]);
+
 export const joinClassroomSchema = z.object({
   code: z
     .string()
     .trim()
     .transform((s) => s.toUpperCase())
     .refine((s) => s.length === 6, { message: "Join code must be exactly 6 characters" }),
+  // Optional — a student can join without stating it and set it later, but
+  // most fill it in immediately since it's a one-tap select on the join form.
+  gradeYear: gradeYearEnum.optional(),
+});
+
+export const updateGradeYearSchema = z.object({
+  gradeYear: gradeYearEnum.nullable(),
 });
 
 export const createSessionSchema = z.object({

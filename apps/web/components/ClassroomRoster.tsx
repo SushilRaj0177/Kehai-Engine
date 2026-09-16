@@ -9,6 +9,7 @@ import { useClassroomRoster, useClassroomHeatmap } from "@/lib/hooks";
 import { apiFetch, ApiError } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import { useLocale } from "@/lib/i18n";
+import { GRADE_YEAR_OPTIONS, type GradeYear } from "@/lib/types";
 
 export function ClassroomRoster({ classroomId, openSessionId }: { classroomId: string; openSessionId?: string | null }) {
   const { t, locale } = useLocale();
@@ -18,6 +19,9 @@ export function ClassroomRoster({ classroomId, openSessionId }: { classroomId: s
   const [overrideError, setOverrideError] = useState<string | null>(null);
   const [confirmingRemoveId, setConfirmingRemoveId] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  // Keyed per-student — changing one row's grade year must not disturb
+  // another row's in-flight save state.
+  const [changingGradeYearIds, setChangingGradeYearIds] = useState<Record<string, boolean>>({});
   const { data, isLoading, mutate } = useClassroomRoster(classroomId);
 
   const filtered = data?.filter((row) => {
@@ -40,6 +44,26 @@ export function ClassroomRoster({ classroomId, openSessionId }: { classroomId: s
       setOverrideError(err instanceof ApiError ? err.message : t("classroomRoster.overrideError"));
     } finally {
       setOverridingId(null);
+    }
+  }
+
+  async function changeGradeYear(studentId: string, gradeYear: GradeYear | "") {
+    setOverrideError(null);
+    setChangingGradeYearIds((prev) => ({ ...prev, [studentId]: true }));
+    try {
+      await apiFetch(`/api/classrooms/${classroomId}/students/${studentId}/grade-year`, {
+        method: "PATCH",
+        body: JSON.stringify({ gradeYear: gradeYear || null }),
+      });
+      await mutate();
+    } catch (err) {
+      setOverrideError(err instanceof ApiError ? err.message : t("classroomRoster.gradeYearError"));
+    } finally {
+      setChangingGradeYearIds((prev) => {
+        const next = { ...prev };
+        delete next[studentId];
+        return next;
+      });
     }
   }
 
@@ -98,6 +122,8 @@ export function ClassroomRoster({ classroomId, openSessionId }: { classroomId: s
                 removing={removingId === row.student.id}
                 onRemove={() => removeStudent(row.student.id)}
                 onCancelRemove={() => setConfirmingRemoveId(null)}
+                changingGradeYear={!!changingGradeYearIds[row.student.id]}
+                onChangeGradeYear={(gradeYear) => changeGradeYear(row.student.id, gradeYear)}
               />
             ))}
           </div>
@@ -107,6 +133,7 @@ export function ClassroomRoster({ classroomId, openSessionId }: { classroomId: s
               <thead className="sticky top-0 bg-void-900/95 text-[11px] uppercase tracking-wider text-white/40">
                 <tr>
                   <th className="px-4 py-2.5 font-medium">{t("classroomRoster.colName")}</th>
+                  <th className="px-4 py-2.5 font-medium">{t("classroomRoster.colGradeYear")}</th>
                   <th className="px-4 py-2.5 font-medium">{t("classroomRoster.colEmail")}</th>
                   <th className="px-4 py-2.5 font-medium">{t("classroomRoster.colPresent")}</th>
                   <th className="px-4 py-2.5 font-medium">{t("classroomRoster.colTotal")}</th>
@@ -133,6 +160,8 @@ export function ClassroomRoster({ classroomId, openSessionId }: { classroomId: s
                     removing={removingId === row.student.id}
                     onRemove={() => removeStudent(row.student.id)}
                     onCancelRemove={() => setConfirmingRemoveId(null)}
+                    changingGradeYear={!!changingGradeYearIds[row.student.id]}
+                    onChangeGradeYear={(gradeYear) => changeGradeYear(row.student.id, gradeYear)}
                   />
                 ))}
               </tbody>
@@ -157,7 +186,37 @@ type RosterItemProps = {
   removing: boolean;
   onRemove: () => void;
   onCancelRemove: () => void;
+  changingGradeYear: boolean;
+  onChangeGradeYear: (gradeYear: GradeYear | "") => void;
 };
+
+function GradeYearSelect({
+  value,
+  disabled,
+  onChange,
+}: {
+  value: GradeYear | null;
+  disabled: boolean;
+  onChange: (gradeYear: GradeYear | "") => void;
+}) {
+  const { t } = useLocale();
+  return (
+    <select
+      value={value ?? ""}
+      disabled={disabled}
+      onClick={(e) => e.stopPropagation()}
+      onChange={(e) => onChange(e.target.value as GradeYear | "")}
+      className="rounded-full border border-white/10 bg-void-900/80 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wider text-white/70 outline-none focus:border-shu-500/60 disabled:opacity-50"
+    >
+      <option value="">{t("gradeYear.unset")}</option>
+      {GRADE_YEAR_OPTIONS.map((y) => (
+        <option key={y} value={y}>
+          {t(`gradeYear.${y}`)}
+        </option>
+      ))}
+    </select>
+  );
+}
 
 function RosterCardItem({
   classroomId,
@@ -172,6 +231,8 @@ function RosterCardItem({
   removing,
   onRemove,
   onCancelRemove,
+  changingGradeYear,
+  onChangeGradeYear,
 }: RosterItemProps) {
   const { t } = useLocale();
   const { data: heatmap } = useClassroomHeatmap(expanded ? classroomId : undefined, row.student.id);
@@ -185,6 +246,9 @@ function RosterCardItem({
             <p className="truncate text-xs text-white/45">{row.student.email}</p>
           </div>
           <span className="shrink-0 text-kehai-400">{Math.round(row.attendanceRate * 100)}%</span>
+        </div>
+        <div className="mt-2.5 border-t border-white/[0.06] pt-2.5">
+          <GradeYearSelect value={row.gradeYear} disabled={changingGradeYear} onChange={onChangeGradeYear} />
         </div>
         <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-white/[0.06] pt-2.5 text-xs text-white/45">
           <span>
@@ -272,15 +336,20 @@ function RosterRowItem({
   removing,
   onRemove,
   onCancelRemove,
+  changingGradeYear,
+  onChangeGradeYear,
 }: RosterItemProps & { showTodayColumn: boolean }) {
   const { t } = useLocale();
   const { data: heatmap } = useClassroomHeatmap(expanded ? classroomId : undefined, row.student.id);
-  const actionsColSpan = showTodayColumn ? 8 : 7;
+  const actionsColSpan = showTodayColumn ? 9 : 8;
 
   return (
     <>
       <tr className="cursor-pointer text-white/75 transition-colors hover:bg-white/[0.03]" onClick={onToggle}>
         <td className="px-4 py-2.5 font-medium text-white">{row.student.name}</td>
+        <td className="px-4 py-2.5">
+          <GradeYearSelect value={row.gradeYear} disabled={changingGradeYear} onChange={onChangeGradeYear} />
+        </td>
         <td className="px-4 py-2.5 text-white/50">{row.student.email}</td>
         <td className="px-4 py-2.5 text-white/50">{row.presentDays}</td>
         <td className="px-4 py-2.5 text-white/50">{row.totalDays}</td>

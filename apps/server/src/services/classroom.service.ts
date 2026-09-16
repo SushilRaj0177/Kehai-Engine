@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import jwt from "jsonwebtoken";
+import type { GradeYear } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { HttpError } from "../lib/http-error.js";
 import { generateJoinCode } from "../utils/joinCode.js";
@@ -84,14 +85,14 @@ export async function regenerateJoinCode(classroomId: string) {
   return prisma.classroom.update({ where: { id: classroomId }, data: { joinCode } });
 }
 
-export async function joinClassroom(code: string, studentId: string) {
+export async function joinClassroom(code: string, studentId: string, gradeYear?: GradeYear) {
   const classroom = await prisma.classroom.findUnique({ where: { joinCode: code.toUpperCase() } });
   if (!classroom) throw HttpError.notFound("No classroom found with that join code");
 
   let enrollment;
   try {
     enrollment = await prisma.enrollment.create({
-      data: { classroomId: classroom.id, studentId },
+      data: { classroomId: classroom.id, studentId, gradeYear },
     });
   } catch (err: any) {
     if (err?.code === "P2002") throw HttpError.conflict("Already enrolled in this classroom");
@@ -320,6 +321,7 @@ export async function getRoster(classroomId: string) {
     return {
       student: enrollment.student,
       enrolledAt: enrollment.createdAt,
+      gradeYear: enrollment.gradeYear,
       presentDays,
       totalDays,
       attendanceRate,
@@ -328,8 +330,43 @@ export async function getRoster(classroomId: string) {
     };
   });
 
-  roster.sort((a, b) => a.student.name.localeCompare(b.student.name));
-  return roster;
+  return sortRosterBySeniority(roster);
+}
+
+// Sempai (senior) first, matching how a club actually reads its own
+// roster — youngest-to-oldest name sort alone buries who the upperclassmen
+// are. Unset comes last, not first, since it reads more like "not filled
+// in yet" than "most senior."
+const GRADE_YEAR_RANK: Record<GradeYear, number> = {
+  ALUMNI: 0,
+  GRADUATE: 1,
+  YEAR_4: 2,
+  YEAR_3: 3,
+  YEAR_2: 4,
+  YEAR_1: 5,
+};
+
+export function sortRosterBySeniority<T extends { gradeYear: GradeYear | null; student: { name: string } }>(
+  roster: T[]
+): T[] {
+  return [...roster].sort((a, b) => {
+    const rankA = a.gradeYear ? GRADE_YEAR_RANK[a.gradeYear] : 99;
+    const rankB = b.gradeYear ? GRADE_YEAR_RANK[b.gradeYear] : 99;
+    if (rankA !== rankB) return rankA - rankB;
+    return a.student.name.localeCompare(b.student.name);
+  });
+}
+
+export async function updateEnrollmentGradeYear(classroomId: string, studentId: string, gradeYear: GradeYear | null) {
+  const enrollment = await prisma.enrollment.findUnique({
+    where: { classroomId_studentId: { classroomId, studentId } },
+  });
+  if (!enrollment) throw HttpError.notFound("This person isn't enrolled in this classroom");
+
+  return prisma.enrollment.update({
+    where: { id: enrollment.id },
+    data: { gradeYear },
+  });
 }
 
 export interface HeatmapResponse {

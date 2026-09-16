@@ -314,11 +314,27 @@ model Classroom {
   @@index([teacherId])
 }
 
+// Japanese university clubs (サークル) organize heavily around academic
+// year — the sempai/kouhai structure is central to how these groups
+// actually function, and OB/OG (graduated alumni who still show up to
+// events) are a real, distinct membership tier, not an edge case. Kept as
+// an enum rather than a free-text year number so it sorts and filters
+// cleanly and covers ALUMNI, which isn't a number at all.
+enum GradeYear {
+  YEAR_1
+  YEAR_2
+  YEAR_3
+  YEAR_4
+  GRADUATE
+  ALUMNI
+}
+
 model Enrollment {
-  id          String   @id @default(cuid())
+  id          String     @id @default(cuid())
   classroomId String
   studentId   String
-  createdAt   DateTime @default(now())
+  gradeYear   GradeYear?
+  createdAt   DateTime   @default(now())
 
   // Last time a "your attendance has slipped" nudge went out for this
   // enrollment — the nudge scheduler's own cooldown, so a student under the

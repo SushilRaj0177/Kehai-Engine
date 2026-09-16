@@ -6,6 +6,7 @@ import { Button } from "./ui/Button";
 import { Input, Label } from "./ui/Input";
 import { ErrorBlock } from "./ui/States";
 import { useLocale } from "@/lib/i18n";
+import { GRADE_YEAR_OPTIONS, type GradeYear } from "@/lib/types";
 
 interface JoinResponse {
   classroom: { id: string; name: string; courseCode: string | null; semesterLabel: string | null; teacherName: string; hasGeofence: boolean };
@@ -21,6 +22,7 @@ export function JoinClassroomForm({
 }) {
   const { t } = useLocale();
   const [code, setCode] = useState(initialCode.toUpperCase().slice(0, 6));
+  const [gradeYear, setGradeYear] = useState<GradeYear | "">("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -32,7 +34,7 @@ export function JoinClassroomForm({
     try {
       const data = await apiFetch<JoinResponse>("/api/classrooms/join", {
         method: "POST",
-        body: JSON.stringify({ code }),
+        body: JSON.stringify({ code, ...(gradeYear ? { gradeYear } : {}) }),
       });
       onJoined(data);
     } catch (err) {
@@ -58,6 +60,22 @@ export function JoinClassroomForm({
           autoComplete="off"
           className="font-mono text-lg tracking-[0.35em]"
         />
+      </div>
+      <div>
+        <Label htmlFor="join-grade-year">{t("joinClassroomForm.gradeYearLabel")}</Label>
+        <select
+          id="join-grade-year"
+          value={gradeYear}
+          onChange={(e) => setGradeYear(e.target.value as GradeYear | "")}
+          className="h-full rounded-lg border border-white/10 bg-void-900/80 px-3 py-2.5 text-sm text-white outline-none focus:border-shu-500/60"
+        >
+          <option value="">{t("gradeYear.unset")}</option>
+          {GRADE_YEAR_OPTIONS.map((y) => (
+            <option key={y} value={y}>
+              {t(`gradeYear.${y}`)}
+            </option>
+          ))}
+        </select>
       </div>
       <Button type="submit" loading={loading} disabled={code.length !== 6}>
         {t("joinClassroomForm.submit")}

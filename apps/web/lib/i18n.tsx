@@ -785,8 +785,18 @@ const dict = {
   joinClassroomForm: {
     codeLabel: { en: "6-character code", ja: "6文字のコード" },
     codePlaceholder: { en: "ABC123", ja: "ABC123" },
+    gradeYearLabel: { en: "Grade year (optional)", ja: "学年（任意）" },
     submit: { en: "Join classroom", ja: "クラスに参加" },
     joinError: { en: "Couldn't join that classroom — check the code and try again.", ja: "クラスに参加できませんでした — コードを確認してもう一度お試しください。" },
+  },
+  gradeYear: {
+    unset: { en: "—", ja: "—" },
+    YEAR_1: { en: "1st year", ja: "1年" },
+    YEAR_2: { en: "2nd year", ja: "2年" },
+    YEAR_3: { en: "3rd year", ja: "3年" },
+    YEAR_4: { en: "4th year", ja: "4年" },
+    GRADUATE: { en: "Graduate student", ja: "大学院生" },
+    ALUMNI: { en: "Alumni (OB/OG)", ja: "OB・OG" },
   },
   classroomJoinPage: {
     kicker: { en: "Join a classroom", ja: "クラスに参加" },
@@ -806,6 +816,8 @@ const dict = {
     searchPlaceholder: { en: "Search name or email…", ja: "名前またはメールアドレスで検索…" },
     noMatch: { en: "No students match.", ja: "該当する学生がいません。" },
     colName: { en: "Name", ja: "名前" },
+    colGradeYear: { en: "Year", ja: "学年" },
+    gradeYearError: { en: "Failed to update grade year", ja: "学年の更新に失敗しました" },
     colEmail: { en: "Email", ja: "メールアドレス" },
     colPresent: { en: "Present", ja: "出席日数" },
     colTotal: { en: "Total", ja: "総日数" },
