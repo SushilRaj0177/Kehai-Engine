@@ -6,6 +6,7 @@ export interface Organization {
   name: string;
   slug: string;
   description?: string | null;
+  webhookUrl?: string | null;
   role?: OrgRole;
 }
 

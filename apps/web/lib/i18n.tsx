@@ -191,6 +191,14 @@ const dict = {
     createEvent: { en: "Create an event", ja: "イベントを作成" },
     registeredCount: { en: "{count} registered", ja: "登録 {count} 件" },
     attendedCount: { en: "{count} attended", ja: "出席 {count} 件" },
+    webhookHeading: { en: "Notifications", ja: "通知" },
+    webhookLabel: { en: "Discord / Slack webhook", ja: "Discord / Slack Webhook" },
+    webhookHint: {
+      en: "Paste an incoming webhook URL from your club's Discord or Slack, and it'll get a live ping every time someone checks in to an event. Leave it blank to disable.",
+      ja: "部活のDiscordまたはSlackの着信Webhook URLを貼り付けると、イベントへのチェックインのたびにリアルタイムで通知が届きます。空欄にすると無効になります。",
+    },
+    webhookPlaceholder: { en: "https://discord.com/api/webhooks/...", ja: "https://discord.com/api/webhooks/..." },
+    webhookError: { en: "Failed to save webhook URL", ja: "Webhook URLの保存に失敗しました" },
     dangerZoneHeading: { en: "Danger zone", ja: "危険な操作" },
     deleteOrgLabel: { en: "Delete organization", ja: "組織を削除" },
     deleteOrgHint: {

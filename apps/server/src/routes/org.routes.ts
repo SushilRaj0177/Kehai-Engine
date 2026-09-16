@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { asyncHandler } from "../middleware/error.js";
 import { requireAuth, requireOrgRole } from "../middleware/auth.js";
-import { createOrgSchema, inviteMemberSchema } from "../validators/org.js";
+import { createOrgSchema, inviteMemberSchema, updateWebhookSchema } from "../validators/org.js";
 import { createEventSchema } from "../validators/event.js";
 import * as orgService from "../services/org.service.js";
 import * as eventService from "../services/event.service.js";
@@ -20,6 +20,16 @@ orgRouter.post(
   })
 );
 
+// A Discord/Slack webhook URL is a bearer secret — anyone holding it can
+// post into that channel — so it's only ever included in a response for a
+// caller whose role can actually manage it, never handed to every member
+// just for having VIEWER/ORGANIZER access to the org.
+function withoutWebhookUrlUnlessManager<T extends { webhookUrl?: string | null }>(org: T, role: string) {
+  if (role === "ADMIN" || role === "OWNER") return org;
+  const { webhookUrl: _webhookUrl, ...rest } = org;
+  return rest;
+}
+
 orgRouter.get(
   "/",
   asyncHandler(async (req, res) => {
@@ -27,7 +37,7 @@ orgRouter.get(
       where: { userId: req.user!.id },
       include: { organization: true },
     });
-    res.json(memberships.map((m) => ({ ...m.organization, role: m.role })));
+    res.json(memberships.map((m) => ({ ...withoutWebhookUrlUnlessManager(m.organization, m.role), role: m.role })));
   })
 );
 
@@ -36,7 +46,17 @@ orgRouter.get(
   requireOrgRole("VIEWER"),
   asyncHandler(async (req, res) => {
     const org = await prisma.organization.findUniqueOrThrow({ where: { id: req.params.orgId } });
-    res.json(org);
+    res.json(withoutWebhookUrlUnlessManager(org, (req as any).membership.role));
+  })
+);
+
+orgRouter.patch(
+  "/:orgId/webhook",
+  requireOrgRole("ADMIN"),
+  asyncHandler(async (req, res) => {
+    const { webhookUrl } = updateWebhookSchema.parse(req.body);
+    const org = await prisma.organization.update({ where: { id: req.params.orgId }, data: { webhookUrl } });
+    res.json({ webhookUrl: org.webhookUrl });
   })
 );
 

@@ -116,6 +116,10 @@ model Organization {
   slug        String   @unique
   description String?
   logoUrl     String?
+  // Discord and Slack incoming-webhook URLs both accept a plain POST of
+  // {"content"/"text": "..."} — sending both keys in one body works for
+  // either platform without needing to ask which one a club uses.
+  webhookUrl  String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
