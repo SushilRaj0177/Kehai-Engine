@@ -50,6 +50,7 @@ event data.
 - Duplicate an event, delete one outright, or delete the whole organization
 - Manage the team: invite by role, change an existing member's role inline, or remove them
 - Review an organization-wide activity log of who did what
+- Get a live ping in the club's own Discord or Slack the moment someone checks in (paste one incoming-webhook URL, no other setup)
 - See deterministic analytics (attendance rate, no-show rate, arrival timeline, peak arrival window) and rule-based anomaly flags
 - Generate AI-interpreted insights, an AI post-event report, and ask natural-language questions about their org's event history
 
@@ -108,8 +109,12 @@ Kehai-Engine/
 ```
 
 **Why this stack:** Postgres + Prisma gives real relational integrity and
-migrations without vendor lock-in (the brief explicitly ruled out Supabase/
-Firebase). Express is deliberately boring and easy to audit for a
+migrations without vendor lock-in (the brief explicitly ruled out building
+on Supabase/Firebase's client SDKs and auto-generated APIs — the app still
+talks to its own Express backend, not a BaaS. The production database
+happens to be *hosted* on Supabase's free Postgres tier, but only as a
+plain Postgres connection string Prisma connects to directly; nothing
+Supabase-specific is used). Express is deliberately boring and easy to audit for a
 security-sensitive backend. Socket.io degrades gracefully when
 websockets are blocked. Next.js App Router gives file-based routing for
 three fairly distinct experiences (landing/marketing, organizer console,
@@ -303,7 +308,7 @@ logs the link server-side instead of emailing it).
 pnpm --filter server test
 ```
 
-124 tests across 20 files (Vitest): geofence math (including accuracy-padding
+134 tests across 21 files (Vitest): geofence math (including accuracy-padding
 edge cases and invalid-coordinate rejection), QR token signing/verification
 (cross-event rejection, expiry, tamper resistance) for both events and
 classroom sessions, duplicate check-in prevention, geofence rejection, and
@@ -311,8 +316,11 @@ attendance revocation against a real Postgres database, event lifecycle
 transition validity, join-code generation and regeneration, streak
 computation, analytics correctness, waitlist promotion under a
 transactional row lock, email verification token lifecycle, self-service
-account/classroom deletion guards, and the auth session lifecycle (refresh
-non-rotation, logout revocation, password reset revoking every session).
+account/classroom deletion guards, organization role-change authorization
+(an ADMIN can't touch an OWNER or a peer ADMIN's role), Discord/Slack
+webhook delivery (never throws on a failed or unreachable endpoint) and
+URL validation, and the auth session lifecycle (refresh non-rotation,
+logout revocation, password reset revoking every session).
 
 Frontend: `pnpm --filter web build` runs a full production build with
 type-checking. The complete demo flow (register → org → event → publish →
@@ -337,10 +345,10 @@ proprietary services.
 docker compose up --build
 ```
 
-### Deploying (split hosting: Render + Vercel)
+### Deploying (split hosting: Supabase + Render + Vercel)
 
-The database and API run on Render; the Next.js frontend runs on Vercel.
-This isn't just preference — Vercel is Next.js's own first-party host and
+The database runs on Supabase, the API runs on Render, and the Next.js
+frontend runs on Vercel. Vercel is Next.js's own first-party host and
 handles it with zero Docker involved, which sidesteps an entire class of
 pnpm-workspace/Docker packaging issues a generic container host runs into
 with a monorepo (we hit several getting the Render-only setup working; see
@@ -348,47 +356,76 @@ git history on `render.yaml` and both Dockerfiles for the specifics if
 you're curious — pnpm's `exec` re-triggering a full reinstall when the
 runtime image lacks its workspace root files was the big one).
 
-**1. Database + API on Render:**
+**Why the database isn't on Render too:** it originally was, via a Render
+Blueprint-provisioned Postgres instance. Render's free Postgres plan is
+**deleted after 90 days** with no way to keep it alive short of upgrading
+to a paid plan — a real problem for a platform meant to accumulate real
+attendance history over a semester. Supabase's free Postgres tier doesn't
+have that hard expiry (it pauses after a stretch of no activity and comes
+back with one click in its dashboard, rather than being deleted outright).
+Since Prisma just needs a plain Postgres connection string, moving
+providers is a one-line `DATABASE_URL` change — no schema or code changes,
+no vendor lock-in either way.
+
+**1. Database on Supabase:**
+
+1. Create a free project at [supabase.com](https://supabase.com).
+2. In the project, click **Connect** (top of the dashboard) and copy the
+   **Session pooler** connection string, not the "Direct connection" one —
+   Supabase's direct-connection hostname resolves IPv6-only by default,
+   which a number of hosts (including some CI/container environments)
+   can't reach; the session pooler is IPv4-compatible and works
+   everywhere. Fill in the database password you set when creating the
+   project.
+3. If that password contains any of `@ : / ? # &`, URL-encode just that
+   character in the connection string (e.g. `@` → `%40`) — those characters
+   are part of the URI syntax itself, and a literal one in the password
+   breaks parsing.
+
+**2. API on Render:**
 
 `render.yaml` at the repo root is a [Render Blueprint](https://render.com/docs/blueprint-spec)
-that provisions Postgres and the API in one pass:
+that provisions the API service:
 
 1. Push this repo to your own GitHub account (fork or your own copy).
 2. On [render.com](https://render.com): **New +** → **Blueprint** → connect
-   the repo. Render reads `render.yaml` and shows a preview (`kehai-engine-db`,
-   `kehai-engine-api`) — click **Apply**.
-3. Secrets (`JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `QR_SIGNING_PEPPER`)
-   are auto-generated by Render, not committed to git.
-4. Optional: open `kehai-engine-api` → **Environment** and set
-   `GROQ_API_KEY` (enables AI features — free at console.groq.com/keys, no
-   credit card) and/or `GOOGLE_CLIENT_ID` (enables Google sign-in). Both are
-   left blank by default — the platform works fully without them.
+   the repo. Render reads `render.yaml` and shows a preview
+   (`kehai-engine-api`) — click **Apply**.
+3. Open `kehai-engine-api` → **Environment** and set `DATABASE_URL` to the
+   Supabase connection string from step 1. Secrets (`JWT_ACCESS_SECRET`,
+   `JWT_REFRESH_SECRET`, `QR_SIGNING_PEPPER`) are auto-generated by Render,
+   not committed to git.
+4. Optional: also set `GROQ_API_KEY` (enables AI features — free at
+   console.groq.com/keys, no credit card), `GOOGLE_CLIENT_ID` (enables
+   Google sign-in), and `RESEND_API_KEY` (enables verification/reset
+   emails — free at resend.com/api-keys). All three are left blank by
+   default — the platform works fully without any of them.
 5. Note the resulting API URL (e.g. `https://kehai-engine-api.onrender.com`)
-   — you'll need it for step 2 below.
+   — you'll need it for step 3 below.
 
-**2. Frontend on Vercel:**
+**3. Frontend on Vercel:**
 
 1. On [vercel.com](https://vercel.com): **Add New** → **Project** → import
    the same repo.
 2. Set **Root Directory** to `apps/web` (Vercel's monorepo support handles
    the pnpm workspace correctly from there — no extra config needed).
-3. Add an environment variable: `API_URL` = the Render API URL from step 1.
+3. Add an environment variable: `API_URL` = the Render API URL from step 2.
 4. Deploy. Vercel gives you a URL like `https://your-project.vercel.app` —
    that's what you share.
 5. Go back to Render's `kehai-engine-api` → **Environment** and set
    `WEB_ORIGIN` to that Vercel URL (needed for CORS and the realtime
    socket connection to accept requests from it).
 
-**Free-tier tradeoffs, stated plainly:** Render's free Postgres instance is
-**deleted after 90 days** unless upgraded to a paid plan, and the free API
-service **spins down after 15 minutes of inactivity** (the next request
-waits ~30-50s for a cold start). This is a real limitation for a platform
-where people are signing up and building attendance history — upgrading
-`kehai-engine-db`'s plan in `render.yaml` (or directly in the dashboard)
-from `free` to `starter` removes the 90-day expiry. A donation-funded
-upgrade path (e.g. a Ko-fi link explaining exactly this tradeoff) is a
-planned addition — see Roadmap. Vercel's free tier for the frontend has no
-equivalent sleep/expiry behavior.
+**Free-tier tradeoffs, stated plainly:** the free Render API service
+**spins down after 15 minutes of inactivity** (the next request waits
+~30-50s for a cold start) — worth knowing before promoting the link
+somewhere people are opening it cold. Supabase's free Postgres pauses
+(not deletes) after a stretch of total inactivity, and a database with
+real, regularly-checked-in-to events won't hit that. Vercel's free tier
+for the frontend has no equivalent sleep/expiry behavior. Several of
+these platforms (Render, Supabase) offer free or discounted tiers for
+student/education projects on request, worth checking before paying for
+anything.
 
 ### Runtime API URL (why this isn't a build arg)
 
@@ -425,6 +462,7 @@ All routes are under `/api`. Representative endpoints:
 | POST | `/api/attendance/:eventId/checkin` | QR + geofence verified check-in |
 | POST | `/api/attendance/:eventId/override` · DELETE `/attendees/:userId` | Manual present / undo a check-in |
 | DELETE | `/api/orgs/:orgId` · `/api/classrooms/:id` | Delete an organization / classroom |
+| PATCH | `/api/orgs/:orgId/webhook` | Set/clear the Discord or Slack check-in notification webhook (ADMIN+) |
 | GET | `/api/analytics/events/:eventId` | Deterministic metrics |
 | GET | `/api/analytics/events/:eventId/anomalies` | Rule-based anomalies |
 | GET | `/api/ai/events/:eventId/insights` · `/report` | AI-interpreted insights / report |
@@ -463,7 +501,9 @@ All routes are under `/api`. Representative endpoints:
 - Bilingual UI (English/Japanese) today — the i18n system
   (`apps/web/lib/i18n.tsx`) is a flat dictionary keyed by dot-path, so
   adding a third language is additive (one more locale column), not a
-  rewrite.
+  rewrite. First-time visitors get Japanese automatically if their browser
+  is set to it (`navigator.language`); anyone who explicitly switches has
+  that choice remembered from then on.
 - No native mobile app — the attendee flow is a mobile-optimized web app
   using the browser's camera and geolocation APIs.
 
@@ -473,7 +513,6 @@ All routes are under `/api`. Representative endpoints:
 - Configurable per-organization anomaly thresholds
 - Retention job to null out raw check-in coordinates after a configurable window (see PRIVACY.md)
 - Bulk CSV import for pre-registering attendee lists
-- Webhooks for organization-level integrations (Slack/Discord check-in pings)
-- A "support this project" section in the UI explaining the free-tier
-  Postgres 90-day expiry honestly, with a donation link (e.g. Ko-fi) framed
-  as funding the upgrade to a paid database plan that doesn't expire
+- A "support this project" section in the UI explaining free-tier hosting
+  tradeoffs honestly, with a donation link (e.g. Ko-fi) framed as funding
+  a paid plan on whichever piece needs it as real usage grows
