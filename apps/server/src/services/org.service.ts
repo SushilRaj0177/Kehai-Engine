@@ -43,16 +43,17 @@ export async function inviteMember(
   if (!user) throw HttpError.notFound("No user found with that email — they must create an account first");
 
   // An ADMIN can only ever *grant* up to ADMIN (see inviteMemberSchema), but
-  // without this check they could still re-invite an existing OWNER at a
-  // lower role and silently demote them — the same privilege-escalation
-  // concern removeMember already guards against, just via upsert instead of
-  // delete.
+  // without this check they could still re-invite an existing OWNER — or a
+  // peer ADMIN — at a lower role and silently demote them. This is the same
+  // rank check removeMember already enforces (never touch an equal-or-higher
+  // role than your own), applied here since this endpoint doubles as the
+  // in-place role-change path.
   if (callerRole === "ADMIN") {
     const existing = await prisma.membership.findUnique({
       where: { userId_organizationId: { userId: user.id, organizationId } },
     });
-    if (existing && existing.role === "OWNER") {
-      throw HttpError.forbidden("You can't change an owner's role");
+    if (existing && (existing.role === "OWNER" || existing.role === "ADMIN")) {
+      throw HttpError.forbidden("You can't change the role of an owner or another admin");
     }
   }
 
