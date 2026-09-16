@@ -53,8 +53,8 @@ export function CustomCursor() {
       // snapping — the actual "premium" cue, not the ring's shape itself.
       const prevX = ringX;
       const prevY = ringY;
-      ringX += (mouseX - ringX) * 0.18;
-      ringY += (mouseY - ringY) * 0.18;
+      ringX += (mouseX - ringX) * 0.26;
+      ringY += (mouseY - ringY) * 0.26;
       if (ring) {
         ring.style.transform = `translate3d(${ringX}px, ${ringY}px, 0) translate(-50%, -50%) scale(${hovering ? 1.8 : 1})`;
         // Even at rest, the ring's 24px diameter is close enough to a small
