@@ -74,9 +74,12 @@ class's attendance over a semester rather than a one-off event:
 - Nudge an at-risk student by email — automatically (weekly, cooldown-gated)
   or manually on demand — and regenerate a classroom's join code, or delete
   the classroom itself
+- Roster sorted by seniority (alumni/graduate first, descending by year,
+  unset last) with each member's grade year (学年) editable inline
 
 **Classrooms (student side)**
-- Join a class by typing its code
+- Join a class by typing its code, optionally noting a grade year
+  (1st-4th year, graduate student, or alumni/OB·OG) on the way in
 - Check in the same QR + geofence way as an event
 - See their own attendance heatmap and streak for every class they're in
 - Leave a classroom themselves, without needing the teacher to remove them
@@ -308,7 +311,7 @@ logs the link server-side instead of emailing it).
 pnpm --filter server test
 ```
 
-134 tests across 21 files (Vitest): geofence math (including accuracy-padding
+140 tests across 21 files (Vitest): geofence math (including accuracy-padding
 edge cases and invalid-coordinate rejection), QR token signing/verification
 (cross-event rejection, expiry, tamper resistance) for both events and
 classroom sessions, duplicate check-in prevention, geofence rejection, and
