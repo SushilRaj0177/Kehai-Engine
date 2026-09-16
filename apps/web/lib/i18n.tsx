@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useLayoutEffect, useMemo, useState } from "react";
 
 export type Locale = "en" | "ja";
 
@@ -960,23 +960,34 @@ interface LocaleState {
 const LocaleContext = createContext<LocaleState | null>(null);
 
 export function LocaleProvider({ children }: { children: React.ReactNode }) {
-  // Reading localStorage inside a plain useEffect meant the app's very
-  // first render was ALWAYS "en" (the literal default above), correcting
-  // to the stored "ja" a moment later via a second render — every
-  // consumer, including the locale toggle's own sliding thumb, briefly
-  // saw the wrong locale and then visibly animated to the right one. A
-  // lazy useState initializer runs synchronously during that first
-  // render instead, so a returning Japanese-locale user's very first
-  // committed state is already "ja" — nothing to correct, nothing to
-  // animate. (A hard page reload still has an unavoidable flash of the
-  // server-rendered default before this client code runs at all; this
-  // fixes every render after that, including every client-side
-  // navigation, which is what was reported.)
-  const [locale, setLocale] = useState<Locale>(() => {
-    if (typeof window === "undefined") return "en";
+  // A previous version of this read localStorage/navigator.language inside
+  // a lazy useState initializer to avoid a visible flash-then-correct on
+  // every render. That backfires specifically on the very first hard page
+  // load: the initializer runs during SSR too (where `window` is
+  // undefined, so it falls back to "en"), but on the client its first
+  // render now computes "ja" for anyone with a saved or browser-implied
+  // Japanese preference — a genuine mismatch between server and client
+  // markup, not just a visual flash. React detects it, discards the
+  // server-rendered HTML, and force-remounts the entire tree client-side —
+  // slower and noisier (a hydration-error console warning) than the flash
+  // it was trying to avoid, and it silently affected every returning
+  // Japanese-locale user, not just first-time visitors.
+  //
+  // The state here always starts at the literal "en" default — identical
+  // on server and client, so hydration never mismatches — and
+  // useLayoutEffect (not useEffect) corrects it synchronously after the
+  // DOM commits but before the browser paints, so there's still no visible
+  // flash of the wrong locale on a real screen, just no hydration error
+  // either.
+  const [locale, setLocale] = useState<Locale>("en");
+
+  useLayoutEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored === "en" || stored === "ja") return stored;
+      if (stored === "en" || stored === "ja") {
+        setLocale(stored);
+        return;
+      }
     } catch {
       // ignore — localStorage unavailable
     }
@@ -985,9 +996,9 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
     // rather than having to find and click the language toggle themselves.
     // Anyone who does switch it gets their explicit choice remembered via
     // the branch above from then on, so this only ever affects a first visit.
-    if (navigator.language?.toLowerCase().startsWith("ja")) return "ja";
-    return "en";
-  });
+    if (navigator.language?.toLowerCase().startsWith("ja")) setLocale("ja");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const value = useMemo<LocaleState>(
     () => ({
