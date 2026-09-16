@@ -960,6 +960,12 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // ignore — localStorage unavailable
     }
+    // No saved preference yet — a first-time visitor whose browser is set
+    // to Japanese almost certainly wants the Japanese UI by default,
+    // rather than having to find and click the language toggle themselves.
+    // Anyone who does switch it gets their explicit choice remembered via
+    // the branch above from then on, so this only ever affects a first visit.
+    if (navigator.language?.toLowerCase().startsWith("ja")) return "ja";
     return "en";
   });
 
