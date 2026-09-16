@@ -11,6 +11,9 @@ import {
   leaveClassroom,
   regenerateJoinCode,
   joinClassroom,
+  getRoster,
+  updateEnrollmentGradeYear,
+  sortRosterBySeniority,
 } from "../src/services/classroom.service.js";
 
 let teacherId: string;
@@ -164,5 +167,81 @@ describe("regenerating a classroom's join code", () => {
       where: { classroomId_studentId: { classroomId, studentId } },
     });
     expect(enrollment).not.toBeNull();
+  });
+});
+
+describe("grade year (学年)", () => {
+  it("stores the grade year given at join time", async () => {
+    const joiner = await prisma.user.create({
+      data: { name: "Grade Year Joiner", email: `grade-year-joiner-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
+    });
+    const classroom = await prisma.classroom.findUniqueOrThrow({ where: { id: classroomId } });
+
+    const { enrollment } = await joinClassroom(classroom.joinCode, joiner.id, "YEAR_2");
+    expect(enrollment.gradeYear).toBe("YEAR_2");
+
+    await prisma.enrollment.deleteMany({ where: { classroomId, studentId: joiner.id } });
+    await prisma.user.delete({ where: { id: joiner.id } });
+  });
+
+  it("defaults to unset when no grade year is given at join time", async () => {
+    const joiner = await prisma.user.create({
+      data: { name: "No Grade Year Joiner", email: `no-grade-year-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
+    });
+    const classroom = await prisma.classroom.findUniqueOrThrow({ where: { id: classroomId } });
+
+    const { enrollment } = await joinClassroom(classroom.joinCode, joiner.id);
+    expect(enrollment.gradeYear).toBeNull();
+
+    await prisma.enrollment.deleteMany({ where: { classroomId, studentId: joiner.id } });
+    await prisma.user.delete({ where: { id: joiner.id } });
+  });
+
+  it("lets the teacher set or correct a student's grade year after the fact", async () => {
+    const updated = await updateEnrollmentGradeYear(classroomId, studentId, "YEAR_3");
+    expect(updated.gradeYear).toBe("YEAR_3");
+
+    const cleared = await updateEnrollmentGradeYear(classroomId, studentId, null);
+    expect(cleared.gradeYear).toBeNull();
+  });
+
+  it("rejects setting a grade year for someone not enrolled in the classroom", async () => {
+    const stranger = await prisma.user.create({
+      data: { name: "Not Enrolled", email: `not-enrolled-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
+    });
+    await expect(updateEnrollmentGradeYear(classroomId, stranger.id, "YEAR_1")).rejects.toThrow(/isn't enrolled/i);
+    await prisma.user.delete({ where: { id: stranger.id } });
+  });
+
+  it("getRoster sorts seniors (alumni/graduate/4th year) before juniors, unset last", async () => {
+    const classroom = await prisma.classroom.findUniqueOrThrow({ where: { id: classroomId } });
+    const seeded = await Promise.all(
+      ["YEAR_1", "ALUMNI", "YEAR_3"].map(async (year) => {
+        const u = await prisma.user.create({
+          data: { name: `Roster ${year}`, email: `roster-${year.toLowerCase()}-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
+        });
+        await joinClassroom(classroom.joinCode, u.id, year as any);
+        return u.id;
+      })
+    );
+
+    const roster = await getRoster(classroomId);
+    const years = roster.filter((r) => seeded.includes(r.student.id)).map((r) => r.gradeYear);
+    // ALUMNI must come before YEAR_3, which must come before YEAR_1.
+    expect(years.indexOf("ALUMNI")).toBeLessThan(years.indexOf("YEAR_3"));
+    expect(years.indexOf("YEAR_3")).toBeLessThan(years.indexOf("YEAR_1"));
+
+    await prisma.enrollment.deleteMany({ where: { classroomId, studentId: { in: seeded } } });
+    await prisma.user.deleteMany({ where: { id: { in: seeded } } });
+  });
+
+  it("sortRosterBySeniority is a pure function that doesn't mutate its input", () => {
+    const input = [
+      { gradeYear: "YEAR_1" as const, student: { name: "A" } },
+      { gradeYear: "ALUMNI" as const, student: { name: "B" } },
+    ];
+    const sorted = sortRosterBySeniority(input);
+    expect(sorted[0].student.name).toBe("B");
+    expect(input[0].gradeYear).toBe("YEAR_1"); // original order untouched
   });
 });

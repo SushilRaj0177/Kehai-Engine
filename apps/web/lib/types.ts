@@ -1,6 +1,9 @@
 export type EventStatus = "DRAFT" | "PUBLISHED" | "ACTIVE" | "COMPLETED" | "CANCELLED";
 export type OrgRole = "OWNER" | "ADMIN" | "ORGANIZER" | "VIEWER";
 
+export type GradeYear = "YEAR_1" | "YEAR_2" | "YEAR_3" | "YEAR_4" | "GRADUATE" | "ALUMNI";
+export const GRADE_YEAR_OPTIONS: GradeYear[] = ["YEAR_1", "YEAR_2", "YEAR_3", "YEAR_4", "GRADUATE", "ALUMNI"];
+
 export interface Organization {
   id: string;
   name: string;
@@ -206,6 +209,7 @@ export interface MyAttendanceRow {
 export interface RosterRow {
   student: { id: string; name: string; email: string; avatarUrl?: string | null };
   enrolledAt: string;
+  gradeYear: GradeYear | null;
   presentDays: number;
   totalDays: number;
   attendanceRate: number;

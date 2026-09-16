@@ -11,6 +11,7 @@ import {
   updateSessionSchema,
   classCheckInSchema,
   classAttendanceOverrideSchema,
+  updateGradeYearSchema,
 } from "../validators/classroom.js";
 import * as classroomService from "../services/classroom.service.js";
 import { sendManualNudge } from "../services/nudge.service.js";
@@ -51,8 +52,8 @@ classroomRouter.post(
   "/join",
   requireAuth,
   asyncHandler(async (req, res) => {
-    const { code } = joinClassroomSchema.parse(req.body);
-    const result = await classroomService.joinClassroom(code, req.user!.id);
+    const { code, gradeYear } = joinClassroomSchema.parse(req.body);
+    const result = await classroomService.joinClassroom(code, req.user!.id, gradeYear);
     res.status(201).json(result);
   })
 );
@@ -109,6 +110,17 @@ classroomRouter.get(
   requireClassroomTeacher(),
   asyncHandler(async (req, res) => {
     res.json(await classroomService.getRoster(req.params.classroomId));
+  })
+);
+
+classroomRouter.patch(
+  "/:classroomId/students/:studentId/grade-year",
+  requireAuth,
+  requireClassroomTeacher(),
+  asyncHandler(async (req, res) => {
+    const { gradeYear } = updateGradeYearSchema.parse(req.body);
+    const enrollment = await classroomService.updateEnrollmentGradeYear(req.params.classroomId, req.params.studentId, gradeYear);
+    res.json(enrollment);
   })
 );
 
