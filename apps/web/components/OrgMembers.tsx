@@ -26,9 +26,11 @@ export function OrgMembers({ orgId, callerRole }: { orgId: string; callerRole: O
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [removeError, setRemoveError] = useState<string | null>(null);
 
-  // Keyed per-member — changing one person's role must not disturb another
-  // row's in-flight state or already-shown error.
-  const [changingRoleId, setChangingRoleId] = useState<string | null>(null);
+  // Keyed per-member (not a single scalar id) — changing one person's role
+  // while another row's change is still in flight must not clear that other
+  // row's disabled/loading state early, which would let a second submission
+  // fire on it before its first request has resolved.
+  const [changingRoleIds, setChangingRoleIds] = useState<Record<string, boolean>>({});
   const [roleErrors, setRoleErrors] = useState<Record<string, string>>({});
 
   async function invite(e: React.FormEvent) {
@@ -55,7 +57,7 @@ export function OrgMembers({ orgId, callerRole }: { orgId: string; callerRole: O
       delete next[userId];
       return next;
     });
-    setChangingRoleId(userId);
+    setChangingRoleIds((prev) => ({ ...prev, [userId]: true }));
     try {
       // The invite endpoint upserts on (userId, organizationId), so
       // re-"inviting" an existing member with a new role just changes it —
@@ -72,7 +74,11 @@ export function OrgMembers({ orgId, callerRole }: { orgId: string; callerRole: O
         [userId]: err instanceof ApiError ? err.message : t("orgMembers.roleChangeError"),
       }));
     } finally {
-      setChangingRoleId(null);
+      setChangingRoleIds((prev) => {
+        const next = { ...prev };
+        delete next[userId];
+        return next;
+      });
     }
   }
 
@@ -149,7 +155,7 @@ export function OrgMembers({ orgId, callerRole }: { orgId: string; callerRole: O
                   {canManage && callerRole && ROLE_RANK[member.role] < ROLE_RANK[callerRole] ? (
                     <select
                       value={member.role}
-                      disabled={changingRoleId === member.user.id}
+                      disabled={!!changingRoleIds[member.user.id]}
                       onChange={(e) => changeRole(member.user.id, member.user.email, e.target.value as OrgRole)}
                       className="rounded-full border border-white/10 bg-void-900/80 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wider text-white/70 outline-none focus:border-shu-500/60 disabled:opacity-50"
                     >
