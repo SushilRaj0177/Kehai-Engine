@@ -1,22 +1,20 @@
-# Render Blueprint — deploys the database and API in one pass. The web
-# frontend is deployed separately on Vercel (see README "Deployment"),
-# which handles Next.js natively with no Docker involved.
+# Render Blueprint — deploys the API. The database is NOT provisioned here
+# (see below), and the web frontend is deployed separately on Vercel (see
+# README "Deployment"), which handles Next.js natively with no Docker
+# involved.
 #
 # In the Render dashboard: New + -> Blueprint -> connect this repo.
 #
-# NOTE ON THE FREE PLAN: Render's free Postgres instances are deleted after
-# 90 days. That's a deliberate tradeoff for now — see the "Support this
-# project" note planned for the README/UI (a donation prompt explaining
-# that a paid database plan is what keeps people's data from expiring).
-# Upgrading the `postgres` plan below to `starter` (or higher) removes the
-# 90-day expiry.
-
-databases:
-  - name: kehai-engine-db
-    databaseName: kehai_engine
-    user: kehai
-    plan: free
-    postgresMajorVersion: "16"
+# DATABASE: this used to also provision a free Render Postgres instance
+# here, wired up automatically. Render's free Postgres plan is deleted
+# after 90 days with no way to keep it alive short of upgrading to a paid
+# plan, so a project that just wants a database that doesn't quietly
+# expire is better served by Supabase or Neon's free Postgres tiers
+# instead (both are plain Postgres underneath — Prisma doesn't care who's
+# hosting it). Create a database there, then set DATABASE_URL below to its
+# connection string in the Render dashboard. If you'd rather use Render's
+# own Postgres anyway, add a `databases:` block back (see git history) and
+# upgrade its plan from `free` to `starter` to avoid the same expiry.
 
 services:
   - type: web
@@ -28,9 +26,7 @@ services:
     healthCheckPath: /health
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: kehai-engine-db
-          property: connectionString
+        sync: false # set to your Postgres connection string (e.g. from Supabase or Neon) in the Render dashboard
       - key: PORT
         value: "4000"
       - key: NODE_ENV
