@@ -55,7 +55,11 @@ export function ClassSessionManager({
   const { data: sessions, mutate } = useClassroomSessions(classroomId);
   const [label, setLabel] = useState("");
   const [starting, setStarting] = useState(false);
-  const [busySessionId, setBusySessionId] = useState<string | null>(null);
+  // Keyed per-session — close/restart/rename/delete on one session are each
+  // independent async actions; a scalar id here would let a second row's
+  // action clear the first row's loading/disabled state while its request
+  // is still in flight, permitting a double-submit on that row.
+  const [busySessionIds, setBusySessionIds] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
   const [recentLabels, setRecentLabels] = useState<string[]>([]);
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -88,6 +92,17 @@ export function ClassSessionManager({
     onSessionsChanged();
   }
 
+  function setBusy(sessionId: string, busy: boolean) {
+    setBusySessionIds((prev) => {
+      if (!busy) {
+        const next = { ...prev };
+        delete next[sessionId];
+        return next;
+      }
+      return { ...prev, [sessionId]: true };
+    });
+  }
+
   async function startSession() {
     setError(null);
     setStarting(true);
@@ -110,28 +125,28 @@ export function ClassSessionManager({
 
   async function closeSession(sessionId: string) {
     setError(null);
-    setBusySessionId(sessionId);
+    setBusy(sessionId, true);
     try {
       await apiFetch(`/api/classrooms/${classroomId}/sessions/${sessionId}/close`, { method: "POST" });
       await refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t("classroomDetail.sessionEndError"));
     } finally {
-      setBusySessionId(null);
+      setBusy(sessionId, false);
     }
   }
 
   async function restartSession(sessionId: string) {
     setError(null);
     setOpenMenuId(null);
-    setBusySessionId(sessionId);
+    setBusy(sessionId, true);
     try {
       await apiFetch(`/api/classrooms/${classroomId}/sessions/${sessionId}/reopen`, { method: "POST" });
       await refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t("classroomDetail.sessionRestartError"));
     } finally {
-      setBusySessionId(null);
+      setBusy(sessionId, false);
     }
   }
 
@@ -145,7 +160,7 @@ export function ClassSessionManager({
 
   async function saveRename(sessionId: string) {
     setError(null);
-    setBusySessionId(sessionId);
+    setBusy(sessionId, true);
     try {
       await apiFetch(`/api/classrooms/${classroomId}/sessions/${sessionId}`, {
         method: "PATCH",
@@ -156,7 +171,7 @@ export function ClassSessionManager({
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t("classroomDetail.sessionRenameError"));
     } finally {
-      setBusySessionId(null);
+      setBusy(sessionId, false);
     }
   }
 
@@ -168,7 +183,7 @@ export function ClassSessionManager({
       return;
     }
     setError(null);
-    setBusySessionId(sessionId);
+    setBusy(sessionId, true);
     try {
       await apiFetch(`/api/classrooms/${classroomId}/sessions/${sessionId}`, { method: "DELETE" });
       setConfirmingDeleteId(null);
@@ -177,7 +192,7 @@ export function ClassSessionManager({
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t("classroomDetail.sessionDeleteError"));
     } finally {
-      setBusySessionId(null);
+      setBusy(sessionId, false);
     }
   }
 
@@ -188,7 +203,7 @@ export function ClassSessionManager({
           classroomId={classroomId}
           sessionId={openSession.id}
           onEndSession={() => closeSession(openSession.id)}
-          ending={busySessionId === openSession.id}
+          ending={!!busySessionIds[openSession.id]}
         />
       )}
 
@@ -247,7 +262,7 @@ export function ClassSessionManager({
                         autoFocus
                       />
                     </div>
-                    <Button size="sm" loading={busySessionId === s.id} onClick={() => saveRename(s.id)}>
+                    <Button size="sm" loading={!!busySessionIds[s.id]} onClick={() => saveRename(s.id)}>
                       {t("classroomDetail.saveRename")}
                     </Button>
                     <Button variant="ghost" size="sm" onClick={() => setRenamingId(null)}>
@@ -290,7 +305,7 @@ export function ClassSessionManager({
                                   <Button
                                     variant="danger"
                                     size="sm"
-                                    loading={busySessionId === s.id}
+                                    loading={!!busySessionIds[s.id]}
                                     onClick={() => deleteSession(s.id)}
                                     className="flex-1"
                                   >
@@ -313,8 +328,9 @@ export function ClassSessionManager({
                                 {s.status !== "OPEN" && (
                                   <button
                                     type="button"
+                                    disabled={!!busySessionIds[s.id]}
                                     onClick={() => restartSession(s.id)}
-                                    className="block w-full px-3 py-2 text-left text-white/75 hover:bg-white/[0.06] hover:text-white focus-visible:outline-none focus-visible:bg-white/[0.06] focus-visible:text-white"
+                                    className="block w-full px-3 py-2 text-left text-white/75 hover:bg-white/[0.06] hover:text-white focus-visible:outline-none focus-visible:bg-white/[0.06] focus-visible:text-white disabled:pointer-events-none disabled:opacity-50"
                                   >
                                     {t("classroomDetail.restartSession")}
                                   </button>
