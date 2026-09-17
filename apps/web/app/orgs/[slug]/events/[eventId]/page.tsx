@@ -53,8 +53,13 @@ export default function EventControlRoomPage() {
   const [liveConnected, setLiveConnected] = useState(false);
   const [liveCount, setLiveCount] = useState<{ attendance: number; registrations: number; rate: number } | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
-  const [transitioning, setTransitioning] = useState(false);
-  const [extending, setExtending] = useState(false);
+  // Which specific transition/extend button is in flight — these are
+  // mutually exclusive actions so only one can ever run at a time, but
+  // tracking the target (not just a bare boolean) keeps the loading
+  // spinner on the button that was actually clicked instead of every
+  // sibling button in the group.
+  const [transitioningTo, setTransitioningTo] = useState<EventStatus | null>(null);
+  const [extendingBy, setExtendingBy] = useState<number | null>(null);
 
   useEffect(() => {
     if (!eventId) return;
@@ -75,14 +80,14 @@ export default function EventControlRoomPage() {
 
   async function transition(next: EventStatus) {
     setStatusError(null);
-    setTransitioning(true);
+    setTransitioningTo(next);
     try {
       await apiFetch(`/api/events/${eventId}/status`, { method: "POST", body: JSON.stringify({ status: next }) });
       await mutate();
     } catch (err) {
       setStatusError(err instanceof ApiError ? err.message : t("eventControl.statusUpdateError"));
     } finally {
-      setTransitioning(false);
+      setTransitioningTo(null);
     }
   }
 
@@ -94,7 +99,7 @@ export default function EventControlRoomPage() {
   async function extendWindow(minutes: number) {
     if (!event) return;
     setStatusError(null);
-    setExtending(true);
+    setExtendingBy(minutes);
     try {
       const newEndsAt = new Date(new Date(event.endsAt).getTime() + minutes * 60_000).toISOString();
       await apiFetch(`/api/events/${eventId}`, { method: "PATCH", body: JSON.stringify({ endsAt: newEndsAt }) });
@@ -102,7 +107,7 @@ export default function EventControlRoomPage() {
     } catch (err) {
       setStatusError(err instanceof ApiError ? err.message : t("eventControl.extendError"));
     } finally {
-      setExtending(false);
+      setExtendingBy(null);
     }
   }
 
@@ -152,7 +157,8 @@ export default function EventControlRoomPage() {
                 key={next}
                 variant={next === "CANCELLED" ? "danger" : next === "ACTIVE" ? "primary" : "secondary"}
                 size="sm"
-                loading={transitioning}
+                loading={transitioningTo === next}
+                disabled={transitioningTo !== null && transitioningTo !== next}
                 onClick={() => transition(next)}
               >
                 {labelFor(event.status, next, t)}
@@ -190,7 +196,14 @@ export default function EventControlRoomPage() {
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <span className="text-xs uppercase tracking-wider text-amber-200/60">{t("eventControl.extendPrompt")}</span>
                 {[15, 30, 60].map((minutes) => (
-                  <Button key={minutes} variant="secondary" size="sm" loading={extending} onClick={() => extendWindow(minutes)}>
+                  <Button
+                    key={minutes}
+                    variant="secondary"
+                    size="sm"
+                    loading={extendingBy === minutes}
+                    disabled={extendingBy !== null && extendingBy !== minutes}
+                    onClick={() => extendWindow(minutes)}
+                  >
                     {t(`eventControl.extendBy${minutes}`)}
                   </Button>
                 ))}
