@@ -23,7 +23,9 @@ export function OrgMembers({ orgId, callerRole }: { orgId: string; callerRole: O
   const [inviteError, setInviteError] = useState<string | null>(null);
 
   const [confirmingRemoveId, setConfirmingRemoveId] = useState<string | null>(null);
-  const [removingId, setRemovingId] = useState<string | null>(null);
+  // Keyed per-member — same reasoning as changingRoleIds below: one row's
+  // in-flight remove must not clear another row's loading state early.
+  const [removingIds, setRemovingIds] = useState<Record<string, boolean>>({});
   const [removeError, setRemoveError] = useState<string | null>(null);
 
   // Keyed per-member (not a single scalar id) — changing one person's role
@@ -89,7 +91,7 @@ export function OrgMembers({ orgId, callerRole }: { orgId: string; callerRole: O
       return;
     }
     setRemoveError(null);
-    setRemovingId(userId);
+    setRemovingIds((prev) => ({ ...prev, [userId]: true }));
     try {
       await apiFetch(`/api/orgs/${orgId}/members/${userId}`, { method: "DELETE" });
       setConfirmingRemoveId(null);
@@ -97,7 +99,11 @@ export function OrgMembers({ orgId, callerRole }: { orgId: string; callerRole: O
     } catch (err) {
       setRemoveError(err instanceof ApiError ? err.message : t("orgMembers.removeError"));
     } finally {
-      setRemovingId(null);
+      setRemovingIds((prev) => {
+        const next = { ...prev };
+        delete next[userId];
+        return next;
+      });
     }
   }
 
@@ -178,7 +184,7 @@ export function OrgMembers({ orgId, callerRole }: { orgId: string; callerRole: O
                       <Button
                         variant="danger"
                         size="sm"
-                        loading={removingId === member.user.id}
+                        loading={!!removingIds[member.user.id]}
                         onClick={() => removeMember(member.user.id)}
                       >
                         {t("orgMembers.remove")}

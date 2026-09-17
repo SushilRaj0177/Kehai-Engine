@@ -15,12 +15,12 @@ export function ClassroomRoster({ classroomId, openSessionId }: { classroomId: s
   const { t, locale } = useLocale();
   const [q, setQ] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [overridingId, setOverridingId] = useState<string | null>(null);
+  // Keyed per-student — one row's in-flight action must not clobber another
+  // row's loading/confirm state when two rows are acted on concurrently.
+  const [overridingIds, setOverridingIds] = useState<Record<string, boolean>>({});
   const [overrideError, setOverrideError] = useState<string | null>(null);
   const [confirmingRemoveId, setConfirmingRemoveId] = useState<string | null>(null);
-  const [removingId, setRemovingId] = useState<string | null>(null);
-  // Keyed per-student — changing one row's grade year must not disturb
-  // another row's in-flight save state.
+  const [removingIds, setRemovingIds] = useState<Record<string, boolean>>({});
   const [changingGradeYearIds, setChangingGradeYearIds] = useState<Record<string, boolean>>({});
   const { data, isLoading, mutate } = useClassroomRoster(classroomId);
 
@@ -33,7 +33,7 @@ export function ClassroomRoster({ classroomId, openSessionId }: { classroomId: s
   async function markPresent(studentId: string) {
     if (!openSessionId) return;
     setOverrideError(null);
-    setOverridingId(studentId);
+    setOverridingIds((prev) => ({ ...prev, [studentId]: true }));
     try {
       await apiFetch(`/api/classrooms/${classroomId}/sessions/${openSessionId}/override`, {
         method: "POST",
@@ -43,7 +43,11 @@ export function ClassroomRoster({ classroomId, openSessionId }: { classroomId: s
     } catch (err) {
       setOverrideError(err instanceof ApiError ? err.message : t("classroomRoster.overrideError"));
     } finally {
-      setOverridingId(null);
+      setOverridingIds((prev) => {
+        const next = { ...prev };
+        delete next[studentId];
+        return next;
+      });
     }
   }
 
@@ -74,7 +78,7 @@ export function ClassroomRoster({ classroomId, openSessionId }: { classroomId: s
       return;
     }
     setOverrideError(null);
-    setRemovingId(studentId);
+    setRemovingIds((prev) => ({ ...prev, [studentId]: true }));
     try {
       await apiFetch(`/api/classrooms/${classroomId}/students/${studentId}`, { method: "DELETE" });
       setConfirmingRemoveId(null);
@@ -82,7 +86,11 @@ export function ClassroomRoster({ classroomId, openSessionId }: { classroomId: s
     } catch (err) {
       setOverrideError(err instanceof ApiError ? err.message : t("classroomRoster.removeError"));
     } finally {
-      setRemovingId(null);
+      setRemovingIds((prev) => {
+        const next = { ...prev };
+        delete next[studentId];
+        return next;
+      });
     }
   }
 
@@ -116,10 +124,10 @@ export function ClassroomRoster({ classroomId, openSessionId }: { classroomId: s
                 expanded={expanded === row.student.id}
                 onToggle={() => setExpanded((cur) => (cur === row.student.id ? null : row.student.id))}
                 canOverride={!!openSessionId && !row.checkedInOpenSession}
-                overriding={overridingId === row.student.id}
+                overriding={!!overridingIds[row.student.id]}
                 onMarkPresent={() => markPresent(row.student.id)}
                 confirmingRemove={confirmingRemoveId === row.student.id}
-                removing={removingId === row.student.id}
+                removing={!!removingIds[row.student.id]}
                 onRemove={() => removeStudent(row.student.id)}
                 onCancelRemove={() => setConfirmingRemoveId(null)}
                 changingGradeYear={!!changingGradeYearIds[row.student.id]}
@@ -154,10 +162,10 @@ export function ClassroomRoster({ classroomId, openSessionId }: { classroomId: s
                     onToggle={() => setExpanded((cur) => (cur === row.student.id ? null : row.student.id))}
                     showTodayColumn={!!openSessionId}
                     canOverride={!!openSessionId && !row.checkedInOpenSession}
-                    overriding={overridingId === row.student.id}
+                    overriding={!!overridingIds[row.student.id]}
                     onMarkPresent={() => markPresent(row.student.id)}
                     confirmingRemove={confirmingRemoveId === row.student.id}
-                    removing={removingId === row.student.id}
+                    removing={!!removingIds[row.student.id]}
                     onRemove={() => removeStudent(row.student.id)}
                     onCancelRemove={() => setConfirmingRemoveId(null)}
                     changingGradeYear={!!changingGradeYearIds[row.student.id]}
