@@ -5,6 +5,7 @@ import { issueQrToken } from "../utils/qrToken.js";
 import { sendEmail } from "../utils/mailer.js";
 import { signUnsubscribeToken } from "../utils/unsubscribeToken.js";
 import { env } from "../config/env.js";
+import { appendAuditLog } from "../utils/auditLog.js";
 import type { EventStatus } from "@prisma/client";
 
 export interface CreateEventInput {
@@ -264,14 +265,12 @@ export async function removeRegistration(eventId: string, userId: string, actorI
   }
   await prisma.registration.delete({ where: { id: registration.id } });
 
-  await prisma.auditLog.create({
-    data: {
-      organizationId: registration.event.organizationId,
-      eventId,
-      actorUserId: actorId,
-      action: "registration.removed",
-      metadata: { targetUserId: userId },
-    },
+  await appendAuditLog({
+    organizationId: registration.event.organizationId,
+    eventId,
+    actorUserId: actorId,
+    action: "registration.removed",
+    metadata: { targetUserId: userId },
   });
 
   // Only freed up a spot if the removed registration was actually counted

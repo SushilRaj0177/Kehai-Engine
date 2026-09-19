@@ -24,6 +24,7 @@ event data.
 - [Geofence verification](#geofence-verification)
 - [Realtime](#realtime)
 - [Analytics & AI architecture](#analytics--ai-architecture)
+- [Trust & integrity](#trust--integrity)
 - [Local setup](#local-setup)
 - [Environment variables](#environment-variables)
 - [Testing](#testing)
@@ -51,6 +52,7 @@ event data.
 - Manage the team: invite by role, change an existing member's role inline, or remove them
 - Review an organization-wide activity log of who did what
 - Get a live ping in the club's own Discord or Slack the moment someone checks in (paste one incoming-webhook URL, no other setup)
+- Every manual override or membership change is written to a tamper-evident, hash-chained audit log — see [Trust & integrity](#trust--integrity)
 - See deterministic analytics (attendance rate, no-show rate, arrival timeline, peak arrival window) and rule-based anomaly flags
 - Generate AI-interpreted insights, an AI post-event report, and ask natural-language questions about their org's event history
 
@@ -76,6 +78,7 @@ class's attendance over a semester rather than a one-off event:
   the classroom itself
 - Roster sorted by seniority (alumni/graduate first, descending by year,
   unset last) with each member's grade year (学年) editable inline
+- Review a classroom-scoped activity log of every manual attendance override
 
 **Classrooms (student side)**
 - Join a class by typing its code, optionally noting a grade year
@@ -260,6 +263,37 @@ provider means changing one file.
 
 ---
 
+## Trust & integrity
+
+Whoever operates this app controls its database — that's true of any
+attendance system anyone hosts, and no application code can make that
+technically impossible. What the app does instead: every manual attendance
+override, and every organization membership removal, is written through
+`appendAuditLog()` (`apps/server/src/utils/auditLog.ts`) to an
+append-only `AuditLog` table, and nothing in the codebase writes to that
+table any other way.
+
+Each row's `hash` is a SHA-256 of its own fields plus the *previous* row's
+hash, forming a chain — editing or deleting a past row (including via
+direct database access, not just the API) breaks every hash after it.
+`verifyAuditLogChain()` re-walks the whole table and recomputes each hash
+to confirm nothing's broken; it's exposed with no auth and no row content
+at `GET /api/audit/verify`, and rendered live on the public
+[`/trust`](apps/web/app/trust/page.tsx) page so anyone — a club, a
+program coordinator, a skeptical student — can check the current state of
+the chain themselves instead of taking it on faith. Metadata is hashed via
+a recursively key-sorted stringifier specifically because Postgres JSONB
+does not preserve object key order, which would otherwise produce false
+"tampered" verdicts on rows nobody touched.
+
+Organizations get an org-scoped audit log (`GET /api/orgs/:orgId/audit-log`,
+ADMIN+); classrooms get the same for their manual overrides
+(`GET /api/classrooms/:classroomId/audit-log`, teacher-only) — a program
+can add its own coordinator as an admin/teacher and check the log
+independently, rather than trusting an export.
+
+---
+
 ## Local setup
 
 Prerequisites: Node 22+, pnpm, PostgreSQL (or Docker).
@@ -311,7 +345,7 @@ logs the link server-side instead of emailing it).
 pnpm --filter server test
 ```
 
-140 tests across 21 files (Vitest): geofence math (including accuracy-padding
+148 tests across 22 files (Vitest): geofence math (including accuracy-padding
 edge cases and invalid-coordinate rejection), QR token signing/verification
 (cross-event rejection, expiry, tamper resistance) for both events and
 classroom sessions, duplicate check-in prevention, geofence rejection, and
@@ -321,9 +355,11 @@ computation, analytics correctness, waitlist promotion under a
 transactional row lock, email verification token lifecycle, self-service
 account/classroom deletion guards, organization role-change authorization
 (an ADMIN can't touch an OWNER or a peer ADMIN's role), Discord/Slack
-webhook delivery (never throws on a failed or unreachable endpoint) and
-URL validation, and the auth session lifecycle (refresh non-rotation,
-logout revocation, password reset revoking every session).
+webhook delivery (never throws on a failed or unreachable endpoint, refuses
+to deliver to a private/internal/metadata address) and URL validation, the
+audit log's hash chain (unaffected by JSONB key reordering, catches a row
+edited or deleted after the fact), and the auth session lifecycle (refresh
+non-rotation, logout revocation, password reset revoking every session).
 
 Frontend: `pnpm --filter web build` runs a full production build with
 type-checking. The complete demo flow (register → org → event → publish →

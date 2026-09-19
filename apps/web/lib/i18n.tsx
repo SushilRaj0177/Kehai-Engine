@@ -109,6 +109,7 @@ const dict = {
     copyright: { en: "Kehai Engine", ja: "気配エンジン" },
     legal: { en: "Legal", ja: "利用規約・プライバシー" },
     privacyPolicy: { en: "Privacy & terms", ja: "プライバシーと利用規約" },
+    trustPolicy: { en: "Trust & integrity", ja: "信頼性と公正性" },
   },
   common: {
     signIn: { en: "Sign in", ja: "ログイン" },
@@ -229,6 +230,7 @@ const dict = {
     unknownActor: { en: "Someone", ja: "不明なユーザー" },
     unknownEvent: { en: "an event", ja: "イベント" },
     attendanceOverride: { en: "{actor} manually marked someone present at {event}", ja: "{actor} が {event} で手動出席登録しました" },
+    classAttendanceOverride: { en: "{actor} manually marked a student present", ja: "{actor} が学生を手動で出席登録しました" },
     registrationRemoved: { en: "{actor} removed a registration from {event}", ja: "{actor} が {event} の登録を削除しました" },
     memberRemoved: { en: "{actor} removed a {role} from the team", ja: "{actor} がチームから {role} を削除しました" },
   },
@@ -931,6 +933,54 @@ const dict = {
       en: "The full technical privacy model, including exactly what code enforces each of these points, is documented in PRIVACY.md in the source repository.",
       ja: "各項目をどのコードが実際に担保しているかを含む、技術的な詳細はソースリポジトリのPRIVACY.mdに記載されています。",
     },
+  },
+  trust: {
+    kicker: { en: "Trust & integrity", ja: "信頼性と公正性" },
+    title: { en: "Nobody plays favorites — here's how that's enforced", ja: "誰もえこひいきできない仕組み" },
+    subtitle: {
+      en: "The person running this app controls the database. That's true of every attendance system anyone hosts. What matters is whether an edit made outside the rules leaves a trace — here, it does, every time.",
+      ja: "このアプリを運営する者はデータベースを管理しています。これはホストされるあらゆる出席管理システムに共通する事実です。重要なのは、ルール外で行われた変更が痕跡を残すかどうかです — このアプリでは、必ず痕跡が残ります。",
+    },
+    honestyHeading: { en: "The honest starting point", ja: "正直な前提" },
+    honestyBody: {
+      en: "No software running on infrastructure one person controls can make it technically impossible for that person to edit the database directly. Any claim otherwise is marketing, not engineering. What this app does instead is make a direct edit detectable and provable — so the operator has something real at stake if they ever tried, not just a promise.",
+      ja: "一人が管理するインフラ上で動くソフトウェアが、その本人によるデータベースの直接編集を技術的に不可能にすることはできません。そうでないという主張は、エンジニアリングではなくマーケティングです。このアプリが代わりに行っているのは、直接的な変更を検知可能かつ証明可能にすることです — 単なる約束ではなく、実際に発覚するリスクを運営者に負わせます。",
+    },
+    point1Heading: { en: "1. Check-ins never go through a human", ja: "1. チェックインは人の手を介さない" },
+    point1Body: {
+      en: "The default, and only self-service, way to check in is a rotating cryptographically-signed QR code plus GPS geofence verification — both checked entirely by server code, with no manual step where anyone could quietly approve or reject someone. Only an explicit, logged override (point 2) ever bypasses this path.",
+      ja: "チェックインの既定かつ唯一のセルフサービス手段は、暗号署名付きの回転QRコードとGPSジオフェンス検証の組み合わせです — どちらもサーバー側のコードのみで判定され、誰かを密かに承認・拒否できる手作業の余地はありません。この経路を迂回できるのは、明示的かつ記録される上書き操作（項目2）のみです。",
+    },
+    point2Heading: { en: "2. Every manual override is permanently, verifiably logged", ja: "2. すべての手動操作は改ざん検知可能な形で永久に記録される" },
+    point2Body: {
+      en: "A teacher or organizer can manually mark someone present — for a phone that died, no signal, or GPS that was a little too strict — but that action always writes an audit log entry: who, when, and for whom. These entries are chained by cryptographic hash, each one covering the previous entry's hash, so editing or deleting a past entry — including by direct database access — breaks the chain from that point forward. The chain's current integrity is verified live below.",
+      ja: "教師や主催者は、電池切れ・電波なし・GPSが厳しすぎたなどの理由で手動で出席を記録できますが、その操作は必ず「誰が・いつ・誰を対象に」を記録した監査ログを生成します。これらの記録は暗号学的ハッシュで連結されており、各記録が直前の記録のハッシュを含むため、データベースへの直接アクセスを含め、過去の記録を編集・削除するとその時点以降の連鎖が壊れます。現在の連鎖の整合性は下で即座に確認できます。",
+    },
+    point3Heading: { en: "3. Program coordinators can get their own eyes on it", ja: "3. プログラム担当者にも直接確認いただけます" },
+    point3Body: {
+      en: "Any organization or classroom can add a coordinator as an admin or teacher with direct, independent access to its audit log — no need to take the operator's word for it, or wait for an export.",
+      ja: "組織やクラスには、監査ログへ直接かつ独立してアクセスできる管理者・教師としてコーディネーターを追加できます。運営者の言葉を信じるだけでも、エクスポートを待つ必要もありません。",
+    },
+    point4Heading: { en: "4. The source code is public", ja: "4. ソースコードは公開されています" },
+    point4Body: {
+      en: "Every claim on this page is backed by code anyone can read on GitHub — including exactly what appendAuditLog() and the hash-chain verifier do. Nothing here has to be taken on faith.",
+      ja: "このページのすべての主張は、GitHubで誰でも読めるコードに裏付けられています — appendAuditLog() やハッシュ連鎖の検証ロジックの実装も含めて。このページの内容を鵜呑みにする必要はありません。",
+    },
+    point5Heading: { en: "5. Full data export, on request", ja: "5. ご要望に応じてデータを全て提供します" },
+    point5Body: {
+      en: "Any organization or classroom's attendance data and audit log can be exported (CSV/Excel export is built in for attendance; reach out via GitHub for a full audit log export) — nothing here is locked behind a dashboard only the operator can see.",
+      ja: "組織やクラスの出席データと監査ログはエクスポート可能です（出席データのCSV/Excelエクスポートは標準機能です。監査ログの全体エクスポートをご希望の場合はGitHub経由でご連絡ください）— 運営者だけが見られるダッシュボードの中に閉じ込められている情報はありません。",
+    },
+    verifyHeading: { en: "Live chain verification", ja: "連鎖の整合性をライブ確認" },
+    verifyBody: {
+      en: "This re-walks every audit log entry across the whole platform right now and recomputes its hash from scratch. It doesn't reveal what happened — only whether the record of what happened is intact.",
+      ja: "これはプラットフォーム全体のすべての監査ログをその場で再走査し、ハッシュをゼロから再計算します。何が起きたかは明かしませんが、その記録が改ざんされていないかどうかは確認できます。",
+    },
+    verifyLoading: { en: "Verifying the chain…", ja: "連鎖を検証中…" },
+    verifyValid: { en: "Chain intact — {count} entries verified", ja: "連鎖は健全です — {count}件のエントリを検証済み" },
+    verifyBroken: { en: "Chain broken — inconsistency found at entry {id}", ja: "連鎖に異常があります — エントリ {id} で不整合を検出" },
+    verifyError: { en: "Couldn't reach the verification endpoint right now.", ja: "現在、検証エンドポイントに接続できません。" },
+    verifyCheckedAt: { en: "Checked at {time}", ja: "確認時刻: {time}" },
   },
 } as const;
 

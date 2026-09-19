@@ -9,6 +9,7 @@ import { checkGeofence } from "../utils/geo.js";
 import { checkImpossibleTravel, isDuplicateLocation, hasZeroAccuracy, type FlagReason } from "../utils/fraud.js";
 import { computeStreaks, type StreakDay } from "../utils/streaks.js";
 import { emitClassroomJoin, emitClassAttendanceUpdate } from "../realtime/socket.js";
+import { appendAuditLog } from "../utils/auditLog.js";
 
 export interface CreateClassroomInput {
   name: string;
@@ -850,5 +851,23 @@ export async function manualOverrideClassAttendance(classroomId: string, session
     attendanceRate: totalEnrolled > 0 ? totalPresent / totalEnrolled : 0,
   });
 
+  await appendAuditLog({
+    classroomId,
+    actorUserId: overriddenById,
+    action: "class_attendance.override",
+    metadata: { sessionId, studentId },
+  });
+
   return attendance;
+}
+
+export async function getClassroomAuditLog(classroomId: string) {
+  return prisma.auditLog.findMany({
+    where: { classroomId },
+    orderBy: { createdAt: "desc" },
+    take: 100,
+    include: {
+      actor: { select: { id: true, name: true, email: true } },
+    },
+  });
 }

@@ -19,7 +19,9 @@ export interface AuditLogEntry {
   createdAt: string;
   metadata: Record<string, unknown> | null;
   actor: { id: string; name: string; email: string } | null;
-  event: { id: string; name: string } | null;
+  // Only present on org/event audit-log responses — classroom audit-log
+  // entries (getClassroomAuditLog) don't include this relation at all.
+  event?: { id: string; name: string } | null;
 }
 
 export interface OrgMember {

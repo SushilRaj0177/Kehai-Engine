@@ -16,6 +16,7 @@ import { exportRouter } from "./routes/export.routes.js";
 import { qrRouter } from "./routes/qr.routes.js";
 import { classroomRouter } from "./routes/classroom.routes.js";
 import { notificationsRouter } from "./routes/notifications.routes.js";
+import { auditRouter } from "./routes/audit.routes.js";
 
 // WEB_ORIGIN is pasted by hand into the hosting dashboard, so tolerate a
 // trailing slash or stray whitespace instead of failing an exact string
@@ -66,6 +67,7 @@ export function createApp() {
   app.use("/api/qr", qrRouter);
   app.use("/api/classrooms", classroomRouter);
   app.use("/api/notifications", notificationsRouter);
+  app.use("/api/audit", auditRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
