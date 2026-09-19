@@ -103,6 +103,24 @@ export function useClassroom(id: string | undefined) {
   return useSWR<ClassroomDetail>(id ? `/api/classrooms/${id}` : null, fetcher);
 }
 
+export function useClassroomAuditLog(classroomId: string | undefined) {
+  return useSWR<AuditLogEntry[]>(classroomId ? `/api/classrooms/${classroomId}/audit-log` : null, fetcher);
+}
+
+export interface AuditChainStatus {
+  valid: boolean;
+  rowsChecked: number;
+  brokenAtId: string | null;
+  checkedAt: string;
+}
+
+// Public and content-free (see apps/server/src/routes/audit.routes.ts) —
+// used on the /trust page so anyone, not just a logged-in admin, can
+// confirm the attendance audit trail hasn't been silently edited.
+export function useAuditChainStatus() {
+  return useSWR<AuditChainStatus>("/api/audit/verify", fetcher, { revalidateOnFocus: false });
+}
+
 export function useClassroomRoster(id: string | undefined) {
   return useSWR<RosterRow[]>(id ? `/api/classrooms/${id}/roster` : null, fetcher, {
     refreshInterval: 8000,

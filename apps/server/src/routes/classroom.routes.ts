@@ -256,6 +256,15 @@ classroomRouter.post(
   })
 );
 
+classroomRouter.get(
+  "/:classroomId/audit-log",
+  requireAuth,
+  requireClassroomTeacher(),
+  asyncHandler(async (req, res) => {
+    res.json(await classroomService.getClassroomAuditLog(req.params.classroomId));
+  })
+);
+
 classroomRouter.post(
   "/:classroomId/checkin",
   requireAuth,

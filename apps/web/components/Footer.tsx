@@ -24,7 +24,10 @@ export function Footer() {
     },
     {
       heading: t("footer.legal"),
-      links: [{ label: t("footer.privacyPolicy"), href: "/privacy" }],
+      links: [
+        { label: t("footer.trustPolicy"), href: "/trust" },
+        { label: t("footer.privacyPolicy"), href: "/privacy" },
+      ],
     },
   ];
 

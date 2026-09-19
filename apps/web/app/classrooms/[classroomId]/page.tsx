@@ -16,6 +16,7 @@ import { ClassSessionManager } from "@/components/ClassSessionManager";
 import { ClassroomRoster } from "@/components/ClassroomRoster";
 import { ClassroomExportButtons } from "@/components/ExportButtons";
 import { AtRiskStudents } from "@/components/AtRiskStudents";
+import { AuditLogPanel } from "@/components/AuditLogPanel";
 import { MyAttendanceHistory } from "@/components/MyAttendanceHistory";
 import { AttendanceHeatmap } from "@/components/AttendanceHeatmap";
 import { SessionTrendChart } from "@/components/charts/SessionTrendChart";
@@ -210,6 +211,15 @@ export default function ClassroomDetailPage() {
               />
 
               <AtRiskStudents classroomId={classroomId} />
+
+              <Card>
+                <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">
+                  {t("auditLog.heading")}
+                </CardHeader>
+                <CardBody>
+                  <AuditLogPanel classroomId={classroomId} />
+                </CardBody>
+              </Card>
 
               <Card>
                 <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">

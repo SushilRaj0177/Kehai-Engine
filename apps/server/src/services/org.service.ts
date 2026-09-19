@@ -1,6 +1,7 @@
 import { prisma } from "../lib/prisma.js";
 import { HttpError } from "../lib/http-error.js";
 import { slugify } from "../validators/org.js";
+import { appendAuditLog } from "../utils/auditLog.js";
 
 export async function createOrganization(ownerId: string, name: string) {
   const base = slugify(name) || "org";
@@ -100,13 +101,11 @@ export async function removeMember(organizationId: string, userId: string, calle
 
   await prisma.membership.delete({ where: { id: membership.id } });
 
-  await prisma.auditLog.create({
-    data: {
-      organizationId,
-      actorUserId: callerId,
-      action: "member.removed",
-      metadata: { removedUserId: userId, removedRole: membership.role },
-    },
+  await appendAuditLog({
+    organizationId,
+    actorUserId: callerId,
+    action: "member.removed",
+    metadata: { removedUserId: userId, removedRole: membership.role },
   });
 }
 

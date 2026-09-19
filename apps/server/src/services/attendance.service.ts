@@ -5,6 +5,7 @@ import { checkGeofence } from "../utils/geo.js";
 import { checkImpossibleTravel, isDuplicateLocation, hasZeroAccuracy, type FlagReason } from "../utils/fraud.js";
 import { emitAttendanceUpdate } from "../realtime/socket.js";
 import { sendWebhookMessage } from "../utils/webhook.js";
+import { appendAuditLog } from "../utils/auditLog.js";
 
 export interface CheckInInput {
   eventId: string;
@@ -186,14 +187,12 @@ export async function manualOverride(eventId: string, targetUserId: string, over
     },
   });
 
-  await prisma.auditLog.create({
-    data: {
-      organizationId: event.organizationId,
-      eventId,
-      actorUserId: overriddenById,
-      action: "attendance.override",
-      metadata: { targetUserId },
-    },
+  await appendAuditLog({
+    organizationId: event.organizationId,
+    eventId,
+    actorUserId: overriddenById,
+    action: "attendance.override",
+    metadata: { targetUserId },
   });
 
   return attendance;
@@ -216,14 +215,12 @@ export async function revokeAttendance(eventId: string, targetUserId: string, ac
 
   await prisma.attendanceRecord.delete({ where: { id: attendance.id } });
 
-  await prisma.auditLog.create({
-    data: {
-      organizationId: event.organizationId,
-      eventId,
-      actorUserId: actorId,
-      action: "attendance.revoked",
-      metadata: { targetUserId, originalMethod: attendance.method },
-    },
+  await appendAuditLog({
+    organizationId: event.organizationId,
+    eventId,
+    actorUserId: actorId,
+    action: "attendance.revoked",
+    metadata: { targetUserId, originalMethod: attendance.method },
   });
 }
 

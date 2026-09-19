@@ -1,6 +1,6 @@
 "use client";
 
-import { useOrgAuditLog } from "@/lib/hooks";
+import { useOrgAuditLog, useClassroomAuditLog } from "@/lib/hooks";
 import { LoadingBlock } from "./ui/States";
 import { formatDateTime } from "@/lib/format";
 import { useLocale } from "@/lib/i18n";
@@ -13,6 +13,8 @@ function describeEntry(entry: AuditLogEntry, t: (path: string, vars?: Record<str
   switch (entry.action) {
     case "attendance.override":
       return t("auditLog.attendanceOverride", { actor: actorName, event: entry.event?.name ?? t("auditLog.unknownEvent") });
+    case "class_attendance.override":
+      return t("auditLog.classAttendanceOverride", { actor: actorName });
     case "registration.removed":
       return t("auditLog.registrationRemoved", { actor: actorName, event: entry.event?.name ?? t("auditLog.unknownEvent") });
     case "member.removed":
@@ -25,9 +27,11 @@ function describeEntry(entry: AuditLogEntry, t: (path: string, vars?: Record<str
   }
 }
 
-export function AuditLogPanel({ orgId }: { orgId: string }) {
+export function AuditLogPanel({ orgId, classroomId }: { orgId?: string; classroomId?: string }) {
   const { t, locale } = useLocale();
-  const { data, isLoading } = useOrgAuditLog(orgId);
+  const orgQuery = useOrgAuditLog(orgId);
+  const classroomQuery = useClassroomAuditLog(classroomId);
+  const { data, isLoading } = orgId ? orgQuery : classroomQuery;
 
   if (isLoading) return <LoadingBlock />;
   if (!data?.length) {

@@ -310,6 +310,7 @@ model Classroom {
   teacher     User           @relation("ClassroomTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
   enrollments Enrollment[]
   sessions    ClassSession[]
+  auditLogs   AuditLog[]
 
   @@index([teacherId])
 }
@@ -411,21 +412,41 @@ model ClassAttendance {
 // Audit log — lightweight, append-only trail for sensitive actions
 // ─────────────────────────────────────────────────────────────────────────
 
+// Append-only by convention — always written through appendAuditLog()
+// (src/utils/auditLog.ts), never prisma.auditLog.create() directly, so
+// every row's hash chain stays intact. hash/prevHash form a tamper-evident
+// chain: each row's hash covers its own fields *and* the previous row's
+// hash, so silently editing or deleting a past row breaks the chain from
+// that point forward — detectable by re-walking the table and recomputing
+// each hash, which verifyAuditLogChain() (same file) does on demand. This
+// doesn't stop someone with raw DB access from editing rows; it makes such
+// an edit provable after the fact, which is the actual guarantee a "we
+// don't play favorites with attendance" claim needs.
 model AuditLog {
   id             String   @id @default(cuid())
   organizationId String?
   eventId        String?
+  classroomId    String?
   actorUserId    String?
   action         String // e.g. "event.publish", "attendance.override"
   metadata       Json?
   createdAt      DateTime @default(now())
 
+  // hash always set by appendAuditLog(); nullable only so existing rows
+  // from before the chain existed remain valid (the chain simply starts
+  // fresh at the first hashed row, and verification treats a null hash as
+  // outside the chain rather than a break in it).
+  prevHash String?
+  hash     String? @unique
+
   organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   event        Event?        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  classroom    Classroom?    @relation(fields: [classroomId], references: [id], onDelete: Cascade)
   actor        User?         @relation(fields: [actorUserId], references: [id])
 
   @@index([organizationId, createdAt])
   @@index([eventId, createdAt])
+  @@index([classroomId, createdAt])
 }
 
 // ─────────────────────────────────────────────────────────────────────────
