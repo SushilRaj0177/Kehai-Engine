@@ -49,6 +49,8 @@ export function AttendeeTable({ eventId }: { eventId: string }) {
   const [removingIds, setRemovingIds] = useState<Record<string, boolean>>({});
   const [confirmingRevokeIds, setConfirmingRevokeIds] = useState<Record<string, boolean>>({});
   const [revokingIds, setRevokingIds] = useState<Record<string, boolean>>({});
+  const [selectedIds, setSelectedIds] = useState<Record<string, boolean>>({});
+  const [bulkMarking, setBulkMarking] = useState(false);
 
   function setFlag(setter: React.Dispatch<React.SetStateAction<Record<string, boolean>>>, userId: string, on: boolean) {
     setter((prev) => {
@@ -59,7 +61,10 @@ export function AttendeeTable({ eventId }: { eventId: string }) {
     });
   }
 
-  async function markPresent(userId: string) {
+  // Returns whether the override succeeded — bulkMarkPresent needs that to
+  // count failures without changing this function's own catch-and-display
+  // -inline behavior for a single-row call.
+  async function markPresent(userId: string): Promise<boolean> {
     setOverrideError(null);
     setFlag(setOverridingIds, userId, true);
     try {
@@ -68,11 +73,37 @@ export function AttendeeTable({ eventId }: { eventId: string }) {
         body: JSON.stringify({ userId }),
       });
       await mutate();
+      return true;
     } catch (err) {
       setOverrideError(err instanceof ApiError ? err.message : t("attendeeTable.overrideError"));
+      return false;
     } finally {
       setFlag(setOverridingIds, userId, false);
     }
+  }
+
+  const notYetAttended = data?.filter((r) => !r.attended).map((r) => r.user.id) ?? [];
+  const selectedCount = Object.values(selectedIds).filter(Boolean).length;
+
+  function toggleSelected(userId: string) {
+    setSelectedIds((prev) => ({ ...prev, [userId]: !prev[userId] }));
+  }
+
+  function toggleSelectAll() {
+    const allSelected = notYetAttended.length > 0 && notYetAttended.every((id) => selectedIds[id]);
+    setSelectedIds(allSelected ? {} : Object.fromEntries(notYetAttended.map((id) => [id, true])));
+  }
+
+  async function bulkMarkPresent() {
+    const ids = Object.keys(selectedIds).filter((id) => selectedIds[id]);
+    if (ids.length === 0) return;
+    setBulkMarking(true);
+    setOverrideError(null);
+    const results = await Promise.all(ids.map((id) => markPresent(id)));
+    const failures = results.filter((ok) => !ok).length;
+    if (failures > 0) setOverrideError(t("attendeeTable.bulkPartialError", { count: failures }));
+    setSelectedIds({});
+    setBulkMarking(false);
   }
 
   async function revokeAttendance(userId: string) {
@@ -133,6 +164,11 @@ export function AttendeeTable({ eventId }: { eventId: string }) {
           <option value="attended">{t("attendeeTable.filterAttended")}</option>
           <option value="not_attended">{t("attendeeTable.filterNotAttended")}</option>
         </select>
+        {selectedCount > 0 && (
+          <Button variant="cyan" size="sm" loading={bulkMarking} onClick={bulkMarkPresent}>
+            {t("attendeeTable.bulkMarkPresent", { count: selectedCount })}
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -222,6 +258,16 @@ export function AttendeeTable({ eventId }: { eventId: string }) {
             <table className="w-full text-left text-sm">
               <thead className="sticky top-0 bg-void-900/95 text-[11px] uppercase tracking-wider text-white/40">
                 <tr>
+                  <th className="px-4 py-2.5">
+                    <input
+                      type="checkbox"
+                      aria-label={t("attendeeTable.selectAll")}
+                      disabled={notYetAttended.length === 0}
+                      checked={notYetAttended.length > 0 && notYetAttended.every((id) => selectedIds[id])}
+                      onChange={toggleSelectAll}
+                      className="h-4 w-4 rounded border-white/20 bg-void-900/80 accent-kehai-500"
+                    />
+                  </th>
                   <th className="px-4 py-2.5 font-medium">{t("attendeeTable.colName")}</th>
                   <th className="px-4 py-2.5 font-medium">{t("attendeeTable.colEmail")}</th>
                   <th className="px-4 py-2.5 font-medium">{t("attendeeTable.colStatus")}</th>
@@ -233,6 +279,16 @@ export function AttendeeTable({ eventId }: { eventId: string }) {
               <tbody className="divide-y divide-white/6">
                 {data.map((row) => (
                   <tr key={row.registrationId} className="text-white/75">
+                    <td className="px-4 py-2.5">
+                      <input
+                        type="checkbox"
+                        aria-label={t("attendeeTable.selectRow", { name: row.user.name })}
+                        disabled={row.attended}
+                        checked={!!selectedIds[row.user.id]}
+                        onChange={() => toggleSelected(row.user.id)}
+                        className="h-4 w-4 rounded border-white/20 bg-void-900/80 accent-kehai-500 disabled:opacity-30"
+                      />
+                    </td>
                     <td className="px-4 py-2.5 font-medium text-white">{row.user.name}</td>
                     <td className="px-4 py-2.5 text-white/50">{row.user.email}</td>
                     <td className="px-4 py-2.5">

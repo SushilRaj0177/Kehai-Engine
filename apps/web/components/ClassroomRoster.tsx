@@ -22,6 +22,8 @@ export function ClassroomRoster({ classroomId, openSessionId }: { classroomId: s
   const [confirmingRemoveId, setConfirmingRemoveId] = useState<string | null>(null);
   const [removingIds, setRemovingIds] = useState<Record<string, boolean>>({});
   const [changingGradeYearIds, setChangingGradeYearIds] = useState<Record<string, boolean>>({});
+  const [selectedIds, setSelectedIds] = useState<Record<string, boolean>>({});
+  const [bulkMarking, setBulkMarking] = useState(false);
   const { data, isLoading, mutate } = useClassroomRoster(classroomId);
 
   const filtered = data?.filter((row) => {
@@ -30,8 +32,44 @@ export function ClassroomRoster({ classroomId, openSessionId }: { classroomId: s
     return row.student.name.toLowerCase().includes(needle) || row.student.email.toLowerCase().includes(needle);
   });
 
-  async function markPresent(studentId: string) {
-    if (!openSessionId) return;
+  // Only rows an override could actually apply to — already-present
+  // students and (when there's no open session at all) every row are
+  // never selectable, so "select all" never silently includes a no-op.
+  const selectableIds = openSessionId ? filtered?.filter((r) => !r.checkedInOpenSession).map((r) => r.student.id) ?? [] : [];
+  const selectedCount = Object.values(selectedIds).filter(Boolean).length;
+
+  function toggleSelected(studentId: string) {
+    setSelectedIds((prev) => ({ ...prev, [studentId]: !prev[studentId] }));
+  }
+
+  function toggleSelectAll() {
+    const allSelected = selectableIds.length > 0 && selectableIds.every((id) => selectedIds[id]);
+    if (allSelected) {
+      setSelectedIds({});
+    } else {
+      setSelectedIds(Object.fromEntries(selectableIds.map((id) => [id, true])));
+    }
+  }
+
+  async function bulkMarkPresent() {
+    const ids = Object.keys(selectedIds).filter((id) => selectedIds[id]);
+    if (ids.length === 0) return;
+    setBulkMarking(true);
+    setOverrideError(null);
+    const results = await Promise.all(ids.map((id) => markPresent(id)));
+    const failures = results.filter((ok) => !ok).length;
+    if (failures > 0) {
+      setOverrideError(t("classroomRoster.bulkPartialError", { count: failures }));
+    }
+    setSelectedIds({});
+    setBulkMarking(false);
+  }
+
+  // Returns whether the override succeeded — bulkMarkPresent below needs
+  // that to count failures without changing this function's own
+  // catch-and-display-inline behavior for a single-row call.
+  async function markPresent(studentId: string): Promise<boolean> {
+    if (!openSessionId) return false;
     setOverrideError(null);
     setOverridingIds((prev) => ({ ...prev, [studentId]: true }));
     try {
@@ -40,8 +78,10 @@ export function ClassroomRoster({ classroomId, openSessionId }: { classroomId: s
         body: JSON.stringify({ studentId }),
       });
       await mutate();
+      return true;
     } catch (err) {
       setOverrideError(err instanceof ApiError ? err.message : t("classroomRoster.overrideError"));
+      return false;
     } finally {
       setOverridingIds((prev) => {
         const next = { ...prev };
@@ -96,7 +136,7 @@ export function ClassroomRoster({ classroomId, openSessionId }: { classroomId: s
 
   return (
     <div>
-      <div className="mb-3">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
         <Input
           placeholder={t("classroomRoster.searchPlaceholder")}
           value={q}
@@ -104,6 +144,11 @@ export function ClassroomRoster({ classroomId, openSessionId }: { classroomId: s
           className="max-w-xs"
           underline={false}
         />
+        {selectedCount > 0 && (
+          <Button variant="cyan" size="sm" loading={bulkMarking} onClick={bulkMarkPresent}>
+            {t("classroomRoster.bulkMarkPresent", { count: selectedCount })}
+          </Button>
+        )}
       </div>
 
       {overrideError && <p className="mb-3 text-sm text-shu-400">{overrideError}</p>}
@@ -140,6 +185,18 @@ export function ClassroomRoster({ classroomId, openSessionId }: { classroomId: s
             <table className="w-full text-left text-sm">
               <thead className="sticky top-0 bg-void-900/95 text-[11px] uppercase tracking-wider text-white/40">
                 <tr>
+                  {openSessionId && (
+                    <th className="px-4 py-2.5">
+                      <input
+                        type="checkbox"
+                        aria-label={t("classroomRoster.selectAll")}
+                        disabled={selectableIds.length === 0}
+                        checked={selectableIds.length > 0 && selectableIds.every((id) => selectedIds[id])}
+                        onChange={toggleSelectAll}
+                        className="h-4 w-4 rounded border-white/20 bg-void-900/80 accent-kehai-500"
+                      />
+                    </th>
+                  )}
                   <th className="px-4 py-2.5 font-medium">{t("classroomRoster.colName")}</th>
                   <th className="px-4 py-2.5 font-medium">{t("classroomRoster.colGradeYear")}</th>
                   <th className="px-4 py-2.5 font-medium">{t("classroomRoster.colEmail")}</th>
@@ -162,6 +219,9 @@ export function ClassroomRoster({ classroomId, openSessionId }: { classroomId: s
                     onToggle={() => setExpanded((cur) => (cur === row.student.id ? null : row.student.id))}
                     showTodayColumn={!!openSessionId}
                     canOverride={!!openSessionId && !row.checkedInOpenSession}
+                    selectable={!!openSessionId}
+                    selected={!!selectedIds[row.student.id]}
+                    onToggleSelected={() => toggleSelected(row.student.id)}
                     overriding={!!overridingIds[row.student.id]}
                     onMarkPresent={() => markPresent(row.student.id)}
                     confirmingRemove={confirmingRemoveId === row.student.id}
@@ -338,6 +398,9 @@ function RosterRowItem({
   onToggle,
   showTodayColumn,
   canOverride,
+  selectable,
+  selected,
+  onToggleSelected,
   overriding,
   onMarkPresent,
   confirmingRemove,
@@ -346,14 +409,27 @@ function RosterRowItem({
   onCancelRemove,
   changingGradeYear,
   onChangeGradeYear,
-}: RosterItemProps & { showTodayColumn: boolean }) {
+}: RosterItemProps & { showTodayColumn: boolean; selectable: boolean; selected: boolean; onToggleSelected: () => void }) {
   const { t } = useLocale();
   const { data: heatmap } = useClassroomHeatmap(expanded ? classroomId : undefined, row.student.id);
-  const actionsColSpan = showTodayColumn ? 9 : 8;
+  const actionsColSpan = showTodayColumn ? (selectable ? 10 : 9) : selectable ? 9 : 8;
 
   return (
     <>
       <tr className="cursor-pointer text-white/75 transition-colors hover:bg-white/[0.03]" onClick={onToggle}>
+        {selectable && (
+          <td className="px-4 py-2.5">
+            <input
+              type="checkbox"
+              aria-label={t("classroomRoster.selectRow", { name: row.student.name })}
+              disabled={!canOverride}
+              checked={selected}
+              onClick={(e) => e.stopPropagation()}
+              onChange={onToggleSelected}
+              className="h-4 w-4 rounded border-white/20 bg-void-900/80 accent-kehai-500 disabled:opacity-30"
+            />
+          </td>
+        )}
         <td className="px-4 py-2.5 font-medium text-white">{row.student.name}</td>
         <td className="px-4 py-2.5">
           <GradeYearSelect value={row.gradeYear} disabled={changingGradeYear} onChange={onChangeGradeYear} />
