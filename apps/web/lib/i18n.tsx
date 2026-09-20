@@ -730,6 +730,7 @@ const dict = {
     confirmDeleteSession: { en: "Delete for good?", ja: "完全に削除しますか？" },
     sessionDeleteError: { en: "Failed to delete the session", ja: "セッションの削除に失敗しました" },
     shareHeading: { en: "Share join access", ja: "参加コードの共有" },
+    addToCalendar: { en: "+ Add sessions to calendar", ja: "+ セッションをカレンダーに追加" },
     deleteClassroomLabel: { en: "Delete classroom", ja: "クラスを削除" },
     deleteClassroomHint: {
       en: "Permanently deletes this classroom and everything under it — its roster, sessions, and attendance history. This can't be undone.",

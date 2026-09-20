@@ -58,3 +58,53 @@ export async function generateEventIcs(eventId: string): Promise<{ filename: str
 function slug(s: string): string {
   return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "event";
 }
+
+// Classrooms don't have a fixed recurring schedule in this data model —
+// sessions are opened on demand by the teacher, not pre-scheduled to a
+// weekly day/time — so there's no future occurrence to compute an RRULE
+// from. What this exports instead is genuinely useful on its own: one
+// VEVENT per session that's actually happened, at its real opened→closed
+// time, so a student (or teacher) can pull the semester's actual class
+// times into their calendar as a record, re-importable at any point to
+// pick up newly-opened sessions since the last export.
+export async function generateClassroomIcs(classroomId: string): Promise<{ filename: string; content: string }> {
+  const classroom = await prisma.classroom.findUnique({ where: { id: classroomId } });
+  if (!classroom) throw HttpError.notFound("Classroom not found");
+
+  const sessions = await prisma.classSession.findMany({
+    where: { classroomId },
+    orderBy: { date: "asc" },
+    take: 1000,
+  });
+
+  const events = sessions.flatMap((s) => {
+    const start = s.openedAt;
+    // A still-open session (or one closed the instant it opened, which
+    // shouldn't normally happen but would otherwise produce a zero-length
+    // VEVENT some calendar apps render oddly) gets a nominal 1-hour block.
+    const end = s.closedAt && s.closedAt.getTime() > start.getTime() ? s.closedAt : new Date(start.getTime() + 3600_000);
+    return [
+      "BEGIN:VEVENT",
+      `UID:${s.id}@kehai-engine`,
+      `DTSTAMP:${toIcsDate(new Date())}`,
+      `DTSTART:${toIcsDate(start)}`,
+      `DTEND:${toIcsDate(end)}`,
+      `SUMMARY:${escapeIcsText(s.label || classroom.name)}`,
+      `URL:${env.WEB_ORIGIN}/classrooms/${classroomId}`,
+      "END:VEVENT",
+    ];
+  });
+
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Kehai Engine//Classroom Calendar//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    ...events,
+    "END:VCALENDAR",
+  ];
+
+  const content = lines.map(foldLine).join("\r\n") + "\r\n";
+  return { filename: `${slug(classroom.name)}.ics`, content };
+}

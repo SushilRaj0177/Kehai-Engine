@@ -16,6 +16,9 @@ import {
 } from "../validators/classroom.js";
 import * as classroomService from "../services/classroom.service.js";
 import { sendManualNudge } from "../services/nudge.service.js";
+import { generateClassroomIcs } from "../services/ics.service.js";
+import { canAccessClassroom } from "../realtime/socket.js";
+import { HttpError } from "../lib/http-error.js";
 import { env } from "../config/env.js";
 
 export const classroomRouter = Router();
@@ -276,6 +279,23 @@ classroomRouter.get(
   asyncHandler(async (req, res) => {
     const { cursor } = req.query as { cursor?: string };
     res.json(await classroomService.getClassroomAuditLog(req.params.classroomId, cursor));
+  })
+);
+
+// Teacher or enrolled student only — reuses the same membership check the
+// realtime layer enforces for joining a classroom's live room, since this
+// is the same trust boundary (real student names appear in session
+// labels/URLs a random authenticated user shouldn't get a calendar feed of).
+classroomRouter.get(
+  "/:classroomId/calendar.ics",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const allowed = await canAccessClassroom(req.user!.id, req.params.classroomId);
+    if (!allowed) throw HttpError.notFound("Classroom not found");
+    const { filename, content } = await generateClassroomIcs(req.params.classroomId);
+    res.setHeader("Content-Type", "text/calendar; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.send(content);
   })
 );
 

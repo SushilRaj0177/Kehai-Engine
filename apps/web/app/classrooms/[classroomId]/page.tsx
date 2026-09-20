@@ -18,6 +18,7 @@ import { ClassroomExportButtons } from "@/components/ExportButtons";
 import { AtRiskStudents } from "@/components/AtRiskStudents";
 import { AuditLogPanel } from "@/components/AuditLogPanel";
 import { BulkEnrollForm } from "@/components/BulkEnrollForm";
+import { ClassroomCalendarButton } from "@/components/ClassroomCalendarButton";
 import { MyAttendanceHistory } from "@/components/MyAttendanceHistory";
 import { AttendanceHeatmap } from "@/components/AttendanceHeatmap";
 import { SessionTrendChart } from "@/components/charts/SessionTrendChart";
@@ -144,6 +145,9 @@ export default function ClassroomDetailPage() {
                 <EditClassroomDetailsPanel classroom={classroom} onSaved={() => mutate()} />
               </div>
             )}
+            <div className="mt-3">
+              <ClassroomCalendarButton classroomId={classroomId} />
+            </div>
           </div>
 
           {!classroom.isTeacher && classroom.openSession && (
