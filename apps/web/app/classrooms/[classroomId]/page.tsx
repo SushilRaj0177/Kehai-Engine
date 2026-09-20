@@ -19,6 +19,7 @@ import { AtRiskStudents } from "@/components/AtRiskStudents";
 import { AuditLogPanel } from "@/components/AuditLogPanel";
 import { BulkEnrollForm } from "@/components/BulkEnrollForm";
 import { ClassroomCalendarButton } from "@/components/ClassroomCalendarButton";
+import { ClassroomLeaderboard } from "@/components/ClassroomLeaderboard";
 import { MyAttendanceHistory } from "@/components/MyAttendanceHistory";
 import { AttendanceHeatmap } from "@/components/AttendanceHeatmap";
 import { SessionTrendChart } from "@/components/charts/SessionTrendChart";
@@ -219,6 +220,15 @@ export default function ClassroomDetailPage() {
 
               <Card>
                 <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">
+                  {t("leaderboard.heading")}
+                </CardHeader>
+                <CardBody>
+                  <ClassroomLeaderboard classroomId={classroomId} />
+                </CardBody>
+              </Card>
+
+              <Card>
+                <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">
                   {t("auditLog.heading")}
                 </CardHeader>
                 <CardBody>
@@ -263,6 +273,15 @@ export default function ClassroomDetailPage() {
               </CardHeader>
               <CardBody>
                 <MyAttendanceHistory classroomId={classroomId} />
+              </CardBody>
+            </Card>
+
+            <Card>
+              <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">
+                {t("leaderboard.heading")}
+              </CardHeader>
+              <CardBody>
+                <ClassroomLeaderboard classroomId={classroomId} />
               </CardBody>
             </Card>
 

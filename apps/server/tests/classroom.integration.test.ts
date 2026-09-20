@@ -15,6 +15,7 @@ import {
   updateEnrollmentGradeYear,
   sortRosterBySeniority,
   bulkEnrollStudents,
+  getLeaderboard,
 } from "../src/services/classroom.service.js";
 
 let teacherId: string;
@@ -288,5 +289,72 @@ describe("bulk roster enrollment", () => {
     const shouted = bulkStudentEmail.toUpperCase();
     const result = await bulkEnrollStudents(classroomId, [shouted, shouted, bulkStudentEmail]);
     expect(result.enrolled).toEqual([bulkStudentEmail.toLowerCase()]);
+  });
+});
+
+describe("leaderboard", () => {
+  let boardClassroomId: string;
+  let keenStudentId: string;
+  let absentStudentId: string;
+
+  beforeAll(async () => {
+    const board = await createClassroom(teacherId, { name: "Leaderboard Test Classroom" });
+    boardClassroomId = board.id;
+
+    const keen = await prisma.user.create({
+      data: { name: "Keen Student", email: `keen-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
+    });
+    keenStudentId = keen.id;
+    const absent = await prisma.user.create({
+      data: { name: "Absent Student", email: `absent-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
+    });
+    absentStudentId = absent.id;
+    await prisma.enrollment.createMany({
+      data: [
+        { classroomId: boardClassroomId, studentId: keenStudentId },
+        { classroomId: boardClassroomId, studentId: absentStudentId },
+      ],
+    });
+
+    for (let i = 0; i < 2; i++) {
+      const session = await createSession(boardClassroomId, `Session ${i}`);
+      await manualOverrideClassAttendance(boardClassroomId, session.id, keenStudentId, teacherId);
+      await closeSession(boardClassroomId, session.id);
+    }
+  });
+
+  afterAll(async () => {
+    await prisma.classAttendance.deleteMany({ where: { enrollment: { classroomId: boardClassroomId } } });
+    await prisma.classSession.deleteMany({ where: { classroomId: boardClassroomId } });
+    await prisma.enrollment.deleteMany({ where: { classroomId: boardClassroomId } });
+    await prisma.classroom.delete({ where: { id: boardClassroomId } });
+    await prisma.user.deleteMany({ where: { id: { in: [keenStudentId, absentStudentId] } } });
+  });
+
+  it("ranks a perfect-attendance student above one with none, by current streak", async () => {
+    // Both sessions were opened back-to-back in this test, so they land on
+    // the same calendar day — streaks are computed per calendar day (see
+    // getLeaderboard's "attended at least one session that day" rule), so
+    // that's one streak-day, not two, even though two individual session
+    // attendance records exist (reflected in attendanceRate instead).
+    const board = await getLeaderboard(boardClassroomId);
+    expect(board).toHaveLength(2);
+    expect(board[0].student.id).toBe(keenStudentId);
+    expect(board[0].currentStreak).toBe(1);
+    expect(board[0].longestStreak).toBe(1);
+    expect(board[0].attendanceRate).toBe(1);
+
+    expect(board[1].student.id).toBe(absentStudentId);
+    expect(board[1].currentStreak).toBe(0);
+    expect(board[1].attendanceRate).toBe(0);
+  });
+
+  it("returns an empty board for a classroom with no sessions yet", async () => {
+    const empty = await createClassroom(teacherId, { name: "No Sessions Yet" });
+    await prisma.enrollment.create({ data: { classroomId: empty.id, studentId: keenStudentId } });
+    const board = await getLeaderboard(empty.id);
+    expect(board).toEqual([]);
+    await prisma.enrollment.deleteMany({ where: { classroomId: empty.id } });
+    await prisma.classroom.delete({ where: { id: empty.id } });
   });
 });

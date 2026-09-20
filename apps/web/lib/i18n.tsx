@@ -226,6 +226,10 @@ const dict = {
     role_ORGANIZER: { en: "Organizer", ja: "運営者" },
     role_VIEWER: { en: "Viewer", ja: "閲覧者" },
   },
+  leaderboard: {
+    heading: { en: "Streak leaderboard", ja: "連続出席ランキング" },
+    empty: { en: "No sessions yet — the board fills in once class starts meeting.", ja: "まだセッションがありません — クラスが始まるとランキングが表示されます。" },
+  },
   auditLog: {
     heading: { en: "Activity log", ja: "アクティビティログ" },
     empty: { en: "No activity yet.", ja: "まだアクティビティがありません。" },

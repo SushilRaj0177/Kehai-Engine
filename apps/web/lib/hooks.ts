@@ -14,6 +14,7 @@ import type {
   EventInsights,
   EventSummary,
   HeatmapResponse,
+  LeaderboardEntry,
   MyAttendanceRow,
   MyRegistration,
   Organization,
@@ -145,5 +146,11 @@ export function useClassroomHeatmap(id: string | undefined, studentId?: string) 
   const qs = studentId ? `?studentId=${encodeURIComponent(studentId)}` : "";
   return useSWR<HeatmapResponse>(id ? `/api/classrooms/${id}/heatmap${qs}` : null, fetcher, {
     refreshInterval: 10000,
+  });
+}
+
+export function useClassroomLeaderboard(id: string | undefined) {
+  return useSWR<LeaderboardEntry[]>(id ? `/api/classrooms/${id}/leaderboard` : null, fetcher, {
+    refreshInterval: 15000,
   });
 }

@@ -184,6 +184,16 @@ classroomRouter.get(
 );
 
 classroomRouter.get(
+  "/:classroomId/leaderboard",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const allowed = await canAccessClassroom(req.user!.id, req.params.classroomId);
+    if (!allowed) throw HttpError.notFound("Classroom not found");
+    res.json(await classroomService.getLeaderboard(req.params.classroomId));
+  })
+);
+
+classroomRouter.get(
   "/:classroomId/sessions",
   requireAuth,
   requireClassroomTeacher(),

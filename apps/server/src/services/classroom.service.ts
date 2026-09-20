@@ -546,6 +546,77 @@ export async function getHeatmap(
   };
 }
 
+export interface LeaderboardEntry {
+  student: { id: string; name: string; avatarUrl: string | null };
+  currentStreak: number;
+  longestStreak: number;
+  attendanceRate: number;
+}
+
+// A cohort-wide ranking, opt-in gamification for a class where students are
+// used to leaderboards (the STEP-program case) — reuses the exact same
+// "attended at least one session that day" day-bucketing and streak math
+// as getHeatmap's per-student scope, just computed for every enrolled
+// student in one batched pass instead of one Prisma round-trip per student.
+export async function getLeaderboard(classroomId: string): Promise<LeaderboardEntry[]> {
+  const classroom = await prisma.classroom.findUnique({ where: { id: classroomId } });
+  if (!classroom) throw HttpError.notFound("Classroom not found");
+
+  const [sessions, enrollments] = await Promise.all([
+    prisma.classSession.findMany({ where: { classroomId }, orderBy: { date: "asc" } }),
+    prisma.enrollment.findMany({
+      where: { classroomId },
+      include: { student: { select: { id: true, name: true, avatarUrl: true } } },
+    }),
+  ]);
+  if (sessions.length === 0 || enrollments.length === 0) return [];
+
+  const sessionsByDate = new Map<string, typeof sessions>();
+  for (const s of sessions) {
+    const key = toDateKey(s.date);
+    const bucket = sessionsByDate.get(key);
+    if (bucket) bucket.push(s);
+    else sessionsByDate.set(key, [s]);
+  }
+
+  const attendances = await prisma.classAttendance.findMany({
+    where: { sessionId: { in: sessions.map((s) => s.id) } },
+    select: { enrollmentId: true, sessionId: true },
+  });
+  const attendedSessionIdsByEnrollment = new Map<string, Set<string>>();
+  for (const a of attendances) {
+    const set = attendedSessionIdsByEnrollment.get(a.enrollmentId);
+    if (set) set.add(a.sessionId);
+    else attendedSessionIdsByEnrollment.set(a.enrollmentId, new Set([a.sessionId]));
+  }
+
+  const rangeStart = toUtcMidnight(sessions[0].date);
+  const rangeEnd = todayUtcMidnight();
+  const totalSessions = sessions.length;
+
+  const entries = enrollments.map((enrollment) => {
+    const attendedSessionIds = attendedSessionIdsByEnrollment.get(enrollment.id) ?? new Set<string>();
+    const streakDays: StreakDay[] = [];
+    let presentCount = 0;
+    for (const s of sessions) if (attendedSessionIds.has(s.id)) presentCount++;
+    for (let d = new Date(rangeStart); d <= rangeEnd; d.setUTCDate(d.getUTCDate() + 1)) {
+      const daySessions = sessionsByDate.get(toDateKey(d));
+      if (!daySessions?.length) continue;
+      const present = daySessions.some((s) => attendedSessionIds.has(s.id));
+      streakDays.push({ date: toDateKey(d), present });
+    }
+    const { currentStreak, longestStreak } = computeStreaks(streakDays);
+    return {
+      student: enrollment.student,
+      currentStreak,
+      longestStreak,
+      attendanceRate: totalSessions > 0 ? presentCount / totalSessions : 0,
+    };
+  });
+
+  return entries.sort((a, b) => b.currentStreak - a.currentStreak || b.longestStreak - a.longestStreak || b.attendanceRate - a.attendanceRate);
+}
+
 // A classroom can hold any number of sessions — a lecture and a separate
 // quiz on the same day, several sessions across a week, whatever the
 // teacher needs — each independently nameable and restartable. To keep

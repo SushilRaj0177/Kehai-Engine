@@ -232,3 +232,10 @@ export interface HeatmapResponse {
   currentStreak: number;
   longestStreak: number;
 }
+
+export interface LeaderboardEntry {
+  student: { id: string; name: string; avatarUrl: string | null };
+  currentStreak: number;
+  longestStreak: number;
+  attendanceRate: number;
+}
