@@ -57,6 +57,27 @@ export const updateGradeYearSchema = z.object({
   gradeYear: gradeYearEnum.nullable(),
 });
 
+export const bulkEnrollSchema = z.object({
+  // Accepts a raw pasted blob (newline/comma/semicolon/whitespace
+  // separated — however a coordinator's CSV export or copy-paste happens
+  // to be delimited) as well as an already-split array, so the frontend
+  // doesn't need to parse CSV itself.
+  emails: z.union([
+    z.array(z.string().trim().min(1)).min(1).max(1000),
+    z
+      .string()
+      .min(1)
+      .transform((raw) =>
+        raw
+          .split(/[\s,;]+/)
+          .map((e) => e.trim())
+          .filter(Boolean)
+      )
+      .refine((arr) => arr.length > 0 && arr.length <= 1000, { message: "Provide between 1 and 1000 email addresses" }),
+  ]),
+  gradeYear: gradeYearEnum.optional(),
+});
+
 export const createSessionSchema = z.object({
   label: z.string().trim().max(60).optional(),
 });

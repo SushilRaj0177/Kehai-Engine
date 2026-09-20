@@ -12,6 +12,7 @@ import {
   classCheckInSchema,
   classAttendanceOverrideSchema,
   updateGradeYearSchema,
+  bulkEnrollSchema,
 } from "../validators/classroom.js";
 import * as classroomService from "../services/classroom.service.js";
 import { sendManualNudge } from "../services/nudge.service.js";
@@ -132,6 +133,17 @@ classroomRouter.delete(
   asyncHandler(async (req, res) => {
     await classroomService.removeStudent(req.params.classroomId, req.params.studentId);
     res.status(204).end();
+  })
+);
+
+classroomRouter.post(
+  "/:classroomId/students/bulk",
+  requireAuth,
+  requireClassroomTeacher(),
+  asyncHandler(async (req, res) => {
+    const { emails, gradeYear } = bulkEnrollSchema.parse(req.body);
+    const result = await classroomService.bulkEnrollStudents(req.params.classroomId, emails, gradeYear);
+    res.status(201).json(result);
   })
 );
 

@@ -262,6 +262,48 @@ export async function getClassroomDetail(classroomId: string, userId: string) {
 // reasons: a student added by mistake or who dropped the class shouldn't
 // leave an orphaned attendance history behind, and the frontend gates this
 // behind its own confirmation step before calling it.
+// A teacher onboarding a whole cohort at once (the STEP program case: a
+// coordinator with a roster of hundreds, not the one-student-at-a-time
+// join-code flow every other enrollment path uses). Mirrors inviteMember's
+// convention for org invites: a student must already have an account —
+// this never creates one — so an unmatched email comes back in
+// `notFound` rather than silently creating a shell account nobody's
+// verified. Never throws on a partial failure; the whole point is
+// processing a list where some rows will be wrong (typos, students who
+// haven't signed up yet) without losing the rows that are right.
+export async function bulkEnrollStudents(classroomId: string, emails: string[], gradeYear?: GradeYear) {
+  const classroom = await prisma.classroom.findUnique({ where: { id: classroomId } });
+  if (!classroom) throw HttpError.notFound("Classroom not found");
+
+  const normalized = [...new Set(emails.map((e) => e.trim().toLowerCase()).filter(Boolean))];
+  const users = await prisma.user.findMany({ where: { email: { in: normalized } } });
+  const byEmail = new Map(users.map((u) => [u.email.toLowerCase(), u]));
+
+  const enrolled: string[] = [];
+  const alreadyEnrolled: string[] = [];
+  const notFound: string[] = [];
+
+  for (const email of normalized) {
+    const user = byEmail.get(email);
+    if (!user) {
+      notFound.push(email);
+      continue;
+    }
+    try {
+      await prisma.enrollment.create({ data: { classroomId, studentId: user.id, gradeYear } });
+      enrolled.push(email);
+    } catch (err: any) {
+      if (err?.code === "P2002") {
+        alreadyEnrolled.push(email);
+      } else {
+        throw err;
+      }
+    }
+  }
+
+  return { enrolled, alreadyEnrolled, notFound };
+}
+
 export async function removeStudent(classroomId: string, studentId: string) {
   const enrollment = await prisma.enrollment.findUnique({
     where: { classroomId_studentId: { classroomId, studentId } },

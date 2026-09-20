@@ -678,6 +678,22 @@ const dict = {
       ja: "先生から伝えられた6文字のコードを入力してください。",
     },
   },
+  bulkEnroll: {
+    label: { en: "Bulk-add students by email", ja: "メールアドレスで学生を一括追加" },
+    placeholder: { en: "One email per line, or paste a comma-separated list", ja: "1行に1つ、またはカンマ区切りで貼り付け" },
+    hint: {
+      en: "Each student must already have a Kehai Engine account — this adds them to the roster, it doesn't create accounts.",
+      ja: "各学生は事前にKehai Engineのアカウントを作成している必要があります — このフォームは名簿への追加のみを行い、アカウントは作成しません。",
+    },
+    submit: { en: "Add to roster", ja: "名簿に追加" },
+    error: { en: "Bulk enrollment failed — try again.", ja: "一括登録に失敗しました。もう一度お試しください。" },
+    enrolledCount: { en: "{count} added to the roster.", ja: "{count} 名を名簿に追加しました。" },
+    alreadyEnrolledCount: { en: "{count} were already enrolled.", ja: "{count} 名はすでに登録済みでした。" },
+    notFoundCount: {
+      en: "{count} have no account yet — they need to sign up first:",
+      ja: "{count} 名はまだアカウントがありません — 先にサインアップが必要です：",
+    },
+  },
   classroomDetail: {
     notFoundTitle: { en: "Classroom not found", ja: "クラスが見つかりません" },
     notFoundDescription: {

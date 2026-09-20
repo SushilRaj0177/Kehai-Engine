@@ -14,6 +14,7 @@ import {
   getRoster,
   updateEnrollmentGradeYear,
   sortRosterBySeniority,
+  bulkEnrollStudents,
 } from "../src/services/classroom.service.js";
 
 let teacherId: string;
@@ -243,5 +244,49 @@ describe("grade year (学年)", () => {
     const sorted = sortRosterBySeniority(input);
     expect(sorted[0].student.name).toBe("B");
     expect(input[0].gradeYear).toBe("YEAR_1"); // original order untouched
+  });
+});
+
+describe("bulk roster enrollment", () => {
+  let bulkStudentId: string;
+  let bulkStudentEmail: string;
+
+  beforeAll(async () => {
+    const bulkStudent = await prisma.user.create({
+      data: { name: "Bulk Student", email: `bulk-student-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
+    });
+    bulkStudentId = bulkStudent.id;
+    bulkStudentEmail = bulkStudent.email;
+  });
+
+  afterAll(async () => {
+    await prisma.enrollment.deleteMany({ where: { classroomId, studentId: bulkStudentId } });
+    await prisma.user.delete({ where: { id: bulkStudentId } });
+  });
+
+  it("enrolls existing users by email and reports ones with no account", async () => {
+    const result = await bulkEnrollStudents(classroomId, [bulkStudentEmail, "nobody-at-all@example.com"]);
+    expect(result.enrolled).toEqual([bulkStudentEmail.toLowerCase()]);
+    expect(result.notFound).toEqual(["nobody-at-all@example.com"]);
+    expect(result.alreadyEnrolled).toEqual([]);
+
+    const enrollment = await prisma.enrollment.findUnique({ where: { classroomId_studentId: { classroomId, studentId: bulkStudentId } } });
+    expect(enrollment).toBeTruthy();
+  });
+
+  it("reports an already-enrolled email instead of throwing, and doesn't duplicate the enrollment", async () => {
+    const result = await bulkEnrollStudents(classroomId, [bulkStudentEmail]);
+    expect(result.alreadyEnrolled).toEqual([bulkStudentEmail.toLowerCase()]);
+    expect(result.enrolled).toEqual([]);
+
+    const count = await prisma.enrollment.count({ where: { classroomId, studentId: bulkStudentId } });
+    expect(count).toBe(1);
+  });
+
+  it("de-duplicates repeated emails in the same call and normalizes case", async () => {
+    await prisma.enrollment.deleteMany({ where: { classroomId, studentId: bulkStudentId } });
+    const shouted = bulkStudentEmail.toUpperCase();
+    const result = await bulkEnrollStudents(classroomId, [shouted, shouted, bulkStudentEmail]);
+    expect(result.enrolled).toEqual([bulkStudentEmail.toLowerCase()]);
   });
 });

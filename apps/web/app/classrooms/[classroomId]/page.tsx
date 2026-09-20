@@ -17,6 +17,7 @@ import { ClassroomRoster } from "@/components/ClassroomRoster";
 import { ClassroomExportButtons } from "@/components/ExportButtons";
 import { AtRiskStudents } from "@/components/AtRiskStudents";
 import { AuditLogPanel } from "@/components/AuditLogPanel";
+import { BulkEnrollForm } from "@/components/BulkEnrollForm";
 import { MyAttendanceHistory } from "@/components/MyAttendanceHistory";
 import { AttendanceHeatmap } from "@/components/AttendanceHeatmap";
 import { SessionTrendChart } from "@/components/charts/SessionTrendChart";
@@ -227,6 +228,15 @@ export default function ClassroomDetailPage() {
                 </CardHeader>
                 <CardBody>
                   <ShareJoinCode classroomId={classroomId} joinCode={classroom.joinCode} onRegenerated={() => mutate()} />
+                </CardBody>
+              </Card>
+
+              <Card>
+                <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">
+                  {t("bulkEnroll.label")}
+                </CardHeader>
+                <CardBody>
+                  <BulkEnrollForm classroomId={classroomId} onEnrolled={() => mutateRoster()} />
                 </CardBody>
               </Card>
 
