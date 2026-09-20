@@ -18,6 +18,7 @@ import { classroomRouter } from "./routes/classroom.routes.js";
 import { notificationsRouter } from "./routes/notifications.routes.js";
 import { auditRouter } from "./routes/audit.routes.js";
 import { prisma } from "./lib/prisma.js";
+import { requestId } from "./middleware/requestId.js";
 
 // WEB_ORIGIN is pasted by hand into the hosting dashboard, so tolerate a
 // trailing slash or stray whitespace instead of failing an exact string
@@ -39,6 +40,7 @@ export function createApp() {
   const app = express();
 
   app.set("trust proxy", 1);
+  app.use(requestId);
   app.use(helmet());
   app.use(
     cors({
@@ -53,7 +55,17 @@ export function createApp() {
   );
   app.use(compression());
   app.use(express.json({ limit: "1mb" }));
-  app.use(morgan(isProd ? "combined" : "dev"));
+  // Tags every access-log line with the same id the error handler logs on
+  // failure — the only way to connect the two for a specific request.
+  // morgan's built-in "combined"/"dev" formats are named presets, not
+  // strings that can be composed, so the request id is appended by
+  // spelling out "combined"'s own format (from morgan's docs) rather than
+  // losing the standard combined-log fields "dev" doesn't have in prod.
+  morgan.token("reqid", (req) => (req as express.Request).id);
+  const morganFormat = isProd
+    ? ':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent" reqid=:reqid'
+    : ":method :url :status :response-time ms reqid=:reqid";
+  app.use(morgan(morganFormat));
   app.use(apiRateLimit);
 
   // Render uses this as its healthCheckPath to decide whether to route

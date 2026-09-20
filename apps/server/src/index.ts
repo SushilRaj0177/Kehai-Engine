@@ -3,13 +3,17 @@ import { createApp } from "./app.js";
 import { env } from "./config/env.js";
 import { initRealtime } from "./realtime/socket.js";
 import { startScheduler } from "./jobs/scheduler.js";
+import { logger } from "./lib/logger.js";
+import { initErrorTracking, captureException } from "./lib/errorTracking.js";
+
+initErrorTracking();
 
 const app = createApp();
 const httpServer = createServer(app);
 initRealtime(httpServer);
 
 httpServer.listen(env.PORT, () => {
-  console.log(`Kehai Engine API listening on :${env.PORT} (${env.NODE_ENV})`);
+  logger.info(`Kehai Engine API listening on :${env.PORT} (${env.NODE_ENV})`);
 });
 
 startScheduler();
@@ -26,8 +30,10 @@ process.on("SIGINT", () => httpServer.close(() => process.exit(0)));
 // instead of crashing keeps one bad request from taking the whole service
 // down for everyone else.
 process.on("unhandledRejection", (reason) => {
-  console.error("Unhandled promise rejection:", reason);
+  logger.error("Unhandled promise rejection", { reason: String(reason) });
+  captureException(reason);
 });
 process.on("uncaughtException", (err) => {
-  console.error("Uncaught exception:", err);
+  logger.error("Uncaught exception", { err: String(err) });
+  captureException(err);
 });

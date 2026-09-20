@@ -42,6 +42,11 @@ const envSchema = z.object({
 
   RESEND_API_KEY: z.string().optional().default(""),
   RESEND_FROM_EMAIL: z.string().default("Kehai Engine <onboarding@resend.dev>"),
+
+  // Optional. Unset by default — error tracking is a no-op until this is
+  // provided (see lib/errorTracking.ts), never a hard requirement to run
+  // the app locally or self-hosted.
+  SENTRY_DSN: z.string().optional().default(""),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -57,3 +62,4 @@ export const isProd = env.NODE_ENV === "production";
 export const aiEnabled = env.GROQ_API_KEY.length > 0;
 export const emailEnabled = env.RESEND_API_KEY.length > 0;
 export const googleAuthEnabled = env.GOOGLE_CLIENT_ID.length > 0;
+export const errorTrackingEnabled = env.SENTRY_DSN.length > 0;
