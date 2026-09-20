@@ -11,6 +11,28 @@ const nextConfig = {
   // run a single server.js the way standalone output expects, so skip it
   // there (Vercel sets process.env.VERCEL during its builds).
   output: process.env.VERCEL ? undefined : "standalone",
+  // No middleware.ts (this whole app is client-rendered, every page is "use
+  // client"), so there's no nonce plumbing available for a strict
+  // script-src — that would need per-request middleware to inject one.
+  // These headers still close the cheap, real gaps: clickjacking (the QR
+  // check-in and classroom-QR kiosk display pages are exactly the kind of
+  // page you don't want framable), MIME-sniffing, referrer leakage, and an
+  // unused-permissions surface (camera is needed for the QR scanner, so
+  // it's scoped to same-origin rather than denied outright).
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(self), geolocation=(self), microphone=(), payment=(), usb=()" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none'; base-uri 'self'; object-src 'none'" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

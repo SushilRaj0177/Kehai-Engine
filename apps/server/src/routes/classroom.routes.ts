@@ -2,7 +2,7 @@ import { Router } from "express";
 import QRCode from "qrcode";
 import { asyncHandler } from "../middleware/error.js";
 import { requireAuth, requireClassroomTeacher } from "../middleware/auth.js";
-import { attendanceRateLimit } from "../middleware/rateLimit.js";
+import { attendanceRateLimit, joinCodeRateLimit } from "../middleware/rateLimit.js";
 import {
   createClassroomSchema,
   updateClassroomSchema,
@@ -51,6 +51,7 @@ classroomRouter.get(
 classroomRouter.post(
   "/join",
   requireAuth,
+  joinCodeRateLimit,
   asyncHandler(async (req, res) => {
     const { code, gradeYear } = joinClassroomSchema.parse(req.body);
     const result = await classroomService.joinClassroom(code, req.user!.id, gradeYear);

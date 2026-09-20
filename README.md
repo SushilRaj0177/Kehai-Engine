@@ -380,6 +380,14 @@ server's Docker `CMD`). Any standard container host (Fly.io, Railway,
 Render, a VPS) works — there is no dependency on a specific platform's
 proprietary services.
 
+`JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, and `QR_SIGNING_PEPPER` have no
+default in `docker-compose.yml` on purpose — they sign every auth token and
+every QR check-in token, so a convenient fallback would mean anyone reading
+this public repo could forge them against a deployment that forgot to set
+its own. Put real generated values (`openssl rand -hex 32`) in a `.env`
+file next to `docker-compose.yml` (compose reads it automatically) before
+running it — `docker compose up` refuses to start otherwise.
+
 ```bash
 docker compose up --build
 ```
