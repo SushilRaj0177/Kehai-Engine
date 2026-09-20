@@ -87,8 +87,13 @@ export function useOrgMembers(orgId: string | undefined) {
   return useSWR<OrgMember[]>(orgId ? `/api/orgs/${orgId}/members` : null, fetcher);
 }
 
-export function useOrgAuditLog(orgId: string | undefined) {
-  return useSWR<AuditLogEntry[]>(orgId ? `/api/orgs/${orgId}/audit-log` : null, fetcher);
+export interface AuditLogPage {
+  entries: AuditLogEntry[];
+  nextCursor: string | null;
+}
+
+export function useOrgAuditLogActions(orgId: string | undefined) {
+  return useSWR<string[]>(orgId ? `/api/orgs/${orgId}/audit-log/actions` : null, fetcher);
 }
 
 export function useMyClassrooms() {
@@ -103,9 +108,6 @@ export function useClassroom(id: string | undefined) {
   return useSWR<ClassroomDetail>(id ? `/api/classrooms/${id}` : null, fetcher);
 }
 
-export function useClassroomAuditLog(classroomId: string | undefined) {
-  return useSWR<AuditLogEntry[]>(classroomId ? `/api/classrooms/${classroomId}/audit-log` : null, fetcher);
-}
 
 export interface AuditChainStatus {
   valid: boolean;

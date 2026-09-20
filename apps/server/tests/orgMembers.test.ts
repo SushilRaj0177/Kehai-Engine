@@ -146,7 +146,7 @@ describe("organization audit log", () => {
     await removeMember(orgId, removable.id, ownerId, "OWNER");
 
     const log = await getAuditLog(orgId);
-    const entry = log.find((e) => e.action === "member.removed" && (e.metadata as any)?.removedUserId === removable.id);
+    const entry = log.entries.find((e) => e.action === "member.removed" && (e.metadata as any)?.removedUserId === removable.id);
     expect(entry).toBeTruthy();
     expect(entry?.actor?.id).toBe(ownerId);
     expect((entry?.metadata as any)?.removedRole).toBe("VIEWER");

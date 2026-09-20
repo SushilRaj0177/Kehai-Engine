@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import crypto from "node:crypto";
 import { prisma } from "../src/lib/prisma.js";
 import { appendAuditLog, verifyAuditLogChain } from "../src/utils/auditLog.js";
+import { getAuditLog, getAuditLogActions } from "../src/services/org.service.js";
 
 // Other test files run concurrently against the same database and also
 // write real AuditLog rows through their own normal flows (checking a
@@ -85,5 +86,43 @@ describe("appendAuditLog / verifyAuditLogChain", () => {
     // attempt wouldn't get cleaned up either, and afterAll's org-scoped
     // delete removes it along with the rest of this file's rows once no
     // more verify() calls in this file depend on the chain being clean.
+  });
+});
+
+describe("getAuditLog pagination and filtering", () => {
+  it("returns every written row exactly once, newest first", async () => {
+    const scopeOrg = await prisma.organization.create({ data: { name: "Audit Page Org", slug: `audit-page-${crypto.randomUUID()}` } });
+    const written = [];
+    for (let i = 0; i < 5; i++) {
+      written.push(await appendAuditLog({ organizationId: scopeOrg.id, actorUserId: actorId, action: `test.page.${i}` }));
+    }
+
+    const result = await getAuditLog(scopeOrg.id);
+    expect(result.entries.map((e) => e.id)).toEqual(written.map((e) => e.id).reverse());
+    expect(result.nextCursor).toBeNull();
+
+    // The cursor a second page would start from is the last row of this
+    // page — exercised directly since 5 rows never exceed one page size.
+    const nextPage = await getAuditLog(scopeOrg.id, { cursor: result.entries[result.entries.length - 1].id });
+    expect(nextPage.entries).toHaveLength(0);
+
+    await prisma.auditLog.deleteMany({ where: { organizationId: scopeOrg.id } });
+    await prisma.organization.delete({ where: { id: scopeOrg.id } });
+  });
+
+  it("filters by action", async () => {
+    const scopeOrg = await prisma.organization.create({ data: { name: "Audit Filter Org", slug: `audit-filter-${crypto.randomUUID()}` } });
+    await appendAuditLog({ organizationId: scopeOrg.id, actorUserId: actorId, action: "test.filter.a" });
+    await appendAuditLog({ organizationId: scopeOrg.id, actorUserId: actorId, action: "test.filter.b" });
+
+    const result = await getAuditLog(scopeOrg.id, { action: "test.filter.a" });
+    expect(result.entries).toHaveLength(1);
+    expect(result.entries[0].action).toBe("test.filter.a");
+
+    const actions = await getAuditLogActions(scopeOrg.id);
+    expect(actions.sort()).toEqual(["test.filter.a", "test.filter.b"]);
+
+    await prisma.auditLog.deleteMany({ where: { organizationId: scopeOrg.id } });
+    await prisma.organization.delete({ where: { id: scopeOrg.id } });
   });
 });

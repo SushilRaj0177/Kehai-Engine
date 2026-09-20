@@ -119,6 +119,7 @@ export async function listMyClassrooms(teacherId: string) {
     where: { teacherId },
     orderBy: { createdAt: "desc" },
     include: { _count: { select: { enrollments: true, sessions: true } } },
+    take: 200,
   });
 
   return classrooms.map((c) => ({
@@ -140,6 +141,7 @@ export async function listEnrolledClassrooms(studentId: string) {
     where: { studentId },
     include: { classroom: { include: { teacher: { select: { name: true } } } } },
     orderBy: { createdAt: "desc" },
+    take: 200,
   });
   if (enrollments.length === 0) return [];
 
@@ -283,6 +285,7 @@ export async function getRoster(classroomId: string) {
   const enrollments = await prisma.enrollment.findMany({
     where: { classroomId },
     include: { student: { select: { id: true, name: true, email: true, avatarUrl: true } } },
+    take: 1000,
   });
 
   const [sessions, openSession] = await Promise.all([
@@ -861,13 +864,19 @@ export async function manualOverrideClassAttendance(classroomId: string, session
   return attendance;
 }
 
-export async function getClassroomAuditLog(classroomId: string) {
-  return prisma.auditLog.findMany({
+const CLASSROOM_AUDIT_LOG_PAGE_SIZE = 50;
+
+export async function getClassroomAuditLog(classroomId: string, cursor?: string) {
+  const entries = await prisma.auditLog.findMany({
     where: { classroomId },
     orderBy: { createdAt: "desc" },
-    take: 100,
+    take: CLASSROOM_AUDIT_LOG_PAGE_SIZE + 1,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     include: {
       actor: { select: { id: true, name: true, email: true } },
     },
   });
+  const hasMore = entries.length > CLASSROOM_AUDIT_LOG_PAGE_SIZE;
+  const page = hasMore ? entries.slice(0, CLASSROOM_AUDIT_LOG_PAGE_SIZE) : entries;
+  return { entries: page, nextCursor: hasMore ? page[page.length - 1].id : null };
 }

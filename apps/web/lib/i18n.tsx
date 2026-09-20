@@ -235,6 +235,8 @@ const dict = {
     classAttendanceOverride: { en: "{actor} manually marked a student present", ja: "{actor} が学生を手動で出席登録しました" },
     registrationRemoved: { en: "{actor} removed a registration from {event}", ja: "{actor} が {event} の登録を削除しました" },
     memberRemoved: { en: "{actor} removed a {role} from the team", ja: "{actor} がチームから {role} を削除しました" },
+    allActions: { en: "All actions", ja: "すべてのアクション" },
+    loadMore: { en: "Load more", ja: "さらに読み込む" },
   },
   eventControl: {
     live: { en: "Live", ja: "ライブ" },

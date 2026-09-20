@@ -124,6 +124,15 @@ orgRouter.get(
   "/:orgId/audit-log",
   requireOrgRole("ADMIN"),
   asyncHandler(async (req, res) => {
-    res.json(await orgService.getAuditLog(req.params.orgId));
+    const { action, actorUserId, cursor } = req.query as { action?: string; actorUserId?: string; cursor?: string };
+    res.json(await orgService.getAuditLog(req.params.orgId, { action, actorUserId, cursor }));
+  })
+);
+
+orgRouter.get(
+  "/:orgId/audit-log/actions",
+  requireOrgRole("ADMIN"),
+  asyncHandler(async (req, res) => {
+    res.json(await orgService.getAuditLogActions(req.params.orgId));
   })
 );

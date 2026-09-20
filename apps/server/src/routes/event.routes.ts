@@ -21,6 +21,10 @@ eventRouter.get(
         organization: { select: { id: true, name: true, slug: true } },
         _count: { select: { registrations: true, attendances: true } },
       },
+      // Public, unauthenticated discovery feed with no filter — bounded so
+      // it can't grow into an unbounded query as the platform accumulates
+      // events across every organization that's ever used it.
+      take: 200,
     });
     // This page's own heading promises "live right now" — a plain
     // soonest-first sort broke that promise by letting a PUBLISHED event
@@ -48,6 +52,7 @@ eventRouter.get(
         attendance: true,
       },
       orderBy: { event: { startsAt: "desc" } },
+      take: 500,
     });
 
     res.json(
@@ -184,6 +189,7 @@ eventRouter.get(
       },
       include: { user: { select: { id: true, name: true, email: true, avatarUrl: true } }, attendance: true },
       orderBy: { createdAt: "asc" },
+      take: 1000,
     });
 
     const filtered = registrations.filter((r) => {

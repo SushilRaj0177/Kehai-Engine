@@ -262,7 +262,8 @@ classroomRouter.get(
   requireAuth,
   requireClassroomTeacher(),
   asyncHandler(async (req, res) => {
-    res.json(await classroomService.getClassroomAuditLog(req.params.classroomId));
+    const { cursor } = req.query as { cursor?: string };
+    res.json(await classroomService.getClassroomAuditLog(req.params.classroomId, cursor));
   })
 );
 

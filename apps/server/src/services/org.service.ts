@@ -109,17 +109,44 @@ export async function removeMember(organizationId: string, userId: string, calle
   });
 }
 
-export async function getAuditLog(organizationId: string) {
+export interface AuditLogQuery {
+  action?: string;
+  actorUserId?: string;
+  cursor?: string;
+}
+
+const AUDIT_LOG_PAGE_SIZE = 50;
+
+export async function getAuditLog(organizationId: string, query: AuditLogQuery = {}) {
   const entries = await prisma.auditLog.findMany({
-    where: { organizationId },
+    where: {
+      organizationId,
+      ...(query.action ? { action: query.action } : {}),
+      ...(query.actorUserId ? { actorUserId: query.actorUserId } : {}),
+    },
     orderBy: { createdAt: "desc" },
-    take: 100,
+    take: AUDIT_LOG_PAGE_SIZE + 1,
+    ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
     include: {
       actor: { select: { id: true, name: true, email: true } },
       event: { select: { id: true, name: true } },
     },
   });
-  return entries;
+  const hasMore = entries.length > AUDIT_LOG_PAGE_SIZE;
+  const page = hasMore ? entries.slice(0, AUDIT_LOG_PAGE_SIZE) : entries;
+  return { entries: page, nextCursor: hasMore ? page[page.length - 1].id : null };
+}
+
+// Distinct action strings this org's log actually contains, for populating
+// a filter dropdown without hardcoding the list of every possible action.
+export async function getAuditLogActions(organizationId: string) {
+  const rows = await prisma.auditLog.findMany({
+    where: { organizationId },
+    distinct: ["action"],
+    select: { action: true },
+    orderBy: { action: "asc" },
+  });
+  return rows.map((r) => r.action);
 }
 
 // Plain "newest first" buried the one event an organizer most likely opened
@@ -140,6 +167,9 @@ export async function listOrgEvents(organizationId: string) {
   const events = await prisma.event.findMany({
     where: { organizationId },
     include: { _count: { select: { registrations: true, attendances: true } } },
+    // Bounded so an org with years of event history doesn't turn this into
+    // an unbounded query — 500 events is generous for any club/program.
+    take: 500,
   });
 
   return events.sort((a, b) => {
