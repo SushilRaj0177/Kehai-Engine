@@ -17,6 +17,7 @@ import { qrRouter } from "./routes/qr.routes.js";
 import { classroomRouter } from "./routes/classroom.routes.js";
 import { notificationsRouter } from "./routes/notifications.routes.js";
 import { auditRouter } from "./routes/audit.routes.js";
+import { prisma } from "./lib/prisma.js";
 
 // WEB_ORIGIN is pasted by hand into the hosting dashboard, so tolerate a
 // trailing slash or stray whitespace instead of failing an exact string
@@ -55,7 +56,27 @@ export function createApp() {
   app.use(morgan(isProd ? "combined" : "dev"));
   app.use(apiRateLimit);
 
-  app.get("/health", (_req, res) => res.json({ status: "ok", service: "kehai-engine-api" }));
+  // Render uses this as its healthCheckPath to decide whether to route
+  // traffic to (and keep alive) this instance — a health check that
+  // always returns "ok" would keep sending real requests to an instance
+  // that can't actually serve any of them if the database is unreachable
+  // (network partition, exhausted connection pool, rotated credentials).
+  // Bounded so a slow-but-not-dead database doesn't hang the check itself.
+  app.get("/health", async (_req, res) => {
+    try {
+      await Promise.race([
+        prisma.$queryRaw`SELECT 1`,
+        new Promise((_, reject) => setTimeout(() => reject(new Error("db health check timed out")), 3000)),
+      ]);
+      res.json({ status: "ok", service: "kehai-engine-api" });
+    } catch (err) {
+      res.status(503).json({
+        status: "error",
+        service: "kehai-engine-api",
+        detail: "database unreachable",
+      });
+    }
+  });
 
   app.use("/api/auth", authRouter);
   app.use("/api/orgs", orgRouter);

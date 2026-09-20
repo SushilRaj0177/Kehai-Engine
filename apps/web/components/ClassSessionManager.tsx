@@ -202,6 +202,7 @@ export function ClassSessionManager({
         <ClassSessionQrPanel
           classroomId={classroomId}
           sessionId={openSession.id}
+          sessionLabel={openSession.label ?? t("classroomDetail.untitledSession")}
           onEndSession={() => closeSession(openSession.id)}
           ending={!!busySessionIds[openSession.id]}
         />

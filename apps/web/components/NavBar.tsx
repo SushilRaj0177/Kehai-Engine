@@ -124,7 +124,7 @@ export function NavBar() {
               Desktop (sm and up) never renders this button at all. */}
           <button
             type="button"
-            aria-label="Menu"
+            aria-label={t("nav.menu")}
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((v) => !v)}
             className="ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/70 sm:hidden"
@@ -186,6 +186,7 @@ function MobileMenuLink({ href, onNavigate, children }: { href: string; onNaviga
 }
 
 function LocaleSwitch({ locale, onToggle }: { locale: "en" | "ja"; onToggle: () => void }) {
+  const { t } = useLocale();
   const isJa = locale === "ja";
   const trackRef = useRef<HTMLButtonElement>(null);
   const thumbRef = useRef<HTMLSpanElement>(null);
@@ -234,7 +235,7 @@ function LocaleSwitch({ locale, onToggle }: { locale: "en" | "ja"; onToggle: () 
       ref={trackRef}
       type="button"
       onClick={onToggle}
-      aria-label="Toggle language"
+      aria-label={t("nav.toggleLanguage")}
       aria-pressed={isJa}
       className="relative mr-1 h-8 w-20 shrink-0 rounded-full border border-white/10 bg-white/[0.04] transition-colors hover:border-white/20 sm:h-9 sm:w-[132px]"
     >

@@ -16,6 +16,8 @@ const dict = {
     signIn: { en: "Sign in", ja: "ログイン" },
     signOut: { en: "Sign out", ja: "ログアウト" },
     getStarted: { en: "Get started", ja: "はじめる" },
+    menu: { en: "Menu", ja: "メニュー" },
+    toggleLanguage: { en: "Toggle language", ja: "言語を切り替える" },
   },
   hero: {
     badge: { en: "Attendance & event intelligence platform", ja: "出席・イベントインテリジェンス・プラットフォーム" },
@@ -599,6 +601,7 @@ const dict = {
   exportButtons: {
     csv: { en: "Export CSV", ja: "CSVをエクスポート" },
     excel: { en: "Export Excel", ja: "Excelをエクスポート" },
+    error: { en: "Export failed — try again.", ja: "エクスポートに失敗しました。もう一度お試しください。" },
   },
   chart: {
     empty: { en: "No check-ins recorded yet.", ja: "まだチェックインが記録されていません。" },
@@ -1049,6 +1052,14 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
     if (navigator.language?.toLowerCase().startsWith("ja")) setLocale("ja");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // <html lang> stayed hardcoded to "en" (set server-side in layout.tsx)
+  // regardless of the active locale — screen readers and browser
+  // translation/pronunciation kept treating the whole page as English even
+  // after switching to 日本語. Runs on every locale change, not just once.
+  useLayoutEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
 
   const value = useMemo<LocaleState>(
     () => ({

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/Button";
@@ -12,13 +12,14 @@ import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
 import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { useAuth } from "@/lib/auth-context";
-import { ApiError } from "@/lib/api";
+import { ApiError, safeInternalPath } from "@/lib/api";
 import { useLocale } from "@/lib/i18n";
 
 export default function LoginPage() {
   const { t } = useLocale();
   const { login } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +31,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(email, password);
-      router.push("/dashboard");
+      router.push(safeInternalPath(searchParams.get("next")) ?? "/dashboard");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t("auth.genericError"));
     } finally {

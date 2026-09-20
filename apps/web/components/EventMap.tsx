@@ -5,10 +5,15 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
 // Default Leaflet marker icons reference bundled assets that don't resolve
-// under Next.js's asset pipeline — point them at the CDN copies instead.
+// under Next.js's asset pipeline — self-hosted copies in public/leaflet/
+// (copied from the installed leaflet package) instead of hotlinking
+// unpkg.com, which made every map render depend on a third-party CDN
+// being up and reachable, and it isn't cacheable the same way a same-origin
+// asset is.
 const icon = L.icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconUrl: "/leaflet/marker-icon.png",
+  iconRetinaUrl: "/leaflet/marker-icon-2x.png",
+  shadowUrl: "/leaflet/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
 });

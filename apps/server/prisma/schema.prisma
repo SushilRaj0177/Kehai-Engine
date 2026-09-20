@@ -276,6 +276,11 @@ model AttendanceRecord {
 
   @@unique([eventId, userId])
   @@index([eventId, checkedInAt])
+  // Backs the impossible-travel fraud check (utils/fraud.ts via
+  // attendance.service.ts), which looks up a user's most recent check-in
+  // across *any* event on every single check-in — the hottest write path
+  // in the app. Without this, that lookup is a sequential scan.
+  @@index([userId, checkedInAt])
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -406,6 +411,10 @@ model ClassAttendance {
 
   @@unique([sessionId, studentId])
   @@index([sessionId])
+  // Same reasoning as AttendanceRecord's [userId, checkedInAt] index — the
+  // impossible-travel fraud check looks up a student's most recent
+  // check-in across all sessions on every single classroom check-in.
+  @@index([studentId, checkedInAt])
 }
 
 // ─────────────────────────────────────────────────────────────────────────

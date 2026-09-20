@@ -142,6 +142,18 @@ export function getAccessToken(): string | undefined {
 // the moment this app most needs to not just give up. This wrapper
 // retries only that second class of failure, with backoff, and reports
 // each attempt so the UI can show "reconnecting" instead of a dead end.
+// Used by login/register's ?next= redirect-back-to-where-you-came-from —
+// only ever meant to point at a path inside this app. Rejects anything
+// that could actually navigate elsewhere: a protocol-relative URL
+// ("//evil.com"), a value with a scheme ("https://evil.com" or even
+// "javascript:..."), or anything not starting with a single "/".
+export function safeInternalPath(raw: string | null): string | null {
+  if (!raw) return null;
+  if (!raw.startsWith("/") || raw.startsWith("//")) return null;
+  if (raw.includes("://")) return null;
+  return raw;
+}
+
 export async function apiFetchWithRetry<T>(
   path: string,
   options: RequestInit & { skipAuth?: boolean; raw?: boolean } = {},
