@@ -8,6 +8,12 @@ import { useLocale } from "@/lib/i18n";
 import { apiFetch, ApiError } from "@/lib/api";
 import { Button } from "./ui/Button";
 
+// Temporarily off: outbound email isn't deliverable yet (no verified Resend
+// sending domain configured), so nagging users to verify an address that
+// can't receive mail would just be a dead end. Flip back on once a sending
+// domain is verified — nothing else about email verification changed.
+const EMAIL_VERIFICATION_UI_ENABLED = false;
+
 export function NavBar() {
   const { user, memberships, logout } = useAuth();
   const { t, locale, toggle } = useLocale();
@@ -168,7 +174,7 @@ export function NavBar() {
           )}
         </div>
       )}
-      {user && !user.emailVerifiedAt && <VerifyEmailBanner />}
+      {EMAIL_VERIFICATION_UI_ENABLED && user && !user.emailVerifiedAt && <VerifyEmailBanner />}
     </header>
   );
 }
