@@ -25,6 +25,7 @@ event data.
 - [Realtime](#realtime)
 - [Analytics & AI architecture](#analytics--ai-architecture)
 - [Trust & integrity](#trust--integrity)
+- [Rate limiting, logging & observability](#rate-limiting-logging--observability)
 - [Local setup](#local-setup)
 - [Environment variables](#environment-variables)
 - [Testing](#testing)
@@ -50,7 +51,8 @@ event data.
 - Remove a registration, or run a capacity-aware waitlist that promotes the next person automatically when a spot opens
 - Duplicate an event, delete one outright, or delete the whole organization
 - Manage the team: invite by role, change an existing member's role inline, or remove them
-- Review an organization-wide activity log of who did what
+- Review an organization-wide activity log of who did what — paginated,
+  and filterable by action type or by which admin performed it
 - Get a live ping in the club's own Discord or Slack the moment someone checks in (paste one incoming-webhook URL, no other setup)
 - Every manual override or membership change is written to a tamper-evident, hash-chained audit log — see [Trust & integrity](#trust--integrity)
 - See deterministic analytics (attendance rate, no-show rate, arrival timeline, peak arrival window) and rule-based anomaly flags
@@ -78,13 +80,22 @@ class's attendance over a semester rather than a one-off event:
   the classroom itself
 - Roster sorted by seniority (alumni/graduate first, descending by year,
   unset last) with each member's grade year (学年) editable inline
+- Bulk-enroll students by pasting a list of emails (matches existing
+  accounts only — never silently creates one), instead of adding a class
+  one student at a time
+- Select multiple roster rows and mark them all present in one action
 - Review a classroom-scoped activity log of every manual attendance override
+- See a leaderboard ranked by current streak, then longest streak, then
+  attendance rate
+- Export a classroom's sessions as a `.ics` calendar file (one event per
+  session, using its real open/close time)
 
 **Classrooms (student side)**
 - Join a class by typing its code, optionally noting a grade year
   (1st-4th year, graduate student, or alumni/OB·OG) on the way in
 - Check in the same QR + geofence way as an event
-- See their own attendance heatmap and streak for every class they're in
+- See their own attendance heatmap and streak for every class they're in,
+  and where they land on the class leaderboard
 - Leave a classroom themselves, without needing the teacher to remove them
 
 ---
@@ -99,15 +110,20 @@ Kehai-Engine/
 │   │   ├── src/
 │   │   │   ├── ai/        Provider abstraction, context builder, insights, NL query router
 │   │   │   ├── config/    Zod-validated environment config
-│   │   │   ├── middleware/ Auth, error handling, rate limiting
+│   │   │   ├── lib/       Structured logger, error tracking, Prisma client
+│   │   │   ├── middleware/ Auth, error handling, rate limiting, request-id tracing
 │   │   │   ├── realtime/  Socket.io server
 │   │   │   ├── routes/    Express routers (one per resource)
 │   │   │   ├── services/  Business logic (auth, event, attendance, analytics, anomaly, export, org)
 │   │   │   ├── utils/     Geofence math, QR token signing, JWT helpers
 │   │   │   └── validators/ Zod request schemas
-│   │   └── tests/         Vitest — unit + integration (real Postgres)
-│   └── web/                Next.js 14 (App Router) + TypeScript + Tailwind
-│       ├── app/            Pages (landing, auth, organizer console, attendee flow)
+│   │   └── tests/         Vitest — unit, service-level integration, and
+│   │                      HTTP-level integration (supertest against the
+│   │                      real Express app) — against real Postgres
+│   └── web/                Next.js 15 (App Router) + TypeScript + Tailwind
+│       ├── app/            Pages (landing, auth, organizer console, attendee
+│       │                   flow) + PWA manifest (installable, with generated
+│       │                   icons)
 │       ├── components/     UI kit + feature components (QR scanner, live QR panel, charts, AI panels)
 │       └── lib/             API client, auth context, realtime client, hooks, types
 ├── docker-compose.yml
@@ -290,7 +306,30 @@ Organizations get an org-scoped audit log (`GET /api/orgs/:orgId/audit-log`,
 ADMIN+); classrooms get the same for their manual overrides
 (`GET /api/classrooms/:classroomId/audit-log`, teacher-only) — a program
 can add its own coordinator as an admin/teacher and check the log
-independently, rather than trusting an export.
+independently, rather than trusting an export. Both are cursor-paginated
+rather than returned in full, and the org log can be filtered by action
+type (`GET /api/orgs/:orgId/audit-log/actions` lists the distinct actions
+that exist to filter by) or by which admin performed it.
+
+---
+
+## Rate limiting, logging & observability
+
+- **Classroom join codes are rate-limited.** A 6-character code is
+  low-entropy enough to be brute-forceable if an attacker could try
+  unlimited guesses; `POST /api/classrooms/join` is throttled per-IP to
+  make that impractical.
+- **Structured logging in production, readable text in dev.**
+  `apps/server/src/lib/logger.ts` emits JSON when `NODE_ENV=production`
+  (so a log aggregator can parse it) and a human-readable line otherwise.
+- **Request-ID tracing.** `apps/server/src/middleware/requestId.ts` trusts
+  an incoming `X-Request-Id` header or generates one, echoes it on every
+  response, and includes it in the JSON body of any 500 — so a user-
+  reported error can be traced straight to the matching server log line.
+- **Optional error tracking.** `apps/server/src/lib/errorTracking.ts` wraps
+  Sentry behind `SENTRY_DSN`; unset, `captureException` and
+  `initErrorTracking` are genuine no-ops — nothing is sent anywhere and
+  nothing breaks.
 
 ---
 
@@ -345,7 +384,7 @@ logs the link server-side instead of emailing it).
 pnpm --filter server test
 ```
 
-148 tests across 22 files (Vitest): geofence math (including accuracy-padding
+179 tests across 26 files (Vitest): geofence math (including accuracy-padding
 edge cases and invalid-coordinate rejection), QR token signing/verification
 (cross-event rejection, expiry, tamper resistance) for both events and
 classroom sessions, duplicate check-in prevention, geofence rejection, and
@@ -358,8 +397,17 @@ account/classroom deletion guards, organization role-change authorization
 webhook delivery (never throws on a failed or unreachable endpoint, refuses
 to deliver to a private/internal/metadata address) and URL validation, the
 audit log's hash chain (unaffected by JSONB key reordering, catches a row
-edited or deleted after the fact), and the auth session lifecycle (refresh
-non-rotation, logout revocation, password reset revoking every session).
+edited or deleted after the fact) plus its pagination/filtering, the auth
+session lifecycle (refresh non-rotation, logout revocation, password reset
+revoking every session), bulk roster enrollment, classroom `.ics` export,
+and the classroom leaderboard's streak/rate ranking.
+
+A separate `tests/http.integration.test.ts` exercises the real Express app
+(`createApp()`) over actual HTTP via supertest, rather than calling service
+functions directly — it's the only layer that can catch a wiring bug:
+middleware registered in the wrong order, a route shadowed by a more
+generic one (`/mine` vs `/:eventId`), auth not actually enforced at the
+HTTP boundary, or the error handler's real response shape.
 
 Frontend: `pnpm --filter web build` runs a full production build with
 type-checking. The complete demo flow (register → org → event → publish →
@@ -510,6 +558,7 @@ All routes are under `/api`. Representative endpoints:
 | POST | `/api/attendance/:eventId/override` · DELETE `/attendees/:userId` | Manual present / undo a check-in |
 | DELETE | `/api/orgs/:orgId` · `/api/classrooms/:id` | Delete an organization / classroom |
 | PATCH | `/api/orgs/:orgId/webhook` | Set/clear the Discord or Slack check-in notification webhook (ADMIN+) |
+| GET | `/api/orgs/:orgId/audit-log` · `/audit-log/actions` | Paginated, action-filterable activity log (ADMIN+) |
 | GET | `/api/analytics/events/:eventId` | Deterministic metrics |
 | GET | `/api/analytics/events/:eventId/anomalies` | Rule-based anomalies |
 | GET | `/api/ai/events/:eventId/insights` · `/report` | AI-interpreted insights / report |
@@ -522,6 +571,10 @@ All routes are under `/api`. Representative endpoints:
 | GET | `/api/classrooms/:id/sessions/:sessionId/qr` | Issue that session's rotating QR image |
 | POST | `/api/classrooms/:id/checkin` | QR + geofence verified check-in |
 | GET | `/api/classrooms/:id/heatmap` · `/roster` | Attendance heatmap / per-student roster |
+| POST | `/api/classrooms/:id/students/bulk` | Bulk-enroll students by pasted email list (teacher-only) |
+| GET | `/api/classrooms/:id/leaderboard` | Streak/attendance-rate ranking |
+| GET | `/api/classrooms/:id/calendar.ics` | Export sessions as an `.ics` calendar file |
+| GET | `/api/classrooms/:id/audit-log` | Classroom-scoped, paginated activity log (teacher-only) |
 
 ---
 
@@ -538,6 +591,9 @@ All routes are under `/api`. Representative endpoints:
   unlikely.
 - **Graceful degradation everywhere** — AI, realtime, and Google auth are
   all optional; the platform is fully usable with none of them configured.
+- **List endpoints are capped, not unbounded** — event discovery, roster,
+  attendee, and org-event queries all take a hard `take` limit, so a large
+  organization can't turn a list endpoint into a full-table scan.
 
 ## Limitations
 
@@ -559,7 +615,8 @@ All routes are under `/api`. Representative endpoints:
 - Recurring events / event series analytics
 - Configurable per-organization anomaly thresholds
 - Retention job to null out raw check-in coordinates after a configurable window (see PRIVACY.md)
-- Bulk CSV import for pre-registering attendee lists
+- Bulk CSV import for pre-registering *event* attendee lists (classrooms
+  already support bulk roster enrollment)
 - A "support this project" section in the UI explaining free-tier hosting
   tradeoffs honestly, with a donation link (e.g. Ko-fi) framed as funding
   a paid plan on whichever piece needs it as real usage grows
