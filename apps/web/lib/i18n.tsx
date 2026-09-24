@@ -143,6 +143,15 @@ const dict = {
     },
     confidenceSuffix: { en: "confidence", ja: "の確度" },
   },
+  notFound: {
+    title: { en: "This page doesn't exist", ja: "このページは存在しません" },
+    description: {
+      en: "The link may be broken, or whatever it pointed to was removed. Check the address, or head back to somewhere that exists.",
+      ja: "リンクが壊れているか、対象がすでに削除されている可能性があります。アドレスをご確認いただくか、他のページへお戻りください。",
+    },
+    backHome: { en: "Back to home", ja: "ホームへ戻る" },
+    browseEvents: { en: "Browse events", ja: "イベントを探す" },
+  },
   states: {
     checkingSession: { en: "Checking session…", ja: "セッションを確認しています…" },
     loadingEvent: { en: "Loading event…", ja: "イベントを読み込んでいます…" },

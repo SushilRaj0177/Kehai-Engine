@@ -1,208 +1,48 @@
-"use client";
+import type { Metadata } from "next";
+import { EventDetailClient } from "./EventDetailClient";
 
-import dynamic from "next/dynamic";
-import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
-import { NavBar } from "@/components/NavBar";
-import { Button } from "@/components/ui/Button";
-import { Card, CardBody } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
-import { LoadingBlock, ErrorBlock, EmptyState } from "@/components/ui/States";
-import { KanjiMark } from "@/components/ui/KanjiMark";
-import { PageGlow } from "@/components/ui/PageGlow";
-import { ClickRippleLayer } from "@/components/ui/ClickRipple";
-import { useAuth } from "@/lib/auth-context";
-import { useEvent } from "@/lib/hooks";
-import { apiFetch, ApiError, getApiBase } from "@/lib/api";
-import { formatDateRange, formatDateTime } from "@/lib/format";
-import { getCheckInWindow } from "@/lib/checkin-window";
-import { useLocale } from "@/lib/i18n";
+// Server-side only, separate from the client EventDetailClient's own
+// useEvent() fetch -- this one exists purely to build real per-event
+// metadata (title, description, canonical URL) for crawlers and link
+// previews, which generateMetadata can't get from a client component.
+// GET /api/events/:eventId uses optionalAuth, so this works with no token.
+async function fetchEventForMetadata(eventId: string) {
+  const apiBase = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+  try {
+    const res = await fetch(`${apiBase}/api/events/${eventId}`, { cache: "no-store" });
+    if (!res.ok) return null;
+    return (await res.json()) as { name: string; description: string | null; venue: string };
+  } catch {
+    return null;
+  }
+}
 
-const EventMap = dynamic(() => import("@/components/EventMap").then((m) => m.EventMap), { ssr: false });
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ eventId: string }>;
+}): Promise<Metadata> {
+  const { eventId } = await params;
+  const event = await fetchEventForMetadata(eventId);
+
+  if (!event) {
+    return { title: "Event — Kehai Engine" };
+  }
+
+  const title = `${event.name} — Kehai Engine`;
+  const description = event.description
+    ? event.description.slice(0, 160)
+    : `${event.venue} · QR + geofence verified attendance on Kehai Engine.`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: `/events/${eventId}` },
+    openGraph: { title, description },
+    twitter: { title, description },
+  };
+}
 
 export default function EventDetailPage() {
-  const { t, locale } = useLocale();
-  const { eventId } = useParams<{ eventId: string }>();
-  const { user } = useAuth();
-  const router = useRouter();
-  const { data: event, error: eventError, isLoading, mutate } = useEvent(eventId);
-  const [error, setError] = useState<string | null>(null);
-  const [registering, setRegistering] = useState(false);
-  const [cancelling, setCancelling] = useState(false);
-  const [confirmingCancel, setConfirmingCancel] = useState(false);
-
-  if (isLoading) return <LoadingBlock label={t("states.loadingEvent")} />;
-
-  if (eventError || !event) {
-    return (
-      <ClickRippleLayer className="relative min-h-screen">
-        <PageGlow />
-        <NavBar />
-        <div className="relative mx-auto max-w-lg px-6 py-24">
-          <EmptyState title={t("eventDetail.notFoundTitle")} description={t("eventDetail.notFoundDescription")} />
-        </div>
-      </ClickRippleLayer>
-    );
-  }
-
-  async function register() {
-    if (!user) {
-      router.push("/login");
-      return;
-    }
-    setError(null);
-    setRegistering(true);
-    try {
-      await apiFetch(`/api/events/${eventId}/register`, { method: "POST" });
-      await mutate();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : t("eventDetail.registrationFailed"));
-    } finally {
-      setRegistering(false);
-    }
-  }
-
-  async function cancelRegistration() {
-    if (!confirmingCancel) {
-      setError(null);
-      setConfirmingCancel(true);
-      return;
-    }
-    setError(null);
-    setCancelling(true);
-    try {
-      await apiFetch(`/api/events/${eventId}/register`, { method: "DELETE" });
-      setConfirmingCancel(false);
-      await mutate();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : t("eventDetail.cancelFailed"));
-    } finally {
-      setCancelling(false);
-    }
-  }
-
-  const isOpen = event.status === "PUBLISHED" || event.status === "ACTIVE";
-  const checkInWindow = getCheckInWindow(event);
-
-  return (
-    <ClickRippleLayer className="relative min-h-screen">
-      <PageGlow />
-      <NavBar />
-      <div className="relative mx-auto max-w-3xl px-6 py-20">
-        <KanjiMark glyph="詳細" className="absolute -right-6 top-0 text-[5rem] sm:text-[9rem]" />
-
-        <Link
-          href="/events"
-          className="relative z-20 mb-5 inline-block text-sm font-medium text-white/45 transition-colors hover:text-white/80"
-        >
-          {t("eventDetail.backToDiscover")}
-        </Link>
-
-        <div className="relative z-20 flex items-center gap-2.5">
-          <Badge status={event.status}>{t(`badge.status.${event.status}`)}</Badge>
-          <span className="text-sm text-white/40">{event.organization?.name}</span>
-        </div>
-        <h1 className="relative z-20 mt-4 font-display text-4xl font-black leading-tight text-white md:text-5xl">
-          {event.name}
-        </h1>
-        <p className="relative z-20 mt-3 flex flex-wrap items-center gap-x-2 text-lg text-white/50">
-          <span>
-            {formatDateRange(event.startsAt, event.endsAt, locale)} · {event.venue}
-          </span>
-          <a
-            href={`${getApiBase()}/api/events/${event.id}/calendar.ics`}
-            className="text-sm font-medium text-kehai-400 hover:text-kehai-300"
-          >
-            {t("eventDetail.addToCalendar")}
-          </a>
-        </p>
-
-        {event.description && <p className="relative z-20 mt-5 text-base leading-relaxed text-white/60">{event.description}</p>}
-
-        {error && <ErrorBlock message={error} className="relative z-20 mt-5" />}
-
-        <div className="relative z-20 mt-8 flex flex-wrap items-center gap-4">
-          {event.hasAttended ? (
-            <Badge status="COMPLETED">{t("badge.attendanceConfirmed")}</Badge>
-          ) : event.isRegistered && event.isWaitlisted ? (
-            <div className="flex flex-col gap-2">
-              <Badge>{t("badge.waitlisted")}</Badge>
-              <p className="text-xs text-white/40">{t("eventDetail.waitlistedHint")}</p>
-              {confirmingCancel ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-white/50">{t("eventDetail.confirmCancel")}</span>
-                  <Button variant="danger" size="sm" loading={cancelling} onClick={cancelRegistration}>
-                    {t("eventDetail.leaveWaitlist")}
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => setConfirmingCancel(false)}>
-                    {t("common.cancel")}
-                  </Button>
-                </div>
-              ) : (
-                <Button variant="ghost" size="sm" onClick={cancelRegistration}>
-                  {t("eventDetail.leaveWaitlist")}
-                </Button>
-              )}
-            </div>
-          ) : event.isRegistered ? (
-            isOpen ? (
-              <div className="flex flex-col gap-2">
-                <Link href={`/attend/${event.id}`}>
-                  <Button variant="cyan" size="lg">
-                    {t("eventDetail.checkInWithQr")}
-                  </Button>
-                </Link>
-                {checkInWindow.status !== "open" && (
-                  <span className="text-xs text-amber-300/80">
-                    {checkInWindow.status === "not_open"
-                      ? t("attend.windowNotOpenBody", { time: formatDateTime(checkInWindow.opensAt, locale) })
-                      : t("attend.windowClosedBody", { time: formatDateTime(checkInWindow.closesAt, locale) })}
-                  </span>
-                )}
-                {confirmingCancel ? (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-white/50">{t("eventDetail.confirmCancel")}</span>
-                    <Button variant="danger" size="sm" loading={cancelling} onClick={cancelRegistration}>
-                      {t("eventDetail.cancelRegistration")}
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => setConfirmingCancel(false)}>
-                      {t("common.cancel")}
-                    </Button>
-                  </div>
-                ) : (
-                  <Button variant="ghost" size="sm" onClick={cancelRegistration}>
-                    {t("eventDetail.cancelRegistration")}
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <Badge>{t("badge.registered")}</Badge>
-            )
-          ) : isOpen ? (
-            <Button size="lg" onClick={register} loading={registering}>
-              {t("eventDetail.registerToAttend")}
-            </Button>
-          ) : (
-            <Badge>{t("badge.registrationClosed")}</Badge>
-          )}
-          <span className="text-sm text-white/35">
-            {event.capacity
-              ? t("eventDetail.registeredWithCapacity", { count: event._count.registrations, capacity: event.capacity })
-              : t("eventDetail.registeredCount", { count: event._count.registrations })}{" "}
-            · {t("eventDetail.attendedCount", { count: event._count.attendances })}
-          </span>
-        </div>
-
-        <Card className="relative z-20 mt-10">
-          <CardBody className="py-6">
-            <EventMap latitude={event.latitude} longitude={event.longitude} radiusM={event.geofenceRadiusM} />
-            <p className="mt-4 text-sm text-white/35">
-              {t("eventDetail.geofenceNote", { radius: event.geofenceRadiusM })}
-            </p>
-          </CardBody>
-        </Card>
-      </div>
-    </ClickRippleLayer>
-  );
+  return <EventDetailClient />;
 }

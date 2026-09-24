@@ -25,6 +25,9 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://kehai-engine-web.vercel.app"),
   title,
   description,
+  // Root default -- a page that sets its own metadata (e.g. an event
+  // detail page) overrides this with its own canonical path.
+  alternates: { canonical: "/" },
   openGraph: {
     title,
     description,
