@@ -20,6 +20,20 @@ export function NavBar() {
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  // Separate from menuOpen so the panel mounts first at its closed (base
+  // .mobile-menu-reveal) styles, then flips to .is-visible a frame later —
+  // toggling both in the same render would apply the "open" class on the
+  // very first paint and the transition would never actually run.
+  const [menuVisible, setMenuVisible] = useState(false);
+
+  useEffect(() => {
+    if (!menuOpen) {
+      setMenuVisible(false);
+      return;
+    }
+    const id = requestAnimationFrame(() => setMenuVisible(true));
+    return () => cancelAnimationFrame(id);
+  }, [menuOpen]);
 
   const primaryOrg = memberships[0]?.organization;
 
@@ -160,7 +174,7 @@ export function NavBar() {
         // it floats over the page instead of pushing the hero content down
         // in normal flow -- was previously a plain block sibling.
         <div
-          className="absolute inset-x-4 top-[72px] z-50 mx-auto max-w-6xl rounded-2xl border border-white/[0.08] bg-void-900/95 p-2 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.7)] backdrop-blur-2xl sm:hidden">
+          className={`mobile-menu-reveal ${menuVisible ? "is-visible" : ""} absolute inset-x-4 top-[72px] z-50 mx-auto max-w-6xl rounded-2xl border border-white/[0.08] bg-void-900/95 p-2 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.7)] backdrop-blur-2xl sm:hidden`}>
           <MobileMenuLink href="/events" active={!!pathname?.startsWith("/events")} onNavigate={() => setMenuOpen(false)}>
             {t("nav.discover")}
           </MobileMenuLink>
