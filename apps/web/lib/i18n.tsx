@@ -181,6 +181,13 @@ const dict = {
     classroomsNone: { en: "Not enrolled in a classroom yet", ja: "まだクラスに参加していません" },
     overallRateLabel: { en: "Overall attendance", ja: "総合出席率" },
     attentionHeading: { en: "Needs attention", ja: "要注意" },
+    studentsLabel: { en: "Students", ja: "学生数" },
+    classesLabel: { en: "Classes", ja: "クラス数" },
+    liveNow: { en: "Live now", ja: "開催中" },
+    noSessionOpen: { en: "No open session", ja: "セッション未開始" },
+    studentsCount: { en: "{count} students", ja: "学生 {count} 名" },
+    getStartedTitle: { en: "Nothing here yet", ja: "まだ何もありません" },
+    getStartedHint: { en: "Join a classroom or browse events to get started.", ja: "クラスに参加するか、イベントを探してみましょう。" },
   },
   dashboard: {
     kicker: { en: "Organizer console", ja: "主催者コンソール" },
