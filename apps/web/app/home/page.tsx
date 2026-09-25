@@ -22,15 +22,12 @@ import type { ClassroomSummary } from "@/lib/types";
 
 const ATTENTION_THRESHOLD = 0.75;
 
-// The installed PWA's home screen (see app/page.tsx's standalone redirect).
-// Adaptive, not one fixed layout: a pure organizer/teacher with no
-// attendee footprint of their own has nothing to show in a streak ring or
-// a "next event" banner, and rendering those anyway as empty placeholders
-// is exactly what left this page mostly dead space for that persona.
-// Every section below only renders when it has something real to say, and
-// a teacher's own classes -- entirely missing before, despite being the
-// single most relevant thing to a "Prof" account -- now get real, live
-// content: whether a session is open right now, not just a link.
+// Shared surface for every card on this page -- a faint top-to-bottom
+// gradient instead of a flat fill (the previous version's cards all read
+// as the exact same grey slab), and a tactile press-down on tap so the
+// page feels handled rather than just looked at.
+const CARD = "rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.055] to-white/[0.015] transition-transform active:scale-[0.97]";
+
 export default function HomePage() {
   const { t, locale } = useLocale();
   const { user, loading: authLoading } = useAuth();
@@ -82,9 +79,6 @@ export default function HomePage() {
   const overallRate = totals.total > 0 ? totals.present / totals.total : 0;
   const needsAttention = (enrolled ?? []).filter((e) => e.totalDays >= 3 && e.attendanceRate < ATTENTION_THRESHOLD);
 
-  // Whether this account has any attendee footprint at all -- decides
-  // whether the streak/rate/next-event sections are relevant, versus
-  // just empty noise for a pure organizer/teacher account.
   const isAttendee = (enrolled?.length ?? 0) > 0 || upcoming.length > 0;
   const isTeacher = (teaching?.length ?? 0) > 0;
   const teacherTotals = (teaching ?? []).reduce((acc, c) => ({ students: acc.students + c.studentCount, classes: acc.classes + 1 }), {
@@ -98,15 +92,14 @@ export default function HomePage() {
     <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
-      <div className="relative mx-auto max-w-2xl px-5 py-8 sm:px-6 sm:py-12">
-        <p className="text-sm text-white/40">{formatDate(new Date().toISOString(), locale)}</p>
-        <h1 className="mt-1 font-display text-3xl font-black text-white">
-          {greeting}, {firstName}
-        </h1>
+      <div className="home-stagger relative mx-auto max-w-2xl px-5 py-8 sm:px-6 sm:py-12">
+        <div>
+          <p className="text-sm text-white/40">{formatDate(new Date().toISOString(), locale)}</p>
+          <h1 className="mt-1 font-display text-3xl font-black text-white">
+            {greeting}, {firstName}
+          </h1>
+        </div>
 
-        {/* Hero row: attendee metrics if this account has any, otherwise
-            teaching totals -- never both, and never an empty placeholder
-            standing in for a metric that doesn't apply to this account. */}
         {isAttendee ? (
           <div className="mt-7 flex gap-3">
             <RingStat
@@ -117,12 +110,7 @@ export default function HomePage() {
               accent="#ff2d55"
               icon={<FlameIcon lit={!!bestStreak && bestStreak.streak > 0} />}
             />
-            <RingStat
-              value={overallRate}
-              display={`${Math.round(overallRate * 100)}%`}
-              label={t("home.overallRateLabel")}
-              accent="#5ff4ff"
-            />
+            <RingStat value={overallRate} display={`${Math.round(overallRate * 100)}%`} label={t("home.overallRateLabel")} accent="#5ff4ff" />
           </div>
         ) : isTeacher ? (
           <div className="mt-7 flex gap-3">
@@ -131,22 +119,18 @@ export default function HomePage() {
           </div>
         ) : null}
 
-        {/* Next-up banner -- only relevant to an account that actually
-            registers for events; a pure teacher/organizer account has
-            nothing to check in to, so this section doesn't render at all
-            rather than showing an empty "nothing on your calendar" box. */}
         {isAttendee && (
-          <div className="mt-4">
+          <div>
             {next ? (
               <Link
                 href={canCheckInNow ? `/attend/${next.event.id}` : `/events/${next.event.id}`}
-                className="group block rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5 transition-colors hover:border-shu-500/30"
+                className={`${CARD} group mt-4 block p-5 hover:border-shu-500/30`}
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-semibold uppercase tracking-wider text-white/40">{t("home.nextEventHeading")}</span>
                   {canCheckInNow && (
                     <span className="flex items-center gap-1.5 rounded-full bg-kehai-500/15 px-2.5 py-1 text-[11px] font-semibold text-kehai-300">
-                      <span className="h-1.5 w-1.5 rounded-full bg-kehai-400" />
+                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-kehai-400" />
                       {t("home.checkInWindowOpen")}
                     </span>
                   )}
@@ -162,7 +146,7 @@ export default function HomePage() {
                 )}
               </Link>
             ) : (
-              <div className="rounded-2xl border border-dashed border-white/[0.1] p-5 text-center">
+              <div className="mt-4 rounded-2xl border border-dashed border-white/[0.1] p-5 text-center">
                 <p className="text-sm font-medium text-white/60">{t("home.nextEventNone")}</p>
                 <p className="mt-1 text-xs text-white/35">{t("home.nextEventNoneHint")}</p>
               </div>
@@ -171,7 +155,7 @@ export default function HomePage() {
         )}
 
         {later.length > 0 && (
-          <div className="mt-3 divide-y divide-white/[0.06] rounded-2xl border border-white/[0.08] bg-white/[0.02]">
+          <div className={`${CARD} mt-3 divide-y divide-white/[0.06]`}>
             {later.map((r) => (
               <Link key={r.event.id} href={`/events/${r.event.id}`} className="flex items-center justify-between gap-3 px-4 py-3">
                 <span className="truncate text-sm font-medium text-white/75">{r.event.name}</span>
@@ -189,7 +173,7 @@ export default function HomePage() {
                 <Link
                   key={e.classroom.id}
                   href={`/classrooms/${e.classroom.id}`}
-                  className="flex shrink-0 flex-col items-center gap-2"
+                  className="flex shrink-0 flex-col items-center gap-2 transition-transform active:scale-[0.94]"
                   style={{ width: "76px" }}
                 >
                   <div className="relative">
@@ -217,7 +201,7 @@ export default function HomePage() {
                 <Link
                   key={e.classroom.id}
                   href={`/classrooms/${e.classroom.id}`}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-amber-400/15 bg-amber-400/[0.04] px-4 py-3"
+                  className="flex items-center justify-between gap-3 rounded-xl border border-amber-400/15 bg-amber-400/[0.04] px-4 py-3 transition-transform active:scale-[0.97]"
                 >
                   <span className="truncate text-sm font-medium text-amber-100/85">{e.classroom.name}</span>
                   <span className="shrink-0 text-sm font-semibold text-amber-300">{Math.round(e.attendanceRate * 100)}%</span>
@@ -227,12 +211,6 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* Classes you teach -- new. Each card fetches its own live
-            open-session state (TeachingClassCard below), which the plain
-            list-of-classrooms endpoint this page otherwise uses doesn't
-            include -- that live "is a session open right now" signal is
-            the one thing that actually makes this useful to check from a
-            home screen instead of just being another link to /classrooms. */}
         {teaching && teaching.length > 0 && (
           <div className="mt-8">
             <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/40">{t("classroomHub.teachingHeading")}</h2>
@@ -256,7 +234,7 @@ export default function HomePage() {
         )}
 
         {hasNothing && (
-          <div className="mt-10 rounded-2xl border border-dashed border-white/[0.1] p-6 text-center">
+          <div className="mt-8 rounded-2xl border border-dashed border-white/[0.1] p-6 text-center">
             <p className="text-sm font-medium text-white/60">{t("home.getStartedTitle")}</p>
             <p className="mt-1 text-xs text-white/35">{t("home.getStartedHint")}</p>
           </div>
@@ -279,39 +257,45 @@ function TeachingClassCard({
   return (
     <Link
       href={`/classrooms/${classroom.id}`}
-      className={`flex shrink-0 flex-col justify-between gap-3 rounded-2xl border p-4 transition-colors ${
-        isLive ? "border-kehai-500/30 bg-kehai-500/[0.06]" : "border-white/[0.08] bg-white/[0.03] hover:border-shu-500/30"
+      className={`flex shrink-0 flex-col gap-2 rounded-2xl border p-4 transition-transform active:scale-[0.97] ${
+        isLive ? "border-kehai-500/30 bg-gradient-to-b from-kehai-500/[0.08] to-transparent" : `${CARD} hover:border-shu-500/30`
       }`}
-      style={{ width: "168px", minHeight: "108px" }}
+      style={{ width: "168px" }}
     >
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex items-center justify-between gap-2">
         <p className="truncate text-sm font-bold text-white">{classroom.name}</p>
-        {isLive && <span className="mt-1 h-2 w-2 shrink-0 animate-pulse rounded-full bg-kehai-400" aria-hidden />}
+        {isLive && <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-kehai-400" aria-hidden />}
       </div>
-      <div>
-        <p className={`text-xs font-semibold ${isLive ? "text-kehai-300" : "text-white/35"}`}>
-          {isLive ? t("home.liveNow") : t("home.noSessionOpen")}
-        </p>
-        <p className="mt-1 text-[11px] text-white/40">{t("home.studentsCount", { count: classroom.studentCount })}</p>
-      </div>
+      <p className={`text-xs font-semibold ${isLive ? "text-kehai-300" : "text-white/35"}`}>
+        {isLive ? t("home.liveNow") : t("home.noSessionOpen")}
+      </p>
+      <p className="text-[11px] text-white/40">{t("home.studentsCount", { count: classroom.studentCount })}</p>
     </Link>
   );
 }
 
 function SnapshotStat({ value, label }: { value: React.ReactNode; label: string }) {
   return (
-    <div className="shrink-0 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3.5 py-3" style={{ minWidth: "100px" }}>
+    <div className={`${CARD} shrink-0 px-3.5 py-3`} style={{ minWidth: "100px" }}>
       <div className="font-display text-xl font-bold text-white">{value}</div>
       <div className="mt-0.5 whitespace-nowrap text-[10px] uppercase tracking-wider text-white/40">{label}</div>
     </div>
   );
 }
 
-// A progress ring wrapping a stat, always a ring -- even at zero value, so
-// "no streak yet" reads as an empty ring (consistent with its full-value
-// sibling right next to it) rather than degrading into a plain bordered
-// box, which is what made the previous zero-state look like a different,
-// lesser kind of widget instead of the same one with nothing in it yet.
+// A tight ambient glow sitting directly behind the ring -- not the
+// page-wide PageGlow blob, a small tuned-to-the-widget one, so the ring
+// reads as an emitting object rather than a flat icon sitting on a card.
+function RingGlow({ accent }: { accent: string }) {
+  return (
+    <div
+      aria-hidden
+      className="absolute h-20 w-20 rounded-full blur-xl"
+      style={{ background: accent, opacity: 0.22 }}
+    />
+  );
+}
+
 function RingStat({
   value,
   display,
@@ -328,13 +312,16 @@ function RingStat({
   icon?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4">
-      <ProgressRing value={value} size={72} strokeWidth={6} accent={accent}>
-        <div className="flex flex-col items-center gap-0.5">
-          {icon}
-          <span className="font-display text-base font-bold leading-none text-white">{display}</span>
-        </div>
-      </ProgressRing>
+    <div className={`${CARD} flex flex-1 flex-col items-center gap-2.5 p-4`}>
+      <div className="relative flex items-center justify-center">
+        <RingGlow accent={accent} />
+        <ProgressRing value={value} size={72} strokeWidth={6} accent={accent}>
+          <div className="flex flex-col items-center gap-0.5">
+            {icon}
+            <span className="font-display text-base font-bold leading-none text-white">{display}</span>
+          </div>
+        </ProgressRing>
+      </div>
       <div className="text-center">
         <p className="text-[11px] font-medium text-white/50">{label}</p>
         {sublabel && <p className="mt-0.5 truncate text-[10px] text-white/30">{sublabel}</p>}
@@ -343,18 +330,17 @@ function RingStat({
   );
 }
 
-// A static circular badge for an absolute count (students, classes) --
-// deliberately not a ProgressRing, which implies a fraction of something.
-// A plain number doesn't have a "percent of what," so it gets a filled
-// circle instead of a stroked one.
 function CountCircle({ value, label, accent }: { value: number; label: string; accent: string }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4">
-      <div
-        className="flex h-[72px] w-[72px] items-center justify-center rounded-full"
-        style={{ background: `radial-gradient(circle at 35% 30%, ${accent}33, ${accent}0d)`, border: `1px solid ${accent}40` }}
-      >
-        <span className="font-display text-2xl font-black text-white">{value}</span>
+    <div className={`${CARD} flex flex-1 flex-col items-center gap-2.5 p-4`}>
+      <div className="relative flex items-center justify-center">
+        <RingGlow accent={accent} />
+        <div
+          className="relative flex h-[72px] w-[72px] items-center justify-center rounded-full"
+          style={{ background: `radial-gradient(circle at 35% 30%, ${accent}40, ${accent}0d)`, border: `1px solid ${accent}45` }}
+        >
+          <span className="font-display text-2xl font-black text-white">{value}</span>
+        </div>
       </div>
       <p className="text-[11px] font-medium text-white/50">{label}</p>
     </div>
@@ -400,7 +386,7 @@ function ProgressRing({
 
 function FlameIcon({ lit }: { lit: boolean }) {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill={lit ? "#ff9142" : "none"} stroke={lit ? "none" : "rgba(255,255,255,0.35)"} strokeWidth="1.5">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill={lit ? "#ff9142" : "none"} stroke={lit ? "none" : "rgba(255,255,255,0.35)"} strokeWidth="1.75">
       <path d="M12 2c1 3-3 4-3 7.5a3 3 0 006 0c1.5 1 2.5 2.8 2.5 4.9A5.5 5.5 0 0112 20a5.5 5.5 0 01-5.5-5.6c0-4.2 3.4-5.9 5.5-12.4z" />
     </svg>
   );

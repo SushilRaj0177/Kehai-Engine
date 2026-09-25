@@ -426,3 +426,52 @@ body {
     transition: none;
   }
 }
+
+/* Staggered mount entrance -- each direct child of .home-stagger rises and
+   fades in with an increasing delay, a spring-like settle rather than a
+   linear ease. Used on the PWA home dashboard so its sections arrive as a
+   sequence instead of all snapping in at once on mount. */
+@keyframes stagger-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.home-stagger > * {
+  opacity: 0;
+  animation: stagger-rise 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.home-stagger > *:nth-child(1) {
+  animation-delay: 0.02s;
+}
+.home-stagger > *:nth-child(2) {
+  animation-delay: 0.08s;
+}
+.home-stagger > *:nth-child(3) {
+  animation-delay: 0.15s;
+}
+.home-stagger > *:nth-child(4) {
+  animation-delay: 0.22s;
+}
+.home-stagger > *:nth-child(5) {
+  animation-delay: 0.29s;
+}
+.home-stagger > *:nth-child(6) {
+  animation-delay: 0.36s;
+}
+.home-stagger > *:nth-child(7) {
+  animation-delay: 0.43s;
+}
+.home-stagger > *:nth-child(8) {
+  animation-delay: 0.5s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-stagger > * {
+    animation: none !important;
+    opacity: 1;
+  }
+}
