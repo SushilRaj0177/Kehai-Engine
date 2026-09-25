@@ -29,7 +29,7 @@ const ATTENTION_THRESHOLD = 0.75;
 // full-width sections. A grid of mixed 1- and 2-column tiles is what
 // actually reads as "a dashboard" at a glance; a vertical list of
 // sparsely-populated sections doesn't, no matter how each one is styled.
-const TILE = "rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.055] to-white/[0.015] transition-transform active:scale-[0.97]";
+const TILE = "rounded-2xl border border-white/[0.08] bg-white/[0.035] transition-transform active:scale-[0.97]";
 
 function Tile({ span = 1, className = "", children }: { span?: 1 | 2; children: React.ReactNode; className?: string }) {
   return <div className={`${TILE} ${span === 2 ? "col-span-2" : ""} ${className}`}>{children}</div>;
@@ -137,35 +137,32 @@ export default function HomePage() {
         <div className="mt-6 grid grid-cols-2 gap-3">
           {isAttendee && (
             <>
-              <Tile className="flex flex-col items-center gap-2.5 p-4">
-                <RingGlowRing
-                  value={bestStreak ? Math.min(bestStreak.streak / 14, 1) : 0}
-                  accent="#ff2d55"
-                  icon={<FlameIcon lit={!!bestStreak && bestStreak.streak > 0} />}
-                  display={String(bestStreak?.streak ?? 0)}
-                />
-                <div className="text-center">
-                  <p className="text-[11px] font-medium text-white/50">{bestStreak ? t("home.streakDays", { count: bestStreak.streak }) : t("home.streakNone")}</p>
-                  {bestStreak?.name && <p className="mt-0.5 truncate text-[10px] text-white/30">{bestStreak.name}</p>}
+              <Tile className="p-4">
+                <div className="flex items-center gap-2.5">
+                  <RateRing value={bestStreak ? Math.min(bestStreak.streak / 14, 1) : 0} accent="#ff2d55">
+                    <FlameIcon lit={!!bestStreak && bestStreak.streak > 0} />
+                  </RateRing>
+                  <div className="min-w-0 font-mono text-2xl font-bold tabular-nums text-white">{bestStreak?.streak ?? 0}</div>
                 </div>
+                <p className="mt-2 text-[11px] font-medium uppercase tracking-wide text-white/40">
+                  {bestStreak ? t("home.streakDays", { count: bestStreak.streak }) : t("home.streakNone")}
+                </p>
+                {bestStreak?.name && <p className="mt-0.5 truncate text-[10px] text-white/30">{bestStreak.name}</p>}
               </Tile>
-              <Tile className="flex flex-col items-center gap-2.5 p-4">
-                <RingGlowRing value={overallRate} accent="#5ff4ff" display={`${Math.round(overallRate * 100)}%`} />
-                <p className="text-center text-[11px] font-medium text-white/50">{t("home.overallRateLabel")}</p>
+              <Tile className="p-4">
+                <div className="flex items-center gap-2.5">
+                  <RateRing value={overallRate} accent="#5ff4ff" />
+                  <div className="min-w-0 font-mono text-2xl font-bold tabular-nums text-white">{Math.round(overallRate * 100)}%</div>
+                </div>
+                <p className="mt-2 text-[11px] font-medium uppercase tracking-wide text-white/40">{t("home.overallRateLabel")}</p>
               </Tile>
             </>
           )}
 
           {!isAttendee && isTeacher && (
             <>
-              <Tile className="flex flex-col items-center gap-2.5 p-4">
-                <CountBadge value={teacherTotals.students} accent="#5ff4ff" />
-                <p className="text-[11px] font-medium text-white/50">{t("home.studentsLabel")}</p>
-              </Tile>
-              <Tile className="flex flex-col items-center gap-2.5 p-4">
-                <CountBadge value={teacherTotals.classes} accent="#ff2d55" />
-                <p className="text-[11px] font-medium text-white/50">{t("home.classesLabel")}</p>
-              </Tile>
+              <StatBlock value={teacherTotals.students} label={t("home.studentsLabel")} />
+              <StatBlock value={teacherTotals.classes} label={t("home.classesLabel")} />
             </>
           )}
 
@@ -283,18 +280,12 @@ export default function HomePage() {
 
           {primaryOrg && orgOverview && (
             <>
-              <Tile className="p-3.5">
-                <div className="font-display text-xl font-bold text-white">{orgOverview.totalEvents}</div>
-                <div className="mt-0.5 text-[10px] uppercase tracking-wider text-white/40">{t("orgDetail.statEvents")}</div>
-              </Tile>
-              <Tile className="p-3.5">
-                <div className="font-display text-xl font-bold text-white">{orgOverview.totalAttendance}</div>
-                <div className="mt-0.5 text-[10px] uppercase tracking-wider text-white/40">{t("orgDetail.statAttendance")}</div>
-              </Tile>
+              <StatBlock value={orgOverview.totalEvents} label={t("orgDetail.statEvents")} />
+              <StatBlock value={orgOverview.totalAttendance} label={t("orgDetail.statAttendance")} />
               <Tile span={2} className="p-3.5">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-display text-xl font-bold text-white">{Math.round((orgOverview.averageAttendanceRate ?? 0) * 100)}%</div>
+                    <div className="font-mono text-xl font-bold tabular-nums text-white">{Math.round((orgOverview.averageAttendanceRate ?? 0) * 100)}%</div>
                     <div className="mt-0.5 text-[10px] uppercase tracking-wider text-white/40">{t("orgDetail.statAvgRateShort")}</div>
                   </div>
                   <Link href={`/orgs/${primaryOrg.slug}`} className="text-xs font-semibold text-shu-300">
@@ -328,8 +319,13 @@ function TeachingTile({
   const isLive = !!detail?.openSession;
 
   return (
-    <div className={`${TILE} col-span-2 flex items-center justify-between gap-3 p-4 ${isLive ? "border-kehai-500/30 bg-gradient-to-r from-kehai-500/[0.08] to-transparent" : ""}`}>
-      <Link href={`/classrooms/${classroom.id}`} className="min-w-0 flex-1">
+    // Only the button below navigates -- the rest of this row is plain
+    // display text, not a second, wider, invisible tap target doing the
+    // same thing the button already does (that duplication was the
+    // actual bug: it made the button pointless, since tapping anywhere
+    // else on the row went to the same place anyway).
+    <div className={`${TILE} col-span-2 flex items-center justify-between gap-3 p-4`}>
+      <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           {isLive && <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-kehai-400" aria-hidden />}
           <p className="truncate text-sm font-bold text-white">{classroom.name}</p>
@@ -337,7 +333,7 @@ function TeachingTile({
         <p className={`mt-1 text-xs font-semibold ${isLive ? "text-kehai-300" : "text-white/35"}`}>
           {isLive ? t("home.liveNow") : t("home.noSessionOpen")} · {t("home.studentsCount", { count: classroom.studentCount })}
         </p>
-      </Link>
+      </div>
       <Link href={`/classrooms/${classroom.id}`}>
         <Button size="sm" variant={isLive ? "cyan" : "secondary"}>
           {isLive ? t("home.manage") : t("home.startSession")}
@@ -369,31 +365,30 @@ function BarChart({ bars, accent }: { bars: { label: string; value: number; coun
   );
 }
 
-function RingGlowRing({ value, accent, icon, display }: { value: number; accent: string; icon?: React.ReactNode; display: string }) {
+// A small rate ring, no glow halo, no gradient fill behind it -- the ring
+// itself is the only decoration, since it's the one shape here that
+// actually means something (a fraction of 100%). Paired inline with a
+// plain monospace number rather than centered inside the ring, closer to
+// how a real instrument reads (dial + digital readout side by side) than
+// a glowing badge.
+function RateRing({ value, accent, children }: { value: number; accent: string; children?: React.ReactNode }) {
   return (
-    <div className="relative flex items-center justify-center">
-      <div aria-hidden className="absolute h-20 w-20 rounded-full blur-xl" style={{ background: accent, opacity: 0.22 }} />
-      <ProgressRing value={value} size={72} strokeWidth={6} accent={accent}>
-        <div className="flex flex-col items-center gap-0.5">
-          {icon}
-          <span className="font-display text-base font-bold leading-none text-white">{display}</span>
-        </div>
-      </ProgressRing>
-    </div>
+    <ProgressRing value={value} size={40} strokeWidth={4} accent={accent}>
+      {children}
+    </ProgressRing>
   );
 }
 
-function CountBadge({ value, accent }: { value: number; accent: string }) {
+// The one stat treatment used everywhere on this page a plain count needs
+// showing -- flat, no circle, no gradient, matching the org stats below it
+// exactly. A count isn't a fraction of anything, so it doesn't get a ring
+// or a badge shape standing in for one.
+function StatBlock({ value, label }: { value: React.ReactNode; label: string }) {
   return (
-    <div className="relative flex items-center justify-center">
-      <div aria-hidden className="absolute h-20 w-20 rounded-full blur-xl" style={{ background: accent, opacity: 0.22 }} />
-      <div
-        className="relative flex h-[72px] w-[72px] items-center justify-center rounded-full"
-        style={{ background: `radial-gradient(circle at 35% 30%, ${accent}40, ${accent}0d)`, border: `1px solid ${accent}45` }}
-      >
-        <span className="font-display text-2xl font-black text-white">{value}</span>
-      </div>
-    </div>
+    <Tile className="p-3.5">
+      <div className="font-mono text-xl font-bold tabular-nums text-white">{value}</div>
+      <div className="mt-0.5 text-[10px] uppercase tracking-wider text-white/40">{label}</div>
+    </Tile>
   );
 }
 
