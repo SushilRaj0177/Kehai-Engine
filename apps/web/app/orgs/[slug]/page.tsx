@@ -84,7 +84,7 @@ export default function OrgPage() {
             <div className="grid grid-cols-2 gap-3">
               <StatTile label={t("orgDetail.statEvents")} value={overview.totalEvents} />
               <StatTile label={t("orgDetail.statAttendance")} value={overview.totalAttendance} />
-              <StatTile label={t("orgDetail.statAvgRate")} value={`${Math.round((overview.averageAttendanceRate ?? 0) * 100)}%`} />
+              <StatTile label={t("orgDetail.statAvgRateShort")} value={`${Math.round((overview.averageAttendanceRate ?? 0) * 100)}%`} />
               <StatTile label={t("orgDetail.statRegistrations")} value={overview.totalRegistrations} />
             </div>
           )}

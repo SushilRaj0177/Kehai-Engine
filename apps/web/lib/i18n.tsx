@@ -188,6 +188,12 @@ const dict = {
     statRegistrations: { en: "Registrations", ja: "登録者数" },
     statAttendance: { en: "Attendance", ja: "出席者数" },
     statAvgRate: { en: "Avg. attendance rate", ja: "平均出席率" },
+    // Same stat, short enough to stay on one line in the 2-column mobile
+    // stat-tile grid -- the full label wrapping to two lines was
+    // stretching that whole grid row (CSS grid rows size to their tallest
+    // cell) and leaving its row-mate tile with a lot of dead space to
+    // match.
+    statAvgRateShort: { en: "Avg rate", ja: "平均率" },
     statCompleted: { en: "Completed", ja: "終了済み" },
     statRecurringRate: { en: "Repeat attendees", ja: "リピート参加率" },
     trendHeading: { en: "Attendance trend", ja: "出席率の推移" },

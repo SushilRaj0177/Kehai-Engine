@@ -67,7 +67,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
         if (retriesLeft > 0) {
-          await new Promise((resolve) => setTimeout(resolve, (4 - retriesLeft) * 1500));
+          // Short backoff (600/1200/1800ms — 3.6s total worst case, was
+          // 9s): this only delays *retries* after an outright failure, not
+          // the request itself, so it can't make a slow-but-succeeding
+          // cold start any faster. It was just adding dead time on top of
+          // that wait for no benefit.
+          await new Promise((resolve) => setTimeout(resolve, (4 - retriesLeft) * 600));
           return attempt(retriesLeft - 1);
         }
         setUser(null);

@@ -15,7 +15,7 @@ import { Button } from "./ui/Button";
 const EMAIL_VERIFICATION_UI_ENABLED = false;
 
 export function NavBar() {
-  const { user, memberships, logout } = useAuth();
+  const { user, memberships, logout, loading: authLoading } = useAuth();
   const { t, locale, toggle } = useLocale();
   const pathname = usePathname();
   const router = useRouter();
@@ -126,7 +126,17 @@ export function NavBar() {
             <LocaleSwitch locale={locale} onToggle={toggle} />
           </div>
 
-          {user ? (
+          {authLoading ? (
+            // Session check in flight (GET /api/auth/me) -- a stored
+            // token almost always means a real signed-in user, so
+            // rendering the signed-out CTAs here would be actively wrong,
+            // not just a neutral placeholder: it tells someone who IS
+            // signed in that they aren't, for however long that request
+            // takes (worse on a cold-started free-tier API). A same-sized
+            // pulsing placeholder holds the layout with no verdict either
+            // way until the real answer comes back.
+            <span className="h-8 w-20 animate-pulse rounded-full bg-white/[0.06] sm:w-24" aria-hidden />
+          ) : user ? (
             <>
               {/* Dropped below md, not just sm — the HUD button's own
                   corner brackets already read as "this is the account
@@ -226,7 +236,7 @@ export function NavBar() {
               {t("nav.settings")}
             </MobileMenuLink>
           )}
-          {!user && (
+          {!authLoading && !user && (
             <MobileMenuLink href="/login" onNavigate={() => setMenuOpen(false)}>
               {t("nav.signIn")}
             </MobileMenuLink>
