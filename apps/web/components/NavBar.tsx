@@ -35,6 +35,29 @@ export function NavBar() {
     return () => cancelAnimationFrame(id);
   }, [menuOpen]);
 
+  const menuPanelRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Tapping/clicking anywhere outside the open dropdown closes it -- not
+  // just the toggle button itself. `pointerdown`, not `click`: it fires
+  // before the panel's own onClick/Link navigation would, so a tap on a
+  // menu item both closes the menu (here) and navigates (its own
+  // onNavigate) rather than needing the two to coordinate. Capture phase
+  // isn't needed since document-level listeners still see the event before
+  // it's done bubbling; skipped entirely while closed so it isn't doing
+  // anything on every page for no reason.
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handlePointerDown(e: PointerEvent) {
+      const target = e.target as Node;
+      if (menuPanelRef.current?.contains(target)) return;
+      if (menuButtonRef.current?.contains(target)) return;
+      setMenuOpen(false);
+    }
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [menuOpen]);
+
   const primaryOrg = memberships[0]?.organization;
 
   return (
@@ -153,6 +176,7 @@ export function NavBar() {
               dropdown instead of trying to cram it into the bar itself.
               Desktop (sm and up) never renders this button at all. */}
           <button
+            ref={menuButtonRef}
             type="button"
             aria-label={t("nav.menu")}
             aria-expanded={menuOpen}
@@ -174,6 +198,7 @@ export function NavBar() {
         // it floats over the page instead of pushing the hero content down
         // in normal flow -- was previously a plain block sibling.
         <div
+          ref={menuPanelRef}
           className={`mobile-menu-reveal ${menuVisible ? "is-visible" : ""} absolute inset-x-4 top-[72px] z-50 mx-auto max-w-6xl rounded-2xl border border-white/[0.08] bg-void-900/95 p-2 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.7)] backdrop-blur-2xl sm:hidden`}>
           <MobileMenuLink href="/events" active={!!pathname?.startsWith("/events")} onNavigate={() => setMenuOpen(false)}>
             {t("nav.discover")}

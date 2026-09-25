@@ -220,6 +220,8 @@ const dict = {
     typeNameToConfirm: { en: "Type \"{name}\" to confirm", ja: "確認のため「{name}」と入力してください" },
     deleteOrgConfirm: { en: "Permanently delete this organization", ja: "この組織を完全に削除する" },
     deleteOrgError: { en: "Failed to delete organization", ja: "組織の削除に失敗しました" },
+    tabActivity: { en: "Activity", ja: "アクティビティ" },
+    tabSettings: { en: "Settings", ja: "設定" },
   },
   orgMembers: {
     heading: { en: "Team", ja: "チーム" },

@@ -20,6 +20,9 @@ import { useMyOrganizations, useOrgEvents, useOrgOverview } from "@/lib/hooks";
 import { apiFetch, ApiError } from "@/lib/api";
 import { formatDateRange } from "@/lib/format";
 import { useLocale } from "@/lib/i18n";
+import type { EventSummary, Organization, OrgOverview } from "@/lib/types";
+
+type MobileTab = "events" | "team" | "activity" | "settings";
 
 export default function OrgPage() {
   const { t, locale } = useLocale();
@@ -30,6 +33,7 @@ export default function OrgPage() {
   const { data: events, isLoading: eventsLoading } = useOrgEvents(org?.id);
   const { data: overview } = useOrgOverview(org?.id);
   const [q, setQ] = useState("");
+  const [mobileTab, setMobileTab] = useState<MobileTab>("events");
 
   const filteredEvents = useMemo(() => {
     if (!events) return events;
@@ -51,6 +55,8 @@ export default function OrgPage() {
     );
   }
 
+  const isAdmin = org.role === "ADMIN" || org.role === "OWNER";
+
   return (
     <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
@@ -67,117 +73,290 @@ export default function OrgPage() {
           </Link>
         </div>
 
-        {overview && (
-          <div className="relative mt-14 grid grid-cols-2 gap-8 sm:grid-cols-3 lg:grid-cols-6">
-            <MiniStat label={t("orgDetail.statEvents")} value={overview.totalEvents} />
-            <MiniStat label={t("orgDetail.statCompleted")} value={overview.completedEvents} />
-            <MiniStat label={t("orgDetail.statRegistrations")} value={overview.totalRegistrations} />
-            <MiniStat label={t("orgDetail.statAttendance")} value={overview.totalAttendance} />
-            <MiniStat label={t("orgDetail.statAvgRate")} value={`${Math.round((overview.averageAttendanceRate ?? 0) * 100)}%`} />
-            <MiniStat label={t("orgDetail.statRecurringRate")} value={`${Math.round((overview.recurringAttendeeRate ?? 0) * 100)}%`} />
-          </div>
-        )}
-
-        {overview && overview.events.length > 0 && (
-          <Card className="relative mt-10">
-            <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">
-              {t("orgDetail.trendHeading")}
-            </CardHeader>
-            <CardBody>
-              <OrgAttendanceTrendChart events={overview.events} />
-            </CardBody>
-          </Card>
-        )}
-
-        <div className="relative mt-16">
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="font-display text-xl font-bold text-white/70">{t("orgDetail.eventsHeading")}</h2>
-            {events && events.length > 0 && (
-              <Input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder={t("orgDetail.searchPlaceholder")}
-                underline={false}
-                className="max-w-xs"
-              />
-            )}
-          </div>
-          {eventsLoading ? (
-            <LoadingBlock />
-          ) : !events?.length ? (
-            <EmptyState
-              glyph="催"
-              title={t("orgDetail.emptyTitle")}
-              description={t("orgDetail.emptyDescription")}
-              action={
-                <Link href={`/orgs/${org.slug}/events/new`}>
-                  <Button>{t("orgDetail.createEvent")}</Button>
-                </Link>
-              }
-            />
-          ) : !filteredEvents?.length ? (
-            <EmptyState glyph="催" title={t("orgDetail.noMatchTitle")} description={t("orgDetail.noMatchDescription")} />
-          ) : (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredEvents.map((event) => (
-                <Link key={event.id} href={`/orgs/${org.slug}/events/${event.id}`}>
-                  <TiltCard className="h-full rounded-2xl">
-                    <Card className="h-full transition-colors hover:border-shu-500/30">
-                      <CardBody className="relative z-10 py-6">
-                        <div className="flex items-start justify-between gap-2">
-                          <h3 className="font-display text-base font-bold leading-snug text-white">{event.name}</h3>
-                          <Badge status={event.status}>{t(`badge.status.${event.status}`)}</Badge>
-                        </div>
-                        <p className="mt-2 text-sm text-white/40">{formatDateRange(event.startsAt, event.endsAt, locale)}</p>
-                        <p className="mt-1 text-sm text-white/35">{event.venue}</p>
-                        <div className="mt-5 flex items-center gap-4 border-t border-white/[0.06] pt-4 text-sm text-white/50">
-                          <span>{t("orgDetail.registeredCount", { count: event._count.registrations })}</span>
-                          <span>{t("orgDetail.attendedCount", { count: event._count.attendances })}</span>
-                        </div>
-                      </CardBody>
-                    </Card>
-                  </TiltCard>
-                </Link>
-              ))}
+        {/* --- Mobile / tablet (below md): stat widgets + tabbed sections,
+            everything one screen at a time instead of one long stacked
+            page — same pattern GitHub, Stripe, and Vercel's own dashboards
+            use on small screens. Desktop keeps the original full stacked
+            layout below, unchanged, since it never had a scrolling
+            problem to begin with. --- */}
+        <div className="relative mt-10 md:hidden">
+          {overview && (
+            <div className="grid grid-cols-2 gap-3">
+              <StatTile label={t("orgDetail.statEvents")} value={overview.totalEvents} />
+              <StatTile label={t("orgDetail.statAttendance")} value={overview.totalAttendance} />
+              <StatTile label={t("orgDetail.statAvgRate")} value={`${Math.round((overview.averageAttendanceRate ?? 0) * 100)}%`} />
+              <StatTile label={t("orgDetail.statRegistrations")} value={overview.totalRegistrations} />
             </div>
           )}
+
+          <MobileTabBar
+            active={mobileTab}
+            onChange={setMobileTab}
+            showSettings={isAdmin}
+          />
+
+          <div className="mt-5">
+            {mobileTab === "events" && (
+              <EventsPanel
+                org={org}
+                overview={overview}
+                events={events}
+                eventsLoading={eventsLoading}
+                filteredEvents={filteredEvents}
+                q={q}
+                setQ={setQ}
+                locale={locale}
+                t={t}
+                compact
+              />
+            )}
+            {mobileTab === "team" && (
+              <Card>
+                <CardBody>
+                  <OrgMembers orgId={org.id} callerRole={org.role} />
+                </CardBody>
+              </Card>
+            )}
+            {mobileTab === "activity" && (
+              <Card>
+                <CardBody>
+                  <AuditLogPanel orgId={org.id} />
+                </CardBody>
+              </Card>
+            )}
+            {mobileTab === "settings" && isAdmin && (
+              <div className="space-y-6">
+                <WebhookSection org={org} />
+                {org.role === "OWNER" && <DeleteOrgSection org={org} />}
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="relative mt-16">
-          <h2 className="mb-6 font-display text-xl font-bold text-white/70">{t("orgMembers.heading")}</h2>
-          <Card>
-            <CardBody>
-              <OrgMembers orgId={org.id} callerRole={org.role} />
-            </CardBody>
-          </Card>
-        </div>
+        {/* --- Desktop (md and up): original full layout --- */}
+        <div className="hidden md:block">
+          {overview && (
+            <div className="relative mt-14 grid grid-cols-2 gap-8 sm:grid-cols-3 lg:grid-cols-6">
+              <MiniStat label={t("orgDetail.statEvents")} value={overview.totalEvents} />
+              <MiniStat label={t("orgDetail.statCompleted")} value={overview.completedEvents} />
+              <MiniStat label={t("orgDetail.statRegistrations")} value={overview.totalRegistrations} />
+              <MiniStat label={t("orgDetail.statAttendance")} value={overview.totalAttendance} />
+              <MiniStat label={t("orgDetail.statAvgRate")} value={`${Math.round((overview.averageAttendanceRate ?? 0) * 100)}%`} />
+              <MiniStat label={t("orgDetail.statRecurringRate")} value={`${Math.round((overview.recurringAttendeeRate ?? 0) * 100)}%`} />
+            </div>
+          )}
 
-        {(org.role === "ADMIN" || org.role === "OWNER") && (
           <div className="relative mt-16">
-            <h2 className="mb-6 font-display text-xl font-bold text-white/70">{t("auditLog.heading")}</h2>
+            <EventsPanel
+              org={org}
+              overview={overview}
+              events={events}
+              eventsLoading={eventsLoading}
+              filteredEvents={filteredEvents}
+              q={q}
+              setQ={setQ}
+              locale={locale}
+              t={t}
+            />
+          </div>
+
+          <div className="relative mt-16">
+            <h2 className="mb-6 font-display text-xl font-bold text-white/70">{t("orgMembers.heading")}</h2>
             <Card>
               <CardBody>
-                <AuditLogPanel orgId={org.id} />
+                <OrgMembers orgId={org.id} callerRole={org.role} />
               </CardBody>
             </Card>
           </div>
-        )}
 
-        {(org.role === "ADMIN" || org.role === "OWNER") && (
-          <div className="relative mt-16">
-            <h2 className="mb-6 font-display text-xl font-bold text-white/70">{t("orgDetail.webhookHeading")}</h2>
-            <WebhookSection org={org} />
-          </div>
-        )}
+          {isAdmin && (
+            <div className="relative mt-16">
+              <h2 className="mb-6 font-display text-xl font-bold text-white/70">{t("auditLog.heading")}</h2>
+              <Card>
+                <CardBody>
+                  <AuditLogPanel orgId={org.id} />
+                </CardBody>
+              </Card>
+            </div>
+          )}
 
-        {org.role === "OWNER" && (
-          <div className="relative mt-16">
-            <h2 className="mb-6 font-display text-xl font-bold text-shu-400">{t("orgDetail.dangerZoneHeading")}</h2>
-            <DeleteOrgSection org={org} />
-          </div>
-        )}
+          {isAdmin && (
+            <div className="relative mt-16">
+              <h2 className="mb-6 font-display text-xl font-bold text-white/70">{t("orgDetail.webhookHeading")}</h2>
+              <WebhookSection org={org} />
+            </div>
+          )}
+
+          {org.role === "OWNER" && (
+            <div className="relative mt-16">
+              <h2 className="mb-6 font-display text-xl font-bold text-shu-400">{t("orgDetail.dangerZoneHeading")}</h2>
+              <DeleteOrgSection org={org} />
+            </div>
+          )}
+        </div>
       </div>
     </ClickRippleLayer>
+  );
+}
+
+function MobileTabBar({
+  active,
+  onChange,
+  showSettings,
+}: {
+  active: MobileTab;
+  onChange: (tab: MobileTab) => void;
+  showSettings: boolean;
+}) {
+  const { t } = useLocale();
+  const tabs: { id: MobileTab; label: string }[] = [
+    { id: "events", label: t("orgDetail.eventsHeading") },
+    { id: "team", label: t("orgMembers.heading") },
+    { id: "activity", label: t("orgDetail.tabActivity") },
+    ...(showSettings ? [{ id: "settings" as const, label: t("orgDetail.tabSettings") }] : []),
+  ];
+
+  return (
+    <div className="scroll-thin mt-6 flex gap-2 overflow-x-auto pb-1">
+      {tabs.map((tab) => (
+        <button
+          key={tab.id}
+          type="button"
+          onClick={() => onChange(tab.id)}
+          className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold tracking-wide transition-colors ${
+            active === tab.id
+              ? "bg-shu-500 text-void-950"
+              : "border border-white/10 bg-white/[0.04] text-white/60 hover:text-white"
+          }`}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function EventsPanel({
+  org,
+  overview,
+  events,
+  eventsLoading,
+  filteredEvents,
+  q,
+  setQ,
+  locale,
+  t,
+  compact,
+}: {
+  org: Organization;
+  overview: OrgOverview | undefined;
+  events: EventSummary[] | undefined;
+  eventsLoading: boolean;
+  filteredEvents: EventSummary[] | undefined;
+  q: string;
+  setQ: (v: string) => void;
+  locale: "en" | "ja";
+  t: (key: string, vars?: Record<string, string | number>) => string;
+  compact?: boolean;
+}) {
+  return (
+    <div className="space-y-6">
+      {!compact && overview && overview.events.length > 0 && (
+        <Card>
+          <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">
+            {t("orgDetail.trendHeading")}
+          </CardHeader>
+          <CardBody>
+            <OrgAttendanceTrendChart events={overview.events} />
+          </CardBody>
+        </Card>
+      )}
+      {compact && overview && overview.events.length > 0 && (
+        <Card>
+          <CardBody className="py-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">{t("orgDetail.trendHeading")}</p>
+            <OrgAttendanceTrendChart events={overview.events} />
+          </CardBody>
+        </Card>
+      )}
+
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        {!compact && <h2 className="font-display text-xl font-bold text-white/70">{t("orgDetail.eventsHeading")}</h2>}
+        {events && events.length > 0 && (
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={t("orgDetail.searchPlaceholder")}
+            underline={false}
+            className={compact ? "w-full max-w-none" : "max-w-xs"}
+          />
+        )}
+      </div>
+
+      {eventsLoading ? (
+        <LoadingBlock />
+      ) : !events?.length ? (
+        <EmptyState
+          glyph="催"
+          title={t("orgDetail.emptyTitle")}
+          description={t("orgDetail.emptyDescription")}
+          action={
+            <Link href={`/orgs/${org.slug}/events/new`}>
+              <Button>{t("orgDetail.createEvent")}</Button>
+            </Link>
+          }
+        />
+      ) : !filteredEvents?.length ? (
+        <EmptyState glyph="催" title={t("orgDetail.noMatchTitle")} description={t("orgDetail.noMatchDescription")} />
+      ) : (
+        <div className={compact ? "space-y-3" : "grid gap-5 sm:grid-cols-2 lg:grid-cols-3"}>
+          {filteredEvents.map((event) => (
+            <EventCard key={event.id} org={org} event={event} locale={locale} t={t} compact={compact} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EventCard({
+  org,
+  event,
+  locale,
+  t,
+  compact,
+}: {
+  org: Organization;
+  event: EventSummary;
+  locale: "en" | "ja";
+  t: (key: string, vars?: Record<string, string | number>) => string;
+  compact?: boolean;
+}) {
+  const body = (
+    <Card className="h-full transition-colors hover:border-shu-500/30">
+      <CardBody className={compact ? "relative z-10 py-4" : "relative z-10 py-6"}>
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="font-display text-base font-bold leading-snug text-white">{event.name}</h3>
+          <Badge status={event.status}>{t(`badge.status.${event.status}`)}</Badge>
+        </div>
+        <p className="mt-2 text-sm text-white/40">{formatDateRange(event.startsAt, event.endsAt, locale)}</p>
+        <p className="mt-1 text-sm text-white/35">{event.venue}</p>
+        <div className="mt-5 flex items-center gap-4 border-t border-white/[0.06] pt-4 text-sm text-white/50">
+          <span>{t("orgDetail.registeredCount", { count: event._count.registrations })}</span>
+          <span>{t("orgDetail.attendedCount", { count: event._count.attendances })}</span>
+        </div>
+      </CardBody>
+    </Card>
+  );
+
+  // Skip the 3D tilt effect in the compact mobile list -- it's a
+  // pointer/hover flourish that adds nothing on a touch device and the
+  // list here is denser (stacked rows, not a spaced-out grid) than the
+  // tilt effect was designed to sit in.
+  return (
+    <Link href={`/orgs/${org.slug}/events/${event.id}`}>
+      {compact ? body : <TiltCard className="h-full rounded-2xl">{body}</TiltCard>}
+    </Link>
   );
 }
 
@@ -295,6 +474,20 @@ function MiniStat({ label, value }: { label: string; value: React.ReactNode }) {
     <div>
       <div className="font-display text-3xl font-bold text-white md:text-4xl">{value}</div>
       <div className="mt-1.5 text-xs uppercase tracking-wider text-white/40">{label}</div>
+    </div>
+  );
+}
+
+// Compact bordered widget, mobile stat grid only -- a plain number+label
+// pair (MiniStat, used on desktop) reads fine spread across six columns,
+// but bare in a tight 2-column mobile grid it's just floating text. A
+// bounded tile is what makes it scannable at a glance -- the same tile
+// pattern Vercel/Stripe/GitHub's own mobile dashboards use for KPIs.
+function StatTile({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-3.5 py-3">
+      <div className="font-display text-2xl font-bold text-white">{value}</div>
+      <div className="mt-1 text-[11px] uppercase tracking-wider text-white/40">{label}</div>
     </div>
   );
 }
