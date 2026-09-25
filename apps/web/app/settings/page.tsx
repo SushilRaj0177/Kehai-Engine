@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { NavBar } from "@/components/NavBar";
+import { NavBar, LocaleSwitch } from "@/components/NavBar";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Input, Label } from "@/components/ui/Input";
@@ -49,6 +49,7 @@ export default function SettingsPage() {
         <h1 className="relative z-20 mt-3 font-display text-4xl font-black text-white md:text-5xl">{t("settings.title")}</h1>
 
         <div className="relative z-20 mt-12 space-y-6">
+          <AccountSection />
           <ProfileSection />
           <NotificationsSection />
           {user.provider !== "GOOGLE" && <ChangePasswordSection />}
@@ -56,6 +57,39 @@ export default function SettingsPage() {
         </div>
       </div>
     </ClickRippleLayer>
+  );
+}
+
+function AccountSection() {
+  const { t, locale, toggle } = useLocale();
+  const { logout } = useAuth();
+  const router = useRouter();
+
+  return (
+    <Card>
+      <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">
+        {t("settings.preferencesHeading")}
+      </CardHeader>
+      <CardBody className="space-y-4">
+        <div className="flex items-center justify-between gap-4">
+          <p className="text-sm font-medium text-white/85">{t("settings.languageLabel")}</p>
+          <LocaleSwitch locale={locale} onToggle={toggle} />
+        </div>
+        <div className="flex items-center justify-between gap-4 border-t border-white/[0.06] pt-4">
+          <p className="text-sm font-medium text-white/85">{t("nav.signOut")}</p>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              logout();
+              router.push("/");
+            }}
+          >
+            {t("nav.signOut")}
+          </Button>
+        </div>
+      </CardBody>
+    </Card>
   );
 }
 

@@ -141,23 +141,6 @@ body {
   transform: translateY(0);
 }
 
-/* Mobile nav dropdown reveal — same opacity+transform transition technique
-   as .reveal above, but driven by NavBar's own open state (see menuVisible
-   in NavBar.tsx) rather than an IntersectionObserver, since this is a
-   mount-triggered entrance, not a scroll one. Quicker and snaps in from
-   slightly above/scaled-down — reads as the panel dropping into place
-   under the nav bar, not a generic fade. */
-.mobile-menu-reveal {
-  opacity: 0;
-  transform: translateY(-8px) scale(0.97);
-  transform-origin: top center;
-  transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.mobile-menu-reveal.is-visible {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-}
-
 /* Distinct, more dramatic entrance reserved for the hero -> next-section
    boundary only (not used by any other scroll reveal on the page): a
    diagonal clip-path wipe combined with a scale/blur settle, instead of
@@ -416,8 +399,7 @@ body {
     animation: none !important;
   }
   .reveal,
-  .reveal-curtain,
-  .mobile-menu-reveal {
+  .reveal-curtain {
     opacity: 1;
     clip-path: none;
     transform: none;

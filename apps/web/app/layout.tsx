@@ -51,6 +51,11 @@ export const metadata: Metadata = {
 
 export const viewport = {
   themeColor: "#0a0e14",
+  // Needed for the fixed mobile bottom nav's own safe-area padding
+  // (env(safe-area-inset-bottom)) to resolve to anything but 0 on a
+  // notched/gesture-bar phone -- without this, the page renders inside
+  // the safe area by default and the env() variables are meaningless.
+  viewportFit: "cover" as const,
 };
 
 // Forces every page under this layout to render per-request rather than
@@ -66,7 +71,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <html lang="en" className={`${notoJp.variable} ${displayFont.variable} ${inter.variable} ${mono.variable}`}>
-      <body className="min-h-screen bg-void-950 font-sans antialiased">
+      {/* pb-20 clears MobileBottomNav's own h-16 (64px) plus its safe-area
+          padding with room to spare, so the fixed bar never overlaps a
+          page's own bottom content (including Footer). Desktop has no
+          bottom nav at all, hence sm:pb-0. */}
+      <body className="min-h-screen bg-void-950 pb-20 font-sans antialiased sm:pb-0">
         <ApiBaseSetter apiBase={apiBase} />
         <CustomCursor />
         <LocaleProvider>

@@ -81,11 +81,20 @@ export default function OrgPage() {
             problem to begin with. --- */}
         <div className="relative mt-10 md:hidden">
           {overview && (
-            <div className="grid grid-cols-2 gap-3">
+            // Horizontal scrollable strip, not a 2-column grid: the pattern
+            // Robinhood, Coinbase, and Stripe's own mobile dashboards use
+            // for a KPI row. Each chip sizes to its own content instead of
+            // a shared grid cell, so one longer label can never stretch a
+            // whole row and pad out its neighbor (the actual bug in the
+            // grid version -- "Avg. attendance rate" wrapping to two lines
+            // was inflating "Registrations" next to it to match).
+            <div className="scroll-thin -mx-6 flex gap-2.5 overflow-x-auto px-6 pb-1">
               <StatTile label={t("orgDetail.statEvents")} value={overview.totalEvents} />
               <StatTile label={t("orgDetail.statAttendance")} value={overview.totalAttendance} />
               <StatTile label={t("orgDetail.statAvgRateShort")} value={`${Math.round((overview.averageAttendanceRate ?? 0) * 100)}%`} />
               <StatTile label={t("orgDetail.statRegistrations")} value={overview.totalRegistrations} />
+              <StatTile label={t("orgDetail.statCompleted")} value={overview.completedEvents} />
+              <StatTile label={t("orgDetail.statRecurringRateShort")} value={`${Math.round((overview.recurringAttendeeRate ?? 0) * 100)}%`} />
             </div>
           )}
 
@@ -478,16 +487,17 @@ function MiniStat({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-// Compact bordered widget, mobile stat grid only -- a plain number+label
-// pair (MiniStat, used on desktop) reads fine spread across six columns,
-// but bare in a tight 2-column mobile grid it's just floating text. A
-// bounded tile is what makes it scannable at a glance -- the same tile
-// pattern Vercel/Stripe/GitHub's own mobile dashboards use for KPIs.
+// Compact bordered widget for the mobile stat strip -- a plain
+// number+label pair (MiniStat, used on desktop) reads fine spread across
+// six columns, but bare in a tight mobile layout it's just floating text.
+// A bounded tile is what makes it scannable at a glance. shrink-0 + a
+// min-width keep each chip a consistent size in the horizontal scroll
+// strip regardless of its own content length.
 function StatTile({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-3.5 py-3">
+    <div className="shrink-0 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3.5 py-3" style={{ minWidth: "108px" }}>
       <div className="font-display text-2xl font-bold text-white">{value}</div>
-      <div className="mt-1 text-[11px] uppercase tracking-wider text-white/40">{label}</div>
+      <div className="mt-1 whitespace-nowrap text-[11px] uppercase tracking-wider text-white/40">{label}</div>
     </div>
   );
 }

@@ -12,6 +12,11 @@ const dict = {
     myEvents: { en: "My Events", ja: "マイイベント" },
     classrooms: { en: "Classrooms", ja: "クラス" },
     console: { en: "Organizer Console", ja: "主催者コンソール" },
+    // Short enough to stay on one line in the bottom tab bar's narrow
+    // flex-1 slot -- the full "Organizer Console" label above (still used
+    // on desktop) wraps awkwardly at that width.
+    consoleShort: { en: "Console", ja: "コンソール" },
+    account: { en: "Account", ja: "アカウント" },
     settings: { en: "Settings", ja: "設定" },
     signIn: { en: "Sign in", ja: "ログイン" },
     signOut: { en: "Sign out", ja: "ログアウト" },
@@ -196,6 +201,7 @@ const dict = {
     statAvgRateShort: { en: "Avg rate", ja: "平均率" },
     statCompleted: { en: "Completed", ja: "終了済み" },
     statRecurringRate: { en: "Repeat attendees", ja: "リピート参加率" },
+    statRecurringRateShort: { en: "Repeat rate", ja: "リピート率" },
     trendHeading: { en: "Attendance trend", ja: "出席率の推移" },
     eventsHeading: { en: "Events", ja: "イベント" },
     searchPlaceholder: { en: "Search events…", ja: "イベントを検索…" },
@@ -897,6 +903,8 @@ const dict = {
   settings: {
     kicker: { en: "Account", ja: "アカウント" },
     title: { en: "Settings", ja: "設定" },
+    preferencesHeading: { en: "Preferences", ja: "設定" },
+    languageLabel: { en: "Language", ja: "言語" },
     profileHeading: { en: "Profile", ja: "プロフィール" },
     emailLabel: { en: "Email", ja: "メールアドレス" },
     saveChanges: { en: "Save changes", ja: "変更を保存" },
