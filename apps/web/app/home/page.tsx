@@ -88,7 +88,12 @@ export default function HomePage() {
           </p>
           <h1 className="mt-1.5 font-display text-[28px] font-black leading-tight text-white">
             {greeting},{" "}
-            <span className="bg-gradient-to-r from-white to-shu-400 bg-clip-text text-transparent">{firstName}</span>
+            <span
+              className="bg-gradient-to-r from-white via-shu-400 to-shu-600 bg-clip-text text-transparent"
+              style={{ filter: "drop-shadow(0 0 14px rgba(255,45,85,0.45))" }}
+            >
+              {firstName}
+            </span>
           </h1>
         </header>
 
