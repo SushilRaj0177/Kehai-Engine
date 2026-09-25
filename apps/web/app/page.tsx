@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { NavBar } from "@/components/NavBar";
 import { Footer } from "@/components/Footer";
@@ -12,6 +13,7 @@ import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { StarField } from "@/components/ui/StarField";
 import { PillarGlyph } from "@/components/ui/PillarGlyph";
 import { useLocale } from "@/lib/i18n";
+import { useIsStandalone } from "@/lib/useStandalone";
 
 // Base (static) transform per glow blob — scroll-driven parallax offset
 // gets appended to these at runtime, never replaces them.
@@ -20,6 +22,8 @@ const GLOW_PARALLAX_SPEED = [0.12, 0.22, 0.18, 0.28, 0.25];
 
 export default function LandingPage() {
   const { t, locale, pillars, steps } = useLocale();
+  const router = useRouter();
+  const isStandalone = useIsStandalone();
   const glowRefs = useRef<(HTMLDivElement | null)[]>([]);
   const flowOlRef = useRef<HTMLOListElement>(null);
   const flowLineRef = useRef<HTMLDivElement>(null);
@@ -126,6 +130,17 @@ export default function LandingPage() {
       if (raf) cancelAnimationFrame(raf);
     };
   }, []);
+
+  // Installed PWA opens straight into the app instead of the marketing
+  // pitch -- someone who tapped a home-screen icon already knows what
+  // this is; skipping to something functional (public event browsing,
+  // no auth required either way) is a better use of that first screen
+  // than re-selling them on it. A plain browser visit is unaffected.
+  useEffect(() => {
+    if (isStandalone) router.replace("/events");
+  }, [isStandalone, router]);
+
+  if (isStandalone) return null;
 
   return (
     <ClickRippleLayer className="relative min-h-screen overflow-hidden">

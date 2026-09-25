@@ -114,10 +114,14 @@ const iconProps = {
 };
 
 function CompassIcon() {
+  // A proper symmetric compass needle (two points reflected through the
+  // circle's center: 15,9 <-> 9,15 and 13,13 <-> 11,11), not the
+  // hand-approximated quadrilateral this used before, whose points didn't
+  // actually mirror each other and rendered as a visibly lopsided blob.
   return (
     <svg {...iconProps}>
       <circle cx="12" cy="12" r="9" />
-      <path d="M14.8 9.2l-2 5.6-5.6 2 2-5.6z" />
+      <polygon points="15,9 13,13 9,15 11,11" fill="currentColor" stroke="none" />
     </svg>
   );
 }

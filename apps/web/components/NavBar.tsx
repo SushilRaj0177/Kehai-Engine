@@ -8,6 +8,8 @@ import { useLocale } from "@/lib/i18n";
 import { apiFetch, ApiError } from "@/lib/api";
 import { Button } from "./ui/Button";
 import { MobileBottomNav } from "./MobileBottomNav";
+import { MobileBrowserNav } from "./MobileBrowserNav";
+import { useIsStandalone } from "@/lib/useStandalone";
 
 // Temporarily off: outbound email isn't deliverable yet (no verified Resend
 // sending domain configured), so nagging users to verify an address that
@@ -20,6 +22,15 @@ export function NavBar() {
   const { t, locale, toggle } = useLocale();
   const pathname = usePathname();
   const router = useRouter();
+  // Installed PWA (opened from a home-screen icon) gets the bottom tab
+  // bar; a plain mobile browser tab gets the previous hamburger dropdown
+  // back — two real, different contexts with different affordances
+  // (a PWA's whole point is behaving like an app; a browser tab already
+  // has the browser's own chrome, back button, tabs, etc., so a bottom
+  // bar competing with that is less clearly a win there). `null` while
+  // still determining renders neither, briefly, rather than guessing and
+  // risking a flash-then-swap once the real answer comes in.
+  const isStandalone = useIsStandalone();
 
   const primaryOrg = memberships[0]?.organization;
 
@@ -76,9 +87,12 @@ export function NavBar() {
             )}
           </nav>
 
-          {/* Everything below sm:hidden — reachable via the bottom tab bar
-              (Discover/Classrooms/Console/Account) and, for language and
-              sign-out specifically, one tap into Account -> Settings. */}
+          {/* Everything below sm:hidden — in the installed-PWA case these
+              are reachable via the bottom tab bar (Discover/Classrooms/
+              Console/Account) and, for language and sign-out
+              specifically, one tap into Account -> Settings. In the
+              browser-tab case, MobileBrowserNav's own hamburger dropdown
+              (rendered just below) covers the same ground directly. */}
           <div className="hidden items-center gap-3 sm:flex">
             <LocaleSwitch locale={locale} onToggle={toggle} />
 
@@ -126,10 +140,12 @@ export function NavBar() {
               </>
             )}
           </div>
+
+          {isStandalone === false && <MobileBrowserNav />}
         </div>
         {EMAIL_VERIFICATION_UI_ENABLED && user && !user.emailVerifiedAt && <VerifyEmailBanner />}
       </header>
-      <MobileBottomNav />
+      {isStandalone === true && <MobileBottomNav />}
     </>
   );
 }
