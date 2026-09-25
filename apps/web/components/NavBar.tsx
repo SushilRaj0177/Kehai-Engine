@@ -40,15 +40,13 @@ export function NavBar() {
           side, a fully rounded shell, and a soft ambient glow standing in
           for what was a single hard 1px border — the bar reads as an
           object sitting on the page instead of a wall cutting across it.
-          Mobile (below sm) carries just the logo now — Discover,
-          Classrooms, Console, and Account all live in MobileBottomNav
-          instead, the same shift most apps with real navigational depth
-          make on small screens (a fixed bottom tab bar, reachable with a
-          thumb, instead of a top menu eating vertical space). This used
-          to also host a hamburger opening a dropdown with the exact same
-          destinations — removed outright rather than kept as a second,
-          redundant way to get to the same places. */}
-      <header className="sticky top-4 z-40 px-4">
+          In the installed-PWA case this is hidden outright below sm, not
+          just trimmed down: MobileBottomNav already carries every
+          destination this bar would, so keeping a logo-only strip around
+          just for branding is real vertical space spent on nothing
+          actionable. Browser-tab mode keeps it (logo + MobileBrowserNav's
+          hamburger). Desktop is unaffected either way. */}
+      <header className={`sticky top-4 z-40 px-4 ${isStandalone === true ? "hidden sm:block" : ""}`}>
         <div
           className="mx-auto flex h-14 max-w-6xl items-center justify-between rounded-full border border-white/[0.08] bg-white/[0.05] pl-4 pr-4 backdrop-blur-2xl sm:h-16 sm:pl-6 sm:pr-6"
           style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.03), 0 12px 40px -12px rgba(0,0,0,0.6), 0 0 60px -20px rgba(255,45,85,0.18)" }}

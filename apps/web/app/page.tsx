@@ -131,13 +131,12 @@ export default function LandingPage() {
     };
   }, []);
 
-  // Installed PWA opens straight into the app instead of the marketing
-  // pitch -- someone who tapped a home-screen icon already knows what
-  // this is; skipping to something functional (public event browsing,
-  // no auth required either way) is a better use of that first screen
-  // than re-selling them on it. A plain browser visit is unaffected.
+  // Installed PWA opens straight into the app's own home dashboard
+  // instead of the marketing pitch -- someone who tapped a home-screen
+  // icon already knows what this is, so re-selling them on it wastes the
+  // one screen that launch gets. A plain browser visit is unaffected.
   useEffect(() => {
-    if (isStandalone) router.replace("/events");
+    if (isStandalone) router.replace("/home");
   }, [isStandalone, router]);
 
   if (isStandalone) return null;

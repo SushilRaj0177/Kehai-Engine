@@ -13,7 +13,7 @@ export default function robots(): MetadataRoute.Robots {
         allow: ["/", "/classrooms/join"],
         // No auth-gated area is worth a crawler's time, and disallowing it
         // explicitly keeps a search index from ever surfacing a login wall.
-        disallow: ["/dashboard", "/settings", "/orgs/", "/classrooms/", "/my-events", "/attend/"],
+        disallow: ["/dashboard", "/settings", "/orgs/", "/classrooms/", "/my-events", "/attend/", "/home"],
       },
     ],
     sitemap: `${base}/sitemap.xml`,
