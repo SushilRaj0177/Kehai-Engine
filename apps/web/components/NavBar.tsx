@@ -155,7 +155,12 @@ export function NavBar() {
       </div>
 
       {menuOpen && (
-        <div className="mx-auto mt-2 max-w-6xl rounded-2xl border border-white/[0.08] bg-white/[0.06] p-2 backdrop-blur-2xl sm:hidden">
+        // Absolutely positioned against the header (its `sticky` already
+        // establishes the containing block, no extra `relative` needed) so
+        // it floats over the page instead of pushing the hero content down
+        // in normal flow -- was previously a plain block sibling.
+        <div
+          className="absolute inset-x-4 top-[72px] z-50 mx-auto max-w-6xl rounded-2xl border border-white/[0.08] bg-void-900/95 p-2 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.7)] backdrop-blur-2xl sm:hidden">
           <MobileMenuLink href="/events" active={!!pathname?.startsWith("/events")} onNavigate={() => setMenuOpen(false)}>
             {t("nav.discover")}
           </MobileMenuLink>
