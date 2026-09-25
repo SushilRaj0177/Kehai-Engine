@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/Button";
@@ -15,85 +16,27 @@ import {
   useMyClassrooms,
   useClassroom,
   useClassroomSessions,
-  useMyAttendanceHistory,
+  useClassroomHeatmap,
+  useClassroomRoster,
+  useClassroomLeaderboard,
 } from "@/lib/hooks";
 import { getCheckInWindow } from "@/lib/checkin-window";
 import { formatDate } from "@/lib/format";
 import { useLocale } from "@/lib/i18n";
-import type { ClassroomSummary } from "@/lib/types";
+import type { ClassroomSummary, EnrolledClassroom, MyRegistration, OrgOverview } from "@/lib/types";
+
+type T = (key: string, vars?: Record<string, string | number>) => string;
+type Locale = "en" | "ja";
 
 const ATTENTION_THRESHOLD = 0.75;
+const SHU = "#ff2d55";
+const KEHAI = "#5ff4ff";
 
-// Shared tile surface -- every widget on this page is built from this one
-// primitive, arranged in a 2-column bento grid instead of stacked
-// full-width sections. A grid of mixed 1- and 2-column tiles is what
-// actually reads as "a dashboard" at a glance; a vertical list of
-// sparsely-populated sections doesn't, no matter how each one is styled.
-// Sharper corners and an inset top hairline (an instrument panel, not a
-// soft rounded card) plus a plain-mono uppercase label convention below
-// is the actual house style -- Button's HUD brackets, terminal prompts --
-// not generic frosted glass.
-const TILE =
-  "relative rounded-lg border border-white/[0.08] bg-white/[0.03] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] transition-[transform,border-color] active:scale-[0.97]";
-
-const ACCENTS = {
-  shu: { border: "border-shu-500/30", bg: "bg-shu-500/[0.06]", bar: "bg-shu-500", text: "text-shu-300", hex: "#ff2d55" },
-  kehai: { border: "border-kehai-500/30", bg: "bg-kehai-500/[0.06]", bar: "bg-kehai-500", text: "text-kehai-300", hex: "#5ff4ff" },
-} as const;
-type AccentKey = keyof typeof ACCENTS;
-
-function Tile({ span = 1, className = "", children }: { span?: 1 | 2; children: React.ReactNode; className?: string }) {
-  return <div className={`${TILE} ${span === 2 ? "col-span-2" : ""} ${className}`}>{children}</div>;
-}
-
-// A hero tile: colored corner brackets (the same L-marks Button uses) plus
-// a tinted wash and a left accent bar, reserved for the handful of widgets
-// that actually deserve visual weight -- streak, live rate, the next
-// event. Everything else on the page stays flat and quiet on purpose, so
-// these read as "the important numbers" instead of every tile fighting
-// for the same attention.
-function AccentTile({
-  accent,
-  span = 1,
-  className = "",
-  children,
-}: {
-  accent: AccentKey;
-  span?: 1 | 2;
-  className?: string;
-  children: React.ReactNode;
-}) {
-  const a = ACCENTS[accent];
-  return (
-    <div className={`${TILE} ${a.border} ${a.bg} overflow-hidden ${span === 2 ? "col-span-2" : ""} ${className}`}>
-      <span aria-hidden className={`absolute inset-y-0 left-0 w-[3px] ${a.bar}`} />
-      <Corner accent={accent} pos="tl" />
-      <Corner accent={accent} pos="br" />
-      {children}
-    </div>
-  );
-}
-
-function Corner({ accent, pos }: { accent: AccentKey; pos: "tl" | "br" }) {
-  const a = ACCENTS[accent];
-  const edge = pos === "tl" ? "border-l-2 border-t-2 -left-px -top-px" : "border-r-2 border-b-2 -right-px -bottom-px";
-  return <span aria-hidden className={`absolute z-10 h-2.5 w-2.5 ${edge}`} style={{ borderColor: a.hex }} />;
-}
-
-// Mono, uppercase, terminal-prompt style label -- the ">" glyph is the
-// same prompt marker Button's "terminal" variant uses, so section headers
-// read as part of the same visual system as the rest of the app instead
-// of inventing their own generic small-caps convention.
-function SectionLabel({ children, accent = "text-white/40" }: { children: React.ReactNode; accent?: string }) {
-  return (
-    <p className={`flex items-center gap-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.1em] ${accent}`}>
-      <span aria-hidden className="text-white/25">
-        &gt;
-      </span>
-      {children}
-    </p>
-  );
-}
+// One surface for the whole page: a solid dark panel on a dark ground,
+// not a translucent white "glass" overlay. Cards read as physical pieces
+// of an instrument panel instead of frosted sheets floating on a
+// gradient.
+const SURFACE = "rounded-2xl border border-white/[0.07] bg-void-900/60";
 
 export default function HomePage() {
   const { t, locale } = useLocale();
@@ -104,15 +47,6 @@ export default function HomePage() {
   const { data: orgs } = useMyOrganizations();
   const primaryOrg = orgs?.[0];
   const { data: orgOverview } = useOrgOverview(primaryOrg?.id);
-
-  const primaryTeaching = teaching?.[0];
-  const { data: recentSessions } = useClassroomSessions(primaryTeaching?.id);
-
-  const bestStreakClassroomId = (enrolled ?? []).reduce<{ id?: string; streak: number }>(
-    (best, e) => (e.currentStreak > best.streak ? { id: e.classroom.id, streak: e.currentStreak } : best),
-    { streak: -1 }
-  ).id;
-  const { data: myHistory } = useMyAttendanceHistory(bestStreakClassroomId);
 
   if (authLoading) return <LoadingBlock label={t("states.checkingSession")} />;
 
@@ -138,257 +72,316 @@ export default function HomePage() {
   const upcoming = (registrations ?? [])
     .filter((r) => new Date(r.event.endsAt) >= new Date() && r.event.status !== "CANCELLED")
     .sort((a, b) => new Date(a.event.startsAt).getTime() - new Date(b.event.startsAt).getTime());
-  const next = upcoming[0];
-  const later = upcoming.slice(1, 4);
-  const nextWindow = next ? getCheckInWindow(next.event) : null;
-  const canCheckInNow = !!next && !next.attended && nextWindow?.status === "open";
-
-  const bestStreak = (enrolled ?? []).reduce<{ streak: number; name: string } | null>((best, e) => {
-    if (!best || e.currentStreak > best.streak) return { streak: e.currentStreak, name: e.classroom.name };
-    return best;
-  }, null);
-
-  const totals = (enrolled ?? []).reduce(
-    (acc, e) => ({ present: acc.present + e.presentDays, total: acc.total + e.totalDays }),
-    { present: 0, total: 0 }
-  );
-  const overallRate = totals.total > 0 ? totals.present / totals.total : 0;
-  const needsAttention = (enrolled ?? []).filter((e) => e.totalDays >= 3 && e.attendanceRate < ATTENTION_THRESHOLD);
 
   const isAttendee = (enrolled?.length ?? 0) > 0 || upcoming.length > 0;
   const isTeacher = (teaching?.length ?? 0) > 0;
-  const teacherTotals = (teaching ?? []).reduce((acc, c) => ({ students: acc.students + c.studentCount, classes: acc.classes + 1 }), {
-    students: 0,
-    classes: 0,
-  });
   const hasNothing = !isAttendee && !isTeacher && !primaryOrg;
-
-  // Last up to 8 sessions, oldest to newest, as a bar chart -- a real
-  // visualization built from real data (useClassroomSessions, already
-  // polled every 8s by the classroom pages themselves), not another
-  // number in a circle.
-  const sessionBars = (recentSessions ?? [])
-    .slice()
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .slice(-8)
-    .map((s) => ({
-      label: formatDate(s.date, locale).split(" ").slice(0, 2).join(" "),
-      value: primaryTeaching ? Math.min(s.presentCount / Math.max(primaryTeaching.studentCount, 1), 1) : 0,
-      count: s.presentCount,
-    }));
-
-  const historyBars = (myHistory ?? [])
-    .slice()
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .slice(-14);
 
   return (
     <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
-      <div className="home-stagger relative mx-auto max-w-2xl px-5 py-8 sm:px-6 sm:py-12">
-        <div>
-          <p className="font-mono text-xs uppercase tracking-[0.12em] text-white/35">{formatDate(new Date().toISOString(), locale)}</p>
-          <h1 className="mt-1 font-display text-3xl font-black text-white">
-            {greeting}, <span className="text-shu-300">{firstName}</span>
+      <div className="home-stagger relative mx-auto max-w-2xl space-y-8 px-4 pb-28 pt-5 sm:px-6 sm:pt-8">
+        <header className="px-1">
+          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-white/30">
+            {formatDate(new Date().toISOString(), locale)}
+          </p>
+          <h1 className="mt-1.5 font-display text-[28px] font-black leading-tight text-white">
+            {greeting},{" "}
+            <span className="bg-gradient-to-r from-white to-shu-400 bg-clip-text text-transparent">{firstName}</span>
           </h1>
-        </div>
+        </header>
 
-        <div className="mt-6 grid grid-cols-2 gap-3">
-          {isAttendee && (
-            <>
-              <AccentTile accent="shu" className="p-4 pl-5">
-                <div className="flex items-center gap-3">
-                  <RateRing value={bestStreak ? Math.min(bestStreak.streak / 14, 1) : 0} accent={ACCENTS.shu.hex} glow>
-                    <FlameIcon lit={!!bestStreak && bestStreak.streak > 0} />
-                  </RateRing>
-                  <div className="min-w-0 font-mono text-3xl font-black tabular-nums text-white">{bestStreak?.streak ?? 0}</div>
-                </div>
-                <SectionLabel accent="mt-2.5 text-shu-300/80">
-                  {bestStreak ? t("home.streakDays", { count: bestStreak.streak }) : t("home.streakNone")}
-                </SectionLabel>
-                {bestStreak?.name && <p className="mt-0.5 truncate pl-4 text-[10px] text-white/30">{bestStreak.name}</p>}
-              </AccentTile>
-              <AccentTile accent="kehai" className="p-4 pl-5">
-                <div className="flex items-center gap-3">
-                  <RateRing value={overallRate} accent={ACCENTS.kehai.hex} glow />
-                  <div className="min-w-0 font-mono text-3xl font-black tabular-nums text-white">{Math.round(overallRate * 100)}%</div>
-                </div>
-                <SectionLabel accent="mt-2.5 text-kehai-300/80">{t("home.overallRateLabel")}</SectionLabel>
-              </AccentTile>
-            </>
-          )}
-
-          {!isAttendee && isTeacher && (
-            <>
-              <StatBlock value={teacherTotals.students} label={t("home.studentsLabel")} accent="kehai" />
-              <StatBlock value={teacherTotals.classes} label={t("home.classesLabel")} accent="shu" />
-            </>
-          )}
-
-          {/* Real chart #1: a teacher's recent-session attendance, one bar
-              per session, height = turnout for that day. */}
-          {primaryTeaching && sessionBars.length >= 2 && (
-            <Tile span={2} className="p-4">
-              <div className="flex items-center justify-between">
-                <SectionLabel>{primaryTeaching.name}</SectionLabel>
-                <span className="font-mono text-[10px] uppercase tracking-wide text-kehai-300/70">{t("home.attendanceTrend")}</span>
-              </div>
-              <BarChart bars={sessionBars} accent={ACCENTS.kehai.hex} />
-            </Tile>
-          )}
-
-          {/* Real chart #2: a student's own attendance history for their
-              best-streak classroom -- one dot per session, filled if they
-              were present. */}
-          {historyBars.length >= 3 && (
-            <Tile span={2} className="p-4">
-              <div className="flex items-center justify-between">
-                <SectionLabel>{bestStreak?.name}</SectionLabel>
-                <span className="font-mono text-[10px] uppercase tracking-wide text-white/30">{t("home.attendanceHistory")}</span>
-              </div>
-              <div className="mt-4 flex items-end justify-between gap-1.5">
-                {historyBars.map((h) => (
-                  <div key={h.id} className="flex flex-1 flex-col items-center gap-1.5">
-                    <span
-                      className={`h-2.5 w-2.5 rounded-full ${h.present ? "bg-kehai-400 shadow-[0_0_8px_rgba(95,244,255,0.6)]" : "bg-white/10"}`}
-                      aria-hidden
-                    />
-                  </div>
-                ))}
-              </div>
-            </Tile>
-          )}
-
-          {isAttendee &&
-            (next ? (
-              <AccentTile accent={canCheckInNow ? "kehai" : "shu"} span={2} className="group block">
-                <Link href={canCheckInNow ? `/attend/${next.event.id}` : `/events/${next.event.id}`} className="block p-5 pl-6">
-                  <div className="flex items-center justify-between gap-2">
-                    <SectionLabel accent={canCheckInNow ? "text-kehai-300" : "text-shu-300/80"}>{t("home.nextEventHeading")}</SectionLabel>
-                    {canCheckInNow && (
-                      <span className="flex items-center gap-1.5 text-[11px] font-mono font-semibold uppercase tracking-wide text-kehai-300">
-                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-kehai-400" />
-                        {t("home.checkInWindowOpen")}
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-2 font-display text-xl font-bold text-white">{next.event.name}</p>
-                  <p className="mt-1 text-sm text-white/45">
-                    {formatDate(next.event.startsAt, locale)} · {next.event.venue}
-                  </p>
-                  {canCheckInNow && (
-                    <span className="mt-4 inline-flex items-center gap-1.5 font-mono text-sm font-bold uppercase tracking-wide text-kehai-300 group-hover:text-kehai-200">
-                      {t("home.checkInNow")} →
-                    </span>
-                  )}
-                </Link>
-              </AccentTile>
-            ) : (
-              <Tile span={2} className="border-dashed bg-transparent p-6 text-center">
-                <p className="text-sm font-medium text-white/60">{t("home.nextEventNone")}</p>
-                <p className="mt-1 text-xs text-white/35">{t("home.nextEventNoneHint")}</p>
-              </Tile>
-            ))}
-
-          {later.map((r) => (
-            <Tile key={r.event.id} span={2} className="block hover:border-white/[0.16]">
-              <Link href={`/events/${r.event.id}`} className="flex items-center justify-between gap-3 px-4 py-3">
-                <span className="truncate text-sm font-medium text-white/75">{r.event.name}</span>
-                <span className="shrink-0 font-mono text-xs text-white/40">{formatDate(r.event.startsAt, locale)}</span>
-              </Link>
-            </Tile>
-          ))}
-
-          {enrolled?.map((e) => (
-            <Tile key={e.classroom.id} className="block p-3.5 hover:border-kehai-500/30">
-              <Link href={`/classrooms/${e.classroom.id}`} className="flex items-center gap-3">
-                <div className="relative shrink-0">
-                  <ProgressRing value={e.attendanceRate} size={46} strokeWidth={4} accent="#5ff4ff">
-                    <span className="text-[10px] font-bold text-white">{Math.round(e.attendanceRate * 100)}%</span>
-                  </ProgressRing>
-                  {e.currentStreak > 0 && (
-                    <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-void-950 bg-shu-500 px-0.5 text-[9px] font-bold text-white">
-                      {e.currentStreak}
-                    </span>
-                  )}
-                </div>
-                <span className="truncate text-[13px] font-medium text-white/70">{e.classroom.name}</span>
-              </Link>
-            </Tile>
-          ))}
-
-          {needsAttention.map((e) => (
-            <Tile key={e.classroom.id} span={2} className="block overflow-hidden border-amber-400/25 bg-amber-400/[0.05]">
-              <span aria-hidden className="absolute inset-y-0 left-0 w-[3px] bg-amber-400" />
-              <Link href={`/classrooms/${e.classroom.id}`} className="flex items-center justify-between gap-3 px-4 py-3 pl-5">
-                <span className="truncate text-sm font-medium text-amber-100/85">{e.classroom.name}</span>
-                <span className="shrink-0 font-mono text-sm font-bold text-amber-300">{Math.round(e.attendanceRate * 100)}%</span>
-              </Link>
-            </Tile>
-          ))}
-
-          {teaching?.map((c) => (
-            <TeachingTile key={c.id} classroom={c} t={t} />
-          ))}
-
-          {primaryOrg && orgOverview && (
-            <>
-              <StatBlock value={orgOverview.totalEvents} label={t("orgDetail.statEvents")} />
-              <StatBlock value={orgOverview.totalAttendance} label={t("orgDetail.statAttendance")} />
-              <Tile span={2} className="p-3.5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-mono text-xl font-bold tabular-nums text-white">{Math.round((orgOverview.averageAttendanceRate ?? 0) * 100)}%</div>
-                    <div className="mt-0.5 font-mono text-[10px] uppercase tracking-wider text-white/40">{t("orgDetail.statAvgRateShort")}</div>
-                  </div>
-                  <Link href={`/orgs/${primaryOrg.slug}`} className="font-mono text-xs font-semibold uppercase tracking-wide text-shu-300">
-                    {primaryOrg.name} →
-                  </Link>
-                </div>
-              </Tile>
-            </>
-          )}
-
-          {hasNothing && (
-            <Tile span={2} className="border-dashed p-6 text-center">
-              <p className="text-sm font-medium text-white/60">{t("home.getStartedTitle")}</p>
-              <p className="mt-1 text-xs text-white/35">{t("home.getStartedHint")}</p>
-            </Tile>
-          )}
-        </div>
+        {isTeacher && teaching && <TeacherSection classrooms={teaching} t={t} locale={locale} />}
+        {isAttendee && <AttendeeSection enrolled={enrolled ?? []} upcoming={upcoming} t={t} locale={locale} />}
+        {primaryOrg && orgOverview && (
+          <OrgSection overview={orgOverview} slug={primaryOrg.slug} name={primaryOrg.name} t={t} locale={locale} />
+        )}
+        {hasNothing && <GetStarted t={t} />}
       </div>
     </ClickRippleLayer>
   );
 }
 
-function TeachingTile({
-  classroom,
-  t,
-}: {
-  classroom: ClassroomSummary;
-  t: (key: string, vars?: Record<string, string | number>) => string;
-}) {
-  const { data: detail } = useClassroom(classroom.id);
+/* ------------------------------------------------------------------ */
+/* Teacher                                                             */
+/* ------------------------------------------------------------------ */
+
+function TeacherSection({ classrooms, t, locale }: { classrooms: ClassroomSummary[]; t: T; locale: Locale }) {
+  const primary = classrooms[0];
+  const { data: detail } = useClassroom(primary.id);
+  const { data: sessions } = useClassroomSessions(primary.id);
+  const openSession = sessions?.find((s) => s.status === "OPEN");
   const isLive = !!detail?.openSession;
 
-  // Only the button below navigates -- the rest of this row is plain
-  // display text, not a second, wider, invisible tap target doing the
-  // same thing the button already does (that duplication was the
-  // actual bug: it made the button pointless, since tapping anywhere
-  // else on the row went to the same place anyway). A live session still
-  // gets to look alive -- accent bar, tinted wash, pulsing dot -- an idle
-  // one stays flat.
-  const body = (
-    <div className="flex min-w-0 flex-1 items-center justify-between gap-3 p-4 pl-5">
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          {isLive && <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-kehai-400" aria-hidden />}
-          <p className="truncate text-sm font-bold text-white">{classroom.name}</p>
+  // The roster only matters while a session is actually open — passing
+  // undefined otherwise keeps SWR from opening an 8s poll for a list
+  // nobody is looking at.
+  const { data: roster } = useClassroomRoster(isLive ? primary.id : undefined);
+  const presentNow = (roster ?? []).filter((r) => r.checkedInOpenSession);
+
+  const studentCount = detail?.studentCount ?? primary.studentCount;
+  const elapsed = useElapsed(openSession?.openedAt);
+
+  const closed = (sessions ?? [])
+    .filter((s) => s.status === "CLOSED")
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const avgRate =
+    closed.length > 0 && studentCount > 0
+      ? closed.reduce((sum, s) => sum + Math.min(s.presentCount / studentCount, 1), 0) / closed.length
+      : 0;
+
+  const trend = (sessions ?? [])
+    .slice()
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(-10)
+    .map((s) => ({
+      value: studentCount > 0 ? Math.min(s.presentCount / studentCount, 1) : 0,
+      count: s.presentCount,
+      label: new Date(s.date).getDate().toString(),
+    }));
+
+  return (
+    <div className="space-y-8">
+      <section>
+        <LiveCard
+          name={primary.name}
+          courseCode={primary.courseCode}
+          isLive={isLive}
+          present={presentNow.length}
+          total={studentCount}
+          elapsed={elapsed}
+          lastSessionDate={closed[0] ? formatDate(closed[0].date, locale) : null}
+          href={`/classrooms/${primary.id}`}
+          t={t}
+        />
+        <div className="mt-3">
+          <MetricStrip
+            items={[
+              { value: studentCount, label: t("home.studentsLabel") },
+              { value: primary.sessionCount, label: t("home.sessionsLabel") },
+              { value: `${Math.round(avgRate * 100)}%`, label: t("home.avgRateLabel") },
+            ]}
+          />
         </div>
-        <p className={`mt-1 font-mono text-[11px] font-semibold uppercase tracking-wide ${isLive ? "text-kehai-300" : "text-white/35"}`}>
-          {isLive ? t("home.liveNow") : t("home.noSessionOpen")} · {t("home.studentsCount", { count: classroom.studentCount })}
+      </section>
+
+      {isLive && (
+        <section>
+          <SectionHead title={t("home.checkedIn")} trailing={`${presentNow.length}/${studentCount}`} />
+          <div className={`${SURFACE} p-4`}>
+            {presentNow.length === 0 ? (
+              <p className="py-3 text-center text-[13px] text-white/35">{t("home.noOneYet")}</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {presentNow.slice(0, 18).map((r) => (
+                  <Avatar key={r.student.id} name={r.student.name} url={r.student.avatarUrl} />
+                ))}
+                {presentNow.length > 18 && (
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.06] font-mono text-[11px] font-bold text-white/50">
+                    +{presentNow.length - 18}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      <HeatmapSection classroomId={primary.id} t={t} />
+
+      <section>
+        <SectionHead title={t("home.attendanceTrend")} />
+        <TrendCard bars={trend} accent={KEHAI} emptyLabel={t("home.noSessionsYet")} />
+      </section>
+
+      <LeaderboardSection classroomId={primary.id} joinCode={primary.joinCode} studentCount={studentCount} t={t} />
+
+      {classrooms.length > 1 && (
+        <section>
+          <SectionHead title={t("home.otherClassesHeading")} />
+          <div className={`${SURFACE} divide-y divide-white/[0.05] overflow-hidden`}>
+            {classrooms.slice(1).map((c) => (
+              <OtherClassRow key={c.id} classroom={c} t={t} />
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+
+// The page's anchor. Deliberately the same generous height whether or not
+// a session is running: an idle state that collapses to a thin strip is
+// what made the old dashboard look half-finished on a quiet day.
+function LiveCard({
+  name,
+  courseCode,
+  isLive,
+  present,
+  total,
+  elapsed,
+  lastSessionDate,
+  href,
+  t,
+}: {
+  name: string;
+  courseCode: string | null;
+  isLive: boolean;
+  present: number;
+  total: number;
+  elapsed: string | null;
+  lastSessionDate: string | null;
+  href: string;
+  t: T;
+}) {
+  const ratio = total > 0 ? present / total : 0;
+  const accent = isLive ? KEHAI : SHU;
+
+  return (
+    <div className={`relative overflow-hidden rounded-[26px] border p-5 ${isLive ? "border-kehai-500/25" : "border-white/[0.07]"}`}>
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-10"
+        style={{
+          background: isLive
+            ? `radial-gradient(130% 110% at 100% 0%, ${KEHAI}22, transparent 58%), linear-gradient(180deg, #0c1219, #080b11)`
+            : `radial-gradient(130% 110% at 100% 0%, ${SHU}18, transparent 58%), linear-gradient(180deg, #0c0e14, #08090d)`,
+        }}
+      />
+
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <span className="flex items-center gap-2">
+            {isLive && <PulseDot />}
+            <span className={`font-mono text-[10px] font-bold uppercase tracking-[0.16em] ${isLive ? "text-kehai-300" : "text-white/35"}`}>
+              {isLive ? t("home.sessionLive") : t("home.sessionIdle")}
+            </span>
+          </span>
+          <h2 className="mt-2 truncate font-display text-[22px] font-black leading-tight text-white">{name}</h2>
+          <p className="mt-1 truncate text-[13px] text-white/40">
+            {courseCode ? `${courseCode} · ` : ""}
+            {isLive && elapsed
+              ? t("home.runningFor", { duration: elapsed })
+              : lastSessionDate
+                ? t("home.lastSessionOn", { date: lastSessionDate })
+                : t("home.noSessionsYet")}
+          </p>
+        </div>
+
+        <Dial value={ratio} accent={accent} active={isLive}>
+          <span className="font-mono text-[17px] font-black leading-none text-white">{isLive ? present : total}</span>
+          <span className="mt-0.5 font-mono text-[9px] uppercase tracking-wider text-white/35">
+            {isLive ? `/${total}` : t("home.studentsLabel")}
+          </span>
+        </Dial>
+      </div>
+
+      {!isLive && <p className="mt-4 text-[13px] leading-relaxed text-white/35">{t("home.sessionIdleHint")}</p>}
+
+      <Link href={href} className="mt-5 block">
+        <Button size="md" variant={isLive ? "cyan" : "primary"} className="w-full">
+          {isLive ? t("home.manage") : t("home.startSession")}
+        </Button>
+      </Link>
+    </div>
+  );
+}
+
+function LeaderboardSection({
+  classroomId,
+  joinCode,
+  studentCount,
+  t,
+}: {
+  classroomId: string;
+  joinCode: string;
+  studentCount: number;
+  t: T;
+}) {
+  const { data: board } = useClassroomLeaderboard(studentCount > 0 ? classroomId : undefined);
+
+  // With nobody enrolled there is no leaderboard to draw, so the slot goes
+  // to the one thing a teacher in that state actually needs: the code
+  // students join with.
+  if (studentCount === 0) {
+    return (
+      <section>
+        <SectionHead title={t("home.topStreaks")} />
+        <JoinCodeCard code={joinCode} t={t} />
+      </section>
+    );
+  }
+
+  const rows = (board ?? []).slice(0, 5);
+  return (
+    <section>
+      <SectionHead title={t("home.topStreaks")} />
+      <div className={`${SURFACE} divide-y divide-white/[0.05] overflow-hidden`}>
+        {rows.length === 0 ? (
+          <p className="px-4 py-6 text-center text-[13px] text-white/35">{t("home.noStudentsYet")}</p>
+        ) : (
+          rows.map((row, i) => (
+            <div key={row.student.id} className="flex items-center gap-3 px-4 py-3">
+              <span className="w-4 shrink-0 font-mono text-[12px] font-bold text-white/25">{i + 1}</span>
+              <Avatar name={row.student.name} url={row.student.avatarUrl} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[14px] font-semibold text-white/85">{row.student.name}</p>
+                <div className="mt-1.5">
+                  <Meter value={row.attendanceRate} accent={KEHAI} />
+                </div>
+              </div>
+              <span className="flex shrink-0 items-center gap-1 font-mono text-[13px] font-bold text-shu-300">
+                {row.currentStreak}
+                <FlameIcon lit={row.currentStreak > 0} size={13} />
+              </span>
+            </div>
+          ))
+        )}
+      </div>
+    </section>
+  );
+}
+
+function JoinCodeCard({ code, t }: { code: string; t: T }) {
+  const [copied, setCopied] = useState(false);
+
+  return (
+    <div className={`${SURFACE} px-5 py-6 text-center`}>
+      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/35">{t("home.joinCodeLabel")}</p>
+      <p className="mt-3 font-mono text-[34px] font-black tracking-[0.2em] text-white">{code}</p>
+      <p className="mt-2 text-[13px] text-white/35">{t("home.noStudentsYet")}</p>
+      <button
+        type="button"
+        onClick={() => {
+          navigator.clipboard?.writeText(code).then(
+            () => {
+              setCopied(true);
+              setTimeout(() => setCopied(false), 1600);
+            },
+            () => undefined
+          );
+        }}
+        className="mt-4 rounded-full border border-white/[0.12] px-4 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider text-white/70 transition-colors active:bg-white/[0.08]"
+      >
+        {copied ? t("home.copied") : t("home.copy")}
+      </button>
+    </div>
+  );
+}
+
+function OtherClassRow({ classroom, t }: { classroom: ClassroomSummary; t: T }) {
+  const { data: detail } = useClassroom(classroom.id);
+  const isLive = !!detail?.openSession;
+  return (
+    <div className="flex items-center gap-3 px-4 py-3">
+      <div className="min-w-0 flex-1">
+        <p className="flex items-center gap-2 truncate text-[14px] font-semibold text-white/85">
+          {isLive && <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-kehai-400" aria-hidden />}
+          {classroom.name}
         </p>
+        <p className="mt-0.5 text-[12px] text-white/35">{t("home.studentsCount", { count: classroom.studentCount })}</p>
       </div>
       <Link href={`/classrooms/${classroom.id}`}>
         <Button size="sm" variant={isLive ? "cyan" : "secondary"}>
@@ -397,90 +390,441 @@ function TeachingTile({
       </Link>
     </div>
   );
+}
 
-  return isLive ? (
-    <AccentTile accent="kehai" span={2} className="flex items-center">
-      {body}
-    </AccentTile>
-  ) : (
-    <Tile span={2} className="flex items-center">
-      {body}
-    </Tile>
+/* ------------------------------------------------------------------ */
+/* Attendee                                                            */
+/* ------------------------------------------------------------------ */
+
+function AttendeeSection({
+  enrolled,
+  upcoming,
+  t,
+  locale,
+}: {
+  enrolled: EnrolledClassroom[];
+  upcoming: MyRegistration[];
+  t: T;
+  locale: Locale;
+}) {
+  const next = upcoming[0];
+  const later = upcoming.slice(1, 4);
+  const nextWindow = next ? getCheckInWindow(next.event) : null;
+  const canCheckInNow = !!next && !next.attended && nextWindow?.status === "open";
+
+  const best = enrolled.reduce<EnrolledClassroom | null>((b, e) => (!b || e.currentStreak > b.currentStreak ? e : b), null);
+  const totals = enrolled.reduce((acc, e) => ({ present: acc.present + e.presentDays, total: acc.total + e.totalDays }), {
+    present: 0,
+    total: 0,
+  });
+  const overallRate = totals.total > 0 ? totals.present / totals.total : 0;
+  const needsAttention = enrolled.filter((e) => e.totalDays >= 3 && e.attendanceRate < ATTENTION_THRESHOLD);
+
+  return (
+    <div className="space-y-8">
+      <section>
+        <NextEventCard next={next} canCheckInNow={canCheckInNow} t={t} locale={locale} />
+        <div className="mt-3">
+          <MetricStrip
+            items={[
+              { value: best?.currentStreak ?? 0, label: t("home.dayStreakLabel") },
+              { value: `${Math.round(overallRate * 100)}%`, label: t("home.overallRateLabel") },
+              { value: enrolled.length, label: t("home.classesLabel") },
+            ]}
+          />
+        </div>
+      </section>
+
+      {best && <HeatmapSection classroomId={best.classroom.id} t={t} />}
+
+      {enrolled.length > 0 && (
+        <section>
+          <SectionHead title={t("home.classroomsHeading")} />
+          <div className={`${SURFACE} divide-y divide-white/[0.05] overflow-hidden`}>
+            {enrolled.map((e) => (
+              <Link key={e.classroom.id} href={`/classrooms/${e.classroom.id}`} className="flex items-center gap-3 px-4 py-3.5">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[14px] font-semibold text-white/85">{e.classroom.name}</p>
+                  <p className="mt-0.5 truncate text-[12px] text-white/35">{e.classroom.teacherName}</p>
+                  <div className="mt-2">
+                    <Meter value={e.attendanceRate} accent={e.attendanceRate < ATTENTION_THRESHOLD ? "#fbbf24" : KEHAI} />
+                  </div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="font-mono text-[15px] font-black text-white">{Math.round(e.attendanceRate * 100)}%</p>
+                  {e.currentStreak > 0 && (
+                    <p className="mt-0.5 flex items-center justify-end gap-1 font-mono text-[11px] font-bold text-shu-300">
+                      {e.currentStreak}
+                      <FlameIcon lit size={11} />
+                    </p>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {needsAttention.length > 0 && (
+        <section>
+          <SectionHead title={t("home.attentionHeading")} />
+          <div className="space-y-2">
+            {needsAttention.map((e) => (
+              <Link
+                key={e.classroom.id}
+                href={`/classrooms/${e.classroom.id}`}
+                className="flex items-center justify-between gap-3 rounded-2xl border border-amber-400/20 bg-amber-400/[0.05] px-4 py-3"
+              >
+                <span className="truncate text-[14px] font-medium text-amber-100/85">{e.classroom.name}</span>
+                <span className="shrink-0 font-mono text-[14px] font-bold text-amber-300">{Math.round(e.attendanceRate * 100)}%</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {later.length > 0 && (
+        <section>
+          <SectionHead title={t("home.upcomingHeading")} />
+          <div className={`${SURFACE} divide-y divide-white/[0.05] overflow-hidden`}>
+            {later.map((r) => (
+              <Link key={r.event.id} href={`/events/${r.event.id}`} className="flex items-center justify-between gap-3 px-4 py-3">
+                <div className="min-w-0">
+                  <p className="truncate text-[14px] font-medium text-white/80">{r.event.name}</p>
+                  <p className="mt-0.5 truncate text-[12px] text-white/35">{r.event.venue}</p>
+                </div>
+                <span className="shrink-0 font-mono text-[12px] text-white/40">{formatDate(r.event.startsAt, locale)}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
   );
 }
 
-function BarChart({ bars, accent }: { bars: { label: string; value: number; count: number }[]; accent: string }) {
+function NextEventCard({
+  next,
+  canCheckInNow,
+  t,
+  locale,
+}: {
+  next: MyRegistration | undefined;
+  canCheckInNow: boolean;
+  t: T;
+  locale: Locale;
+}) {
+  const accent = canCheckInNow ? KEHAI : SHU;
   return (
-    <div className="mt-4 flex items-end justify-between gap-2">
-      {bars.map((b, i) => (
-        <div key={i} className="flex flex-1 flex-col items-center gap-1.5">
-          <span className="text-[10px] font-semibold text-white/50">{b.count}</span>
-          {/* Fixed-height track, bar grows up from the bottom -- items-end
-              on the track does the alignment, the bar's own height is
-              just its real percentage, no manual offset math. */}
-          <div className="flex h-14 w-full items-end overflow-hidden rounded-md bg-white/[0.06]">
-            <div
-              className="w-full rounded-md transition-[height] duration-500"
-              style={{ height: `${Math.max(b.value * 100, 6)}%`, background: `linear-gradient(180deg, ${accent}, ${accent}66)` }}
-            />
-          </div>
-          <span className="text-[9px] text-white/30">{b.label}</span>
+    <div className={`relative overflow-hidden rounded-[26px] border p-5 ${canCheckInNow ? "border-kehai-500/25" : "border-white/[0.07]"}`}>
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-10"
+        style={{
+          background: `radial-gradient(130% 110% at 100% 0%, ${accent}1f, transparent 58%), linear-gradient(180deg, #0c0e14, #08090d)`,
+        }}
+      />
+      <span className="flex items-center gap-2">
+        {canCheckInNow && <PulseDot />}
+        <span className={`font-mono text-[10px] font-bold uppercase tracking-[0.16em] ${canCheckInNow ? "text-kehai-300" : "text-white/35"}`}>
+          {canCheckInNow ? t("home.checkInWindowOpen") : t("home.nextEventHeading")}
+        </span>
+      </span>
+
+      {next ? (
+        <>
+          <h2 className="mt-2 font-display text-[22px] font-black leading-tight text-white">{next.event.name}</h2>
+          <p className="mt-1.5 text-[13px] text-white/45">{formatDate(next.event.startsAt, locale)}</p>
+          <p className="mt-0.5 text-[13px] text-white/35">{next.event.venue}</p>
+          <Link href={canCheckInNow ? `/attend/${next.event.id}` : `/events/${next.event.id}`} className="mt-5 block">
+            <Button size="md" variant={canCheckInNow ? "cyan" : "secondary"} className="w-full">
+              {canCheckInNow ? t("home.checkInNow") : t("common.viewArrow")}
+            </Button>
+          </Link>
+        </>
+      ) : (
+        <>
+          <h2 className="mt-2 font-display text-[22px] font-black leading-tight text-white">{t("home.nextEventNone")}</h2>
+          <p className="mt-1.5 text-[13px] leading-relaxed text-white/35">{t("home.nextEventNoneHint")}</p>
+          <Link href="/events" className="mt-5 block">
+            <Button size="md" variant="secondary" className="w-full">
+              {t("nav.discover")}
+            </Button>
+          </Link>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Org                                                                 */
+/* ------------------------------------------------------------------ */
+
+function OrgSection({
+  overview,
+  slug,
+  name,
+  t,
+  locale,
+}: {
+  overview: OrgOverview;
+  slug: string;
+  name: string;
+  t: T;
+  locale: Locale;
+}) {
+  const events = overview.events.slice(0, 4);
+  return (
+    <section>
+      <SectionHead
+        title={name}
+        action={
+          <Link href={`/orgs/${slug}`} className="shrink-0 font-mono text-[11px] font-bold uppercase tracking-wider text-shu-300">
+            {t("home.viewAll")} →
+          </Link>
+        }
+      />
+      <MetricStrip
+        items={[
+          { value: overview.totalEvents, label: t("orgDetail.statEvents") },
+          { value: overview.totalAttendance, label: t("orgDetail.statAttendance") },
+          { value: `${Math.round((overview.averageAttendanceRate ?? 0) * 100)}%`, label: t("home.avgRateLabel") },
+        ]}
+      />
+      <div className={`${SURFACE} mt-3 divide-y divide-white/[0.05] overflow-hidden`}>
+        {events.length === 0 ? (
+          <p className="px-4 py-6 text-center text-[13px] text-white/35">{t("home.nextEventNone")}</p>
+        ) : (
+          events.map((e) => (
+            <Link key={e.id} href={`/orgs/${slug}/events/${e.id}`} className="block px-4 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="truncate text-[14px] font-semibold text-white/85">{e.name}</p>
+                <span className="shrink-0 font-mono text-[13px] font-bold text-white">{Math.round(e.attendanceRate * 100)}%</span>
+              </div>
+              <div className="mt-2">
+                <Meter value={e.attendanceRate} accent={SHU} />
+              </div>
+              <p className="mt-1.5 font-mono text-[11px] text-white/30">
+                {formatDate(e.startsAt, locale)} · {e.attendance}/{e.registrations}
+              </p>
+            </Link>
+          ))
+        )}
+      </div>
+    </section>
+  );
+}
+
+function GetStarted({ t }: { t: T }) {
+  return (
+    <div className={`${SURFACE} px-6 py-10 text-center`}>
+      <p className="font-display text-lg font-bold text-white">{t("home.getStartedTitle")}</p>
+      <p className="mx-auto mt-2 max-w-xs text-[13px] leading-relaxed text-white/40">{t("home.getStartedHint")}</p>
+      <div className="mt-6 flex justify-center gap-2">
+        <Link href="/events">
+          <Button size="sm" variant="primary">
+            {t("nav.discover")}
+          </Button>
+        </Link>
+        <Link href="/classrooms/join">
+          <Button size="sm" variant="secondary">
+            {t("nav.classrooms")}
+          </Button>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Shared widgets                                                      */
+/* ------------------------------------------------------------------ */
+
+function SectionHead({ title, action, trailing }: { title: string; action?: React.ReactNode; trailing?: string }) {
+  return (
+    <div className="mb-3 flex items-center justify-between gap-3 px-1">
+      <h2 className="truncate font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-white/35">{title}</h2>
+      {trailing && <span className="shrink-0 font-mono text-[11px] font-bold text-white/50">{trailing}</span>}
+      {action}
+    </div>
+  );
+}
+
+function MetricStrip({ items }: { items: { value: React.ReactNode; label: string }[] }) {
+  return (
+    <div className={`${SURFACE} grid grid-cols-3 divide-x divide-white/[0.06] overflow-hidden`}>
+      {items.map((item) => (
+        <div key={item.label} className="px-2 py-3.5 text-center">
+          <div className="font-mono text-[19px] font-black tabular-nums leading-none text-white">{item.value}</div>
+          <div className="mt-1.5 truncate font-mono text-[9px] uppercase tracking-[0.12em] text-white/35">{item.label}</div>
         </div>
       ))}
     </div>
   );
 }
 
-// A rate ring -- the one shape on this page that actually means something
-// (a fraction of 100%), so it's the one thing allowed a soft accent glow
-// on its stroke, dial-and-digital-readout style, paired inline with a
-// plain monospace number rather than centered inside it like a badge.
-function RateRing({ value, accent, glow, children }: { value: number; accent: string; glow?: boolean; children?: React.ReactNode }) {
+// A contribution grid, drawn from the same heatmap endpoint the classroom
+// page uses. It renders its full frame even with zero sessions on record,
+// which is the point: an empty grid still reads as a designed instrument,
+// whereas hiding the widget leaves the dead space that made this page
+// feel unfinished on a near-empty account.
+const HEATMAP_WEEKS = 17;
+const LEVEL_BG = ["bg-white/[0.045]", "bg-kehai-500/25", "bg-kehai-500/45", "bg-kehai-500/70", "bg-kehai-400"];
+
+function HeatmapSection({ classroomId, t }: { classroomId: string; t: T }) {
+  const { data } = useClassroomHeatmap(classroomId);
+  const days = data?.days ?? [];
+
+  // Offset the first column to the right weekday, then pad out to a full
+  // rectangle so the grid is never a ragged half-row.
+  const lead = days.length > 0 ? new Date(days[0].date).getDay() : 0;
+  const cells: (number | null)[] = [...Array(lead).fill(null), ...days.map((d) => d.level)];
+  const target = Math.max(HEATMAP_WEEKS * 7, Math.ceil(cells.length / 7) * 7);
+  while (cells.length < target) cells.push(days.length > 0 ? 0 : null);
+
   return (
-    <ProgressRing value={value} size={40} strokeWidth={4} accent={accent} glow={glow}>
-      {children}
-    </ProgressRing>
+    <section>
+      <SectionHead title={t("home.attendanceMap")} />
+      <div className={`${SURFACE} p-4`}>
+        <div className="scroll-thin -mx-1 overflow-x-auto px-1 pb-1">
+          <div className="grid grid-flow-col gap-[3px]" style={{ gridTemplateRows: "repeat(7, 12px)", gridAutoColumns: "12px" }}>
+            {cells.map((level, i) => (
+              <span key={i} className={`rounded-[3px] ${level === null ? "bg-white/[0.02]" : LEVEL_BG[level]}`} aria-hidden />
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-3 flex items-center justify-end gap-1.5">
+          <span className="font-mono text-[9px] uppercase tracking-wider text-white/25">{t("home.mapLess")}</span>
+          {LEVEL_BG.map((bg, i) => (
+            <span key={i} className={`h-2.5 w-2.5 rounded-[2px] ${bg}`} aria-hidden />
+          ))}
+          <span className="font-mono text-[9px] uppercase tracking-wider text-white/25">{t("home.mapMore")}</span>
+        </div>
+
+        <div className="mt-4 grid grid-cols-3 gap-2 border-t border-white/[0.05] pt-3.5">
+          <MiniStat value={data?.currentStreak ?? 0} label={t("home.mapCurrent")} accent="text-shu-300" />
+          <MiniStat value={data?.longestStreak ?? 0} label={t("home.mapLongest")} accent="text-white" />
+          <MiniStat
+            value={`${data?.presentCount ?? 0}/${data?.totalSessions ?? 0}`}
+            label={t("home.mapSessions")}
+            accent="text-kehai-300"
+          />
+        </div>
+      </div>
+    </section>
   );
 }
 
-// The stat treatment for a plain count -- no circle, no gradient, matching
-// the org stats it's reused for exactly. It takes an accent purely as a
-// color cue on the label and a bottom rule, not a tinted tile, so a row of
-// these still reads as calm reference numbers next to the bolder hero
-// tiles above them.
-function StatBlock({ value, label, accent }: { value: React.ReactNode; label: string; accent?: AccentKey }) {
-  const a = accent ? ACCENTS[accent] : null;
+function MiniStat({ value, label, accent }: { value: React.ReactNode; label: string; accent: string }) {
   return (
-    <Tile className="overflow-hidden p-3.5">
-      {a && <span aria-hidden className={`absolute inset-x-0 top-0 h-[2px] ${a.bar}`} />}
-      <div className="font-mono text-xl font-bold tabular-nums text-white">{value}</div>
-      <div className={`mt-0.5 font-mono text-[10px] uppercase tracking-wider ${a ? a.text + "/80" : "text-white/40"}`}>{label}</div>
-    </Tile>
+    <div className="text-center">
+      <div className={`font-mono text-[15px] font-black tabular-nums leading-none ${accent}`}>{value}</div>
+      <div className="mt-1 font-mono text-[9px] uppercase tracking-[0.12em] text-white/30">{label}</div>
+    </div>
   );
 }
 
-function ProgressRing({
-  value,
-  size,
-  strokeWidth,
+function TrendCard({
+  bars,
   accent,
-  glow,
-  children,
+  emptyLabel,
 }: {
-  value: number;
-  size: number;
-  strokeWidth: number;
+  bars: { value: number; count: number; label: string }[];
   accent: string;
-  glow?: boolean;
-  children: React.ReactNode;
+  emptyLabel: string;
 }) {
+  // The plot frame — gridlines and a baseline — is always drawn, so an
+  // empty chart reads as "no data yet" inside a real chart rather than as
+  // a blank box.
+  return (
+    <div className={`${SURFACE} p-4`}>
+      <div className="relative h-24">
+        {[0, 0.5, 1].map((g) => (
+          <span
+            key={g}
+            aria-hidden
+            className="absolute inset-x-0 border-t border-dashed border-white/[0.06]"
+            style={{ top: `${g * 100}%` }}
+          />
+        ))}
+        {bars.length === 0 ? (
+          <div className="flex h-full items-center justify-center">
+            <p className="text-[13px] text-white/30">{emptyLabel}</p>
+          </div>
+        ) : (
+          <div className="flex h-full items-end gap-1.5">
+            {bars.map((b, i) => (
+              <div
+                key={i}
+                className="flex-1 rounded-t-[4px] transition-[height] duration-500"
+                style={{ height: `${Math.max(b.value * 100, 3)}%`, background: `linear-gradient(180deg, ${accent}, ${accent}33)` }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+      {bars.length > 0 && (
+        <div className="mt-2 flex gap-1.5">
+          {bars.map((b, i) => (
+            <span key={i} className="flex-1 text-center font-mono text-[9px] text-white/25">
+              {b.label}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Meter({ value, accent }: { value: number; accent: string }) {
+  return (
+    <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.07]">
+      <div
+        className="h-full rounded-full transition-[width] duration-500"
+        style={{ width: `${Math.max(Math.min(value, 1), 0) * 100}%`, background: accent }}
+      />
+    </div>
+  );
+}
+
+function Avatar({ name, url }: { name: string; url?: string | null }) {
+  if (url) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={url} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />;
+  }
+  const initials = name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+  // Alternate the two brand accents by name so a wall of avatars has some
+  // life without pulling in colors from outside the palette.
+  const warm = (name.charCodeAt(0) || 0) % 2 === 0;
+  return (
+    <span
+      aria-hidden
+      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-mono text-[11px] font-bold ${
+        warm ? "bg-shu-500/15 text-shu-300" : "bg-kehai-500/15 text-kehai-300"
+      }`}
+    >
+      {initials || "?"}
+    </span>
+  );
+}
+
+function Dial({ value, accent, active, children }: { value: number; accent: string; active: boolean; children: React.ReactNode }) {
+  const size = 78;
+  const strokeWidth = 5;
   const r = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * r;
   const clamped = Math.max(0, Math.min(1, value));
   return (
-    <div className="relative" style={{ width: size, height: size }}>
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={strokeWidth} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth={strokeWidth} />
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -490,19 +834,57 @@ function ProgressRing({
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeDasharray={circumference}
-          strokeDashoffset={circumference * (1 - clamped)}
-          style={glow ? { filter: `drop-shadow(0 0 3px ${accent}aa)` } : undefined}
+          strokeDashoffset={circumference * (1 - (active ? clamped : 1))}
+          style={active ? { filter: `drop-shadow(0 0 4px ${accent}99)` } : { opacity: 0.22 }}
         />
       </svg>
-      <div className="absolute inset-0 flex items-center justify-center">{children}</div>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">{children}</div>
     </div>
   );
 }
 
-function FlameIcon({ lit }: { lit: boolean }) {
+function PulseDot() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill={lit ? "#ff9142" : "none"} stroke={lit ? "none" : "rgba(255,255,255,0.35)"} strokeWidth="1.75">
+    <span className="relative flex h-2 w-2">
+      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-kehai-400 opacity-70" />
+      <span className="relative inline-flex h-2 w-2 rounded-full bg-kehai-400" />
+    </span>
+  );
+}
+
+function FlameIcon({ lit, size = 20 }: { lit: boolean; size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill={lit ? "#ff9142" : "none"}
+      stroke={lit ? "none" : "rgba(255,255,255,0.35)"}
+      strokeWidth="1.75"
+    >
       <path d="M12 2c1 3-3 4-3 7.5a3 3 0 006 0c1.5 1 2.5 2.8 2.5 4.9A5.5 5.5 0 0112 20a5.5 5.5 0 01-5.5-5.6c0-4.2 3.4-5.9 5.5-12.4z" />
     </svg>
   );
+}
+
+// Starts null so the server and first client render agree — a live
+// "running for 12m" readout can't be server-rendered without a hydration
+// mismatch.
+function useElapsed(since: string | undefined): string | null {
+  const [now, setNow] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!since) {
+      setNow(null);
+      return;
+    }
+    setNow(Date.now());
+    const id = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(id);
+  }, [since]);
+
+  if (!since || now === null) return null;
+  const minutes = Math.max(0, Math.floor((now - new Date(since).getTime()) / 60000));
+  if (minutes < 60) return `${minutes}m`;
+  return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
 }
