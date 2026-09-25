@@ -29,10 +29,70 @@ const ATTENTION_THRESHOLD = 0.75;
 // full-width sections. A grid of mixed 1- and 2-column tiles is what
 // actually reads as "a dashboard" at a glance; a vertical list of
 // sparsely-populated sections doesn't, no matter how each one is styled.
-const TILE = "rounded-2xl border border-white/[0.08] bg-white/[0.035] transition-transform active:scale-[0.97]";
+// Sharper corners and an inset top hairline (an instrument panel, not a
+// soft rounded card) plus a plain-mono uppercase label convention below
+// is the actual house style -- Button's HUD brackets, terminal prompts --
+// not generic frosted glass.
+const TILE =
+  "relative rounded-lg border border-white/[0.08] bg-white/[0.03] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] transition-[transform,border-color] active:scale-[0.97]";
+
+const ACCENTS = {
+  shu: { border: "border-shu-500/30", bg: "bg-shu-500/[0.06]", bar: "bg-shu-500", text: "text-shu-300", hex: "#ff2d55" },
+  kehai: { border: "border-kehai-500/30", bg: "bg-kehai-500/[0.06]", bar: "bg-kehai-500", text: "text-kehai-300", hex: "#5ff4ff" },
+} as const;
+type AccentKey = keyof typeof ACCENTS;
 
 function Tile({ span = 1, className = "", children }: { span?: 1 | 2; children: React.ReactNode; className?: string }) {
   return <div className={`${TILE} ${span === 2 ? "col-span-2" : ""} ${className}`}>{children}</div>;
+}
+
+// A hero tile: colored corner brackets (the same L-marks Button uses) plus
+// a tinted wash and a left accent bar, reserved for the handful of widgets
+// that actually deserve visual weight -- streak, live rate, the next
+// event. Everything else on the page stays flat and quiet on purpose, so
+// these read as "the important numbers" instead of every tile fighting
+// for the same attention.
+function AccentTile({
+  accent,
+  span = 1,
+  className = "",
+  children,
+}: {
+  accent: AccentKey;
+  span?: 1 | 2;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const a = ACCENTS[accent];
+  return (
+    <div className={`${TILE} ${a.border} ${a.bg} overflow-hidden ${span === 2 ? "col-span-2" : ""} ${className}`}>
+      <span aria-hidden className={`absolute inset-y-0 left-0 w-[3px] ${a.bar}`} />
+      <Corner accent={accent} pos="tl" />
+      <Corner accent={accent} pos="br" />
+      {children}
+    </div>
+  );
+}
+
+function Corner({ accent, pos }: { accent: AccentKey; pos: "tl" | "br" }) {
+  const a = ACCENTS[accent];
+  const edge = pos === "tl" ? "border-l-2 border-t-2 -left-px -top-px" : "border-r-2 border-b-2 -right-px -bottom-px";
+  return <span aria-hidden className={`absolute z-10 h-2.5 w-2.5 ${edge}`} style={{ borderColor: a.hex }} />;
+}
+
+// Mono, uppercase, terminal-prompt style label -- the ">" glyph is the
+// same prompt marker Button's "terminal" variant uses, so section headers
+// read as part of the same visual system as the rest of the app instead
+// of inventing their own generic small-caps convention.
+function SectionLabel({ children, accent = "text-white/40" }: { children: React.ReactNode; accent?: string }) {
+  return (
+    <p className={`flex items-center gap-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.1em] ${accent}`}>
+      <span aria-hidden className="text-white/25">
+        &gt;
+      </span>
+      {children}
+    </p>
+  );
 }
 
 export default function HomePage() {
@@ -128,41 +188,41 @@ export default function HomePage() {
       <NavBar />
       <div className="home-stagger relative mx-auto max-w-2xl px-5 py-8 sm:px-6 sm:py-12">
         <div>
-          <p className="text-sm text-white/40">{formatDate(new Date().toISOString(), locale)}</p>
+          <p className="font-mono text-xs uppercase tracking-[0.12em] text-white/35">{formatDate(new Date().toISOString(), locale)}</p>
           <h1 className="mt-1 font-display text-3xl font-black text-white">
-            {greeting}, {firstName}
+            {greeting}, <span className="text-shu-300">{firstName}</span>
           </h1>
         </div>
 
         <div className="mt-6 grid grid-cols-2 gap-3">
           {isAttendee && (
             <>
-              <Tile className="p-4">
-                <div className="flex items-center gap-2.5">
-                  <RateRing value={bestStreak ? Math.min(bestStreak.streak / 14, 1) : 0} accent="#ff2d55">
+              <AccentTile accent="shu" className="p-4 pl-5">
+                <div className="flex items-center gap-3">
+                  <RateRing value={bestStreak ? Math.min(bestStreak.streak / 14, 1) : 0} accent={ACCENTS.shu.hex} glow>
                     <FlameIcon lit={!!bestStreak && bestStreak.streak > 0} />
                   </RateRing>
-                  <div className="min-w-0 font-mono text-2xl font-bold tabular-nums text-white">{bestStreak?.streak ?? 0}</div>
+                  <div className="min-w-0 font-mono text-3xl font-black tabular-nums text-white">{bestStreak?.streak ?? 0}</div>
                 </div>
-                <p className="mt-2 text-[11px] font-medium uppercase tracking-wide text-white/40">
+                <SectionLabel accent="mt-2.5 text-shu-300/80">
                   {bestStreak ? t("home.streakDays", { count: bestStreak.streak }) : t("home.streakNone")}
-                </p>
-                {bestStreak?.name && <p className="mt-0.5 truncate text-[10px] text-white/30">{bestStreak.name}</p>}
-              </Tile>
-              <Tile className="p-4">
-                <div className="flex items-center gap-2.5">
-                  <RateRing value={overallRate} accent="#5ff4ff" />
-                  <div className="min-w-0 font-mono text-2xl font-bold tabular-nums text-white">{Math.round(overallRate * 100)}%</div>
+                </SectionLabel>
+                {bestStreak?.name && <p className="mt-0.5 truncate pl-4 text-[10px] text-white/30">{bestStreak.name}</p>}
+              </AccentTile>
+              <AccentTile accent="kehai" className="p-4 pl-5">
+                <div className="flex items-center gap-3">
+                  <RateRing value={overallRate} accent={ACCENTS.kehai.hex} glow />
+                  <div className="min-w-0 font-mono text-3xl font-black tabular-nums text-white">{Math.round(overallRate * 100)}%</div>
                 </div>
-                <p className="mt-2 text-[11px] font-medium uppercase tracking-wide text-white/40">{t("home.overallRateLabel")}</p>
-              </Tile>
+                <SectionLabel accent="mt-2.5 text-kehai-300/80">{t("home.overallRateLabel")}</SectionLabel>
+              </AccentTile>
             </>
           )}
 
           {!isAttendee && isTeacher && (
             <>
-              <StatBlock value={teacherTotals.students} label={t("home.studentsLabel")} />
-              <StatBlock value={teacherTotals.classes} label={t("home.classesLabel")} />
+              <StatBlock value={teacherTotals.students} label={t("home.studentsLabel")} accent="kehai" />
+              <StatBlock value={teacherTotals.classes} label={t("home.classesLabel")} accent="shu" />
             </>
           )}
 
@@ -171,10 +231,10 @@ export default function HomePage() {
           {primaryTeaching && sessionBars.length >= 2 && (
             <Tile span={2} className="p-4">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold uppercase tracking-wider text-white/40">{primaryTeaching.name}</p>
-                <span className="text-[11px] text-white/30">{t("home.attendanceTrend")}</span>
+                <SectionLabel>{primaryTeaching.name}</SectionLabel>
+                <span className="font-mono text-[10px] uppercase tracking-wide text-kehai-300/70">{t("home.attendanceTrend")}</span>
               </div>
-              <BarChart bars={sessionBars} accent="#5ff4ff" />
+              <BarChart bars={sessionBars} accent={ACCENTS.kehai.hex} />
             </Tile>
           )}
 
@@ -184,8 +244,8 @@ export default function HomePage() {
           {historyBars.length >= 3 && (
             <Tile span={2} className="p-4">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold uppercase tracking-wider text-white/40">{bestStreak?.name}</p>
-                <span className="text-[11px] text-white/30">{t("home.attendanceHistory")}</span>
+                <SectionLabel>{bestStreak?.name}</SectionLabel>
+                <span className="font-mono text-[10px] uppercase tracking-wide text-white/30">{t("home.attendanceHistory")}</span>
               </div>
               <div className="mt-4 flex items-end justify-between gap-1.5">
                 {historyBars.map((h) => (
@@ -200,17 +260,14 @@ export default function HomePage() {
             </Tile>
           )}
 
-          {isAttendee && (
-            <Tile
-              span={2}
-              className={`group block p-5 ${next ? "hover:border-shu-500/30" : "border-dashed"}`}
-            >
-              {next ? (
-                <Link href={canCheckInNow ? `/attend/${next.event.id}` : `/events/${next.event.id}`} className="block">
+          {isAttendee &&
+            (next ? (
+              <AccentTile accent={canCheckInNow ? "kehai" : "shu"} span={2} className="group block">
+                <Link href={canCheckInNow ? `/attend/${next.event.id}` : `/events/${next.event.id}`} className="block p-5 pl-6">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-white/40">{t("home.nextEventHeading")}</span>
+                    <SectionLabel accent={canCheckInNow ? "text-kehai-300" : "text-shu-300/80"}>{t("home.nextEventHeading")}</SectionLabel>
                     {canCheckInNow && (
-                      <span className="flex items-center gap-1.5 rounded-full bg-kehai-500/15 px-2.5 py-1 text-[11px] font-semibold text-kehai-300">
+                      <span className="flex items-center gap-1.5 text-[11px] font-mono font-semibold uppercase tracking-wide text-kehai-300">
                         <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-kehai-400" />
                         {t("home.checkInWindowOpen")}
                       </span>
@@ -221,25 +278,24 @@ export default function HomePage() {
                     {formatDate(next.event.startsAt, locale)} · {next.event.venue}
                   </p>
                   {canCheckInNow && (
-                    <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-kehai-300 group-hover:text-kehai-200">
+                    <span className="mt-4 inline-flex items-center gap-1.5 font-mono text-sm font-bold uppercase tracking-wide text-kehai-300 group-hover:text-kehai-200">
                       {t("home.checkInNow")} →
                     </span>
                   )}
                 </Link>
-              ) : (
-                <div className="text-center">
-                  <p className="text-sm font-medium text-white/60">{t("home.nextEventNone")}</p>
-                  <p className="mt-1 text-xs text-white/35">{t("home.nextEventNoneHint")}</p>
-                </div>
-              )}
-            </Tile>
-          )}
+              </AccentTile>
+            ) : (
+              <Tile span={2} className="border-dashed bg-transparent p-6 text-center">
+                <p className="text-sm font-medium text-white/60">{t("home.nextEventNone")}</p>
+                <p className="mt-1 text-xs text-white/35">{t("home.nextEventNoneHint")}</p>
+              </Tile>
+            ))}
 
           {later.map((r) => (
-            <Tile key={r.event.id} span={2} className="block">
+            <Tile key={r.event.id} span={2} className="block hover:border-white/[0.16]">
               <Link href={`/events/${r.event.id}`} className="flex items-center justify-between gap-3 px-4 py-3">
                 <span className="truncate text-sm font-medium text-white/75">{r.event.name}</span>
-                <span className="shrink-0 text-xs text-white/40">{formatDate(r.event.startsAt, locale)}</span>
+                <span className="shrink-0 font-mono text-xs text-white/40">{formatDate(r.event.startsAt, locale)}</span>
               </Link>
             </Tile>
           ))}
@@ -263,13 +319,11 @@ export default function HomePage() {
           ))}
 
           {needsAttention.map((e) => (
-            <Tile key={e.classroom.id} span={2} className="block border-amber-400/15 bg-amber-400/[0.04]">
-              <Link href={`/classrooms/${e.classroom.id}`} className="flex items-center justify-between gap-3 px-4 py-3">
-                <span className="flex items-center gap-2 truncate text-sm font-medium text-amber-100/85">
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
-                  {e.classroom.name}
-                </span>
-                <span className="shrink-0 text-sm font-semibold text-amber-300">{Math.round(e.attendanceRate * 100)}%</span>
+            <Tile key={e.classroom.id} span={2} className="block overflow-hidden border-amber-400/25 bg-amber-400/[0.05]">
+              <span aria-hidden className="absolute inset-y-0 left-0 w-[3px] bg-amber-400" />
+              <Link href={`/classrooms/${e.classroom.id}`} className="flex items-center justify-between gap-3 px-4 py-3 pl-5">
+                <span className="truncate text-sm font-medium text-amber-100/85">{e.classroom.name}</span>
+                <span className="shrink-0 font-mono text-sm font-bold text-amber-300">{Math.round(e.attendanceRate * 100)}%</span>
               </Link>
             </Tile>
           ))}
@@ -286,9 +340,9 @@ export default function HomePage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-mono text-xl font-bold tabular-nums text-white">{Math.round((orgOverview.averageAttendanceRate ?? 0) * 100)}%</div>
-                    <div className="mt-0.5 text-[10px] uppercase tracking-wider text-white/40">{t("orgDetail.statAvgRateShort")}</div>
+                    <div className="mt-0.5 font-mono text-[10px] uppercase tracking-wider text-white/40">{t("orgDetail.statAvgRateShort")}</div>
                   </div>
-                  <Link href={`/orgs/${primaryOrg.slug}`} className="text-xs font-semibold text-shu-300">
+                  <Link href={`/orgs/${primaryOrg.slug}`} className="font-mono text-xs font-semibold uppercase tracking-wide text-shu-300">
                     {primaryOrg.name} →
                   </Link>
                 </div>
@@ -318,19 +372,21 @@ function TeachingTile({
   const { data: detail } = useClassroom(classroom.id);
   const isLive = !!detail?.openSession;
 
-  return (
-    // Only the button below navigates -- the rest of this row is plain
-    // display text, not a second, wider, invisible tap target doing the
-    // same thing the button already does (that duplication was the
-    // actual bug: it made the button pointless, since tapping anywhere
-    // else on the row went to the same place anyway).
-    <div className={`${TILE} col-span-2 flex items-center justify-between gap-3 p-4`}>
+  // Only the button below navigates -- the rest of this row is plain
+  // display text, not a second, wider, invisible tap target doing the
+  // same thing the button already does (that duplication was the
+  // actual bug: it made the button pointless, since tapping anywhere
+  // else on the row went to the same place anyway). A live session still
+  // gets to look alive -- accent bar, tinted wash, pulsing dot -- an idle
+  // one stays flat.
+  const body = (
+    <div className="flex min-w-0 flex-1 items-center justify-between gap-3 p-4 pl-5">
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           {isLive && <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-kehai-400" aria-hidden />}
           <p className="truncate text-sm font-bold text-white">{classroom.name}</p>
         </div>
-        <p className={`mt-1 text-xs font-semibold ${isLive ? "text-kehai-300" : "text-white/35"}`}>
+        <p className={`mt-1 font-mono text-[11px] font-semibold uppercase tracking-wide ${isLive ? "text-kehai-300" : "text-white/35"}`}>
           {isLive ? t("home.liveNow") : t("home.noSessionOpen")} · {t("home.studentsCount", { count: classroom.studentCount })}
         </p>
       </div>
@@ -340,6 +396,16 @@ function TeachingTile({
         </Button>
       </Link>
     </div>
+  );
+
+  return isLive ? (
+    <AccentTile accent="kehai" span={2} className="flex items-center">
+      {body}
+    </AccentTile>
+  ) : (
+    <Tile span={2} className="flex items-center">
+      {body}
+    </Tile>
   );
 }
 
@@ -365,29 +431,30 @@ function BarChart({ bars, accent }: { bars: { label: string; value: number; coun
   );
 }
 
-// A small rate ring, no glow halo, no gradient fill behind it -- the ring
-// itself is the only decoration, since it's the one shape here that
-// actually means something (a fraction of 100%). Paired inline with a
-// plain monospace number rather than centered inside the ring, closer to
-// how a real instrument reads (dial + digital readout side by side) than
-// a glowing badge.
-function RateRing({ value, accent, children }: { value: number; accent: string; children?: React.ReactNode }) {
+// A rate ring -- the one shape on this page that actually means something
+// (a fraction of 100%), so it's the one thing allowed a soft accent glow
+// on its stroke, dial-and-digital-readout style, paired inline with a
+// plain monospace number rather than centered inside it like a badge.
+function RateRing({ value, accent, glow, children }: { value: number; accent: string; glow?: boolean; children?: React.ReactNode }) {
   return (
-    <ProgressRing value={value} size={40} strokeWidth={4} accent={accent}>
+    <ProgressRing value={value} size={40} strokeWidth={4} accent={accent} glow={glow}>
       {children}
     </ProgressRing>
   );
 }
 
-// The one stat treatment used everywhere on this page a plain count needs
-// showing -- flat, no circle, no gradient, matching the org stats below it
-// exactly. A count isn't a fraction of anything, so it doesn't get a ring
-// or a badge shape standing in for one.
-function StatBlock({ value, label }: { value: React.ReactNode; label: string }) {
+// The stat treatment for a plain count -- no circle, no gradient, matching
+// the org stats it's reused for exactly. It takes an accent purely as a
+// color cue on the label and a bottom rule, not a tinted tile, so a row of
+// these still reads as calm reference numbers next to the bolder hero
+// tiles above them.
+function StatBlock({ value, label, accent }: { value: React.ReactNode; label: string; accent?: AccentKey }) {
+  const a = accent ? ACCENTS[accent] : null;
   return (
-    <Tile className="p-3.5">
+    <Tile className="overflow-hidden p-3.5">
+      {a && <span aria-hidden className={`absolute inset-x-0 top-0 h-[2px] ${a.bar}`} />}
       <div className="font-mono text-xl font-bold tabular-nums text-white">{value}</div>
-      <div className="mt-0.5 text-[10px] uppercase tracking-wider text-white/40">{label}</div>
+      <div className={`mt-0.5 font-mono text-[10px] uppercase tracking-wider ${a ? a.text + "/80" : "text-white/40"}`}>{label}</div>
     </Tile>
   );
 }
@@ -397,12 +464,14 @@ function ProgressRing({
   size,
   strokeWidth,
   accent,
+  glow,
   children,
 }: {
   value: number;
   size: number;
   strokeWidth: number;
   accent: string;
+  glow?: boolean;
   children: React.ReactNode;
 }) {
   const r = (size - strokeWidth) / 2;
@@ -422,6 +491,7 @@ function ProgressRing({
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={circumference * (1 - clamped)}
+          style={glow ? { filter: `drop-shadow(0 0 3px ${accent}aa)` } : undefined}
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">{children}</div>
