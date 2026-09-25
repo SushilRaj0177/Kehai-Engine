@@ -17,6 +17,7 @@ const dict = {
     // on desktop) wraps awkwardly at that width.
     consoleShort: { en: "Console", ja: "コンソール" },
     account: { en: "Account", ja: "アカウント" },
+    home: { en: "Home", ja: "ホーム" },
     settings: { en: "Settings", ja: "設定" },
     signIn: { en: "Sign in", ja: "ログイン" },
     signOut: { en: "Sign out", ja: "ログアウト" },
@@ -178,8 +179,8 @@ const dict = {
     checkInNow: { en: "Check in now", ja: "今すぐチェックイン" },
     classroomsHeading: { en: "Your classrooms", ja: "受講中のクラス" },
     classroomsNone: { en: "Not enrolled in a classroom yet", ja: "まだクラスに参加していません" },
-    orgsHeading: { en: "Your organizations", ja: "所属組織" },
-    quickActionsHeading: { en: "Quick actions", ja: "クイックアクション" },
+    overallRateLabel: { en: "Overall attendance", ja: "総合出席率" },
+    attentionHeading: { en: "Needs attention", ja: "要注意" },
   },
   dashboard: {
     kicker: { en: "Organizer console", ja: "主催者コンソール" },

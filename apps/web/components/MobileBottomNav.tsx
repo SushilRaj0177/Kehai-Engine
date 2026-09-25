@@ -28,6 +28,11 @@ export function MobileBottomNav() {
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
       <div className="mx-auto flex h-16 max-w-6xl items-stretch">
+        {/* Was missing entirely -- once you navigated anywhere else there
+            was no way back to /home short of relaunching the app fresh
+            (the standalone-only redirect on "/" only fires on a true
+            cold start, not on ordinary in-app navigation). */}
+        <TabLink href="/home" active={pathname === "/home"} label={t("nav.home")} icon={<HomeIcon />} />
         <TabLink href="/events" active={!!pathname?.startsWith("/events")} label={t("nav.discover")} icon={<CompassIcon />} />
         <TabLink
           href="/classrooms"
@@ -112,6 +117,15 @@ const iconProps = {
   strokeLinecap: "round" as const,
   strokeLinejoin: "round" as const,
 };
+
+function HomeIcon() {
+  return (
+    <svg {...iconProps}>
+      <path d="M4 11.5L12 4l8 7.5" />
+      <path d="M6 10v8.5a1 1 0 001 1h3.5v-5h3v5H17a1 1 0 001-1V10" />
+    </svg>
+  );
+}
 
 function CompassIcon() {
   // A proper symmetric compass needle (two points reflected through the
