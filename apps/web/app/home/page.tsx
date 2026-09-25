@@ -14,6 +14,8 @@ import {
   useOrgOverview,
   useMyClassrooms,
   useClassroom,
+  useClassroomSessions,
+  useMyAttendanceHistory,
 } from "@/lib/hooks";
 import { getCheckInWindow } from "@/lib/checkin-window";
 import { formatDate } from "@/lib/format";
@@ -22,11 +24,16 @@ import type { ClassroomSummary } from "@/lib/types";
 
 const ATTENTION_THRESHOLD = 0.75;
 
-// Shared surface for every card on this page -- a faint top-to-bottom
-// gradient instead of a flat fill (the previous version's cards all read
-// as the exact same grey slab), and a tactile press-down on tap so the
-// page feels handled rather than just looked at.
-const CARD = "rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.055] to-white/[0.015] transition-transform active:scale-[0.97]";
+// Shared tile surface -- every widget on this page is built from this one
+// primitive, arranged in a 2-column bento grid instead of stacked
+// full-width sections. A grid of mixed 1- and 2-column tiles is what
+// actually reads as "a dashboard" at a glance; a vertical list of
+// sparsely-populated sections doesn't, no matter how each one is styled.
+const TILE = "rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.055] to-white/[0.015] transition-transform active:scale-[0.97]";
+
+function Tile({ span = 1, className = "", children }: { span?: 1 | 2; children: React.ReactNode; className?: string }) {
+  return <div className={`${TILE} ${span === 2 ? "col-span-2" : ""} ${className}`}>{children}</div>;
+}
 
 export default function HomePage() {
   const { t, locale } = useLocale();
@@ -37,6 +44,15 @@ export default function HomePage() {
   const { data: orgs } = useMyOrganizations();
   const primaryOrg = orgs?.[0];
   const { data: orgOverview } = useOrgOverview(primaryOrg?.id);
+
+  const primaryTeaching = teaching?.[0];
+  const { data: recentSessions } = useClassroomSessions(primaryTeaching?.id);
+
+  const bestStreakClassroomId = (enrolled ?? []).reduce<{ id?: string; streak: number }>(
+    (best, e) => (e.currentStreak > best.streak ? { id: e.classroom.id, streak: e.currentStreak } : best),
+    { streak: -1 }
+  ).id;
+  const { data: myHistory } = useMyAttendanceHistory(bestStreakClassroomId);
 
   if (authLoading) return <LoadingBlock label={t("states.checkingSession")} />;
 
@@ -85,8 +101,26 @@ export default function HomePage() {
     students: 0,
     classes: 0,
   });
-
   const hasNothing = !isAttendee && !isTeacher && !primaryOrg;
+
+  // Last up to 8 sessions, oldest to newest, as a bar chart -- a real
+  // visualization built from real data (useClassroomSessions, already
+  // polled every 8s by the classroom pages themselves), not another
+  // number in a circle.
+  const sessionBars = (recentSessions ?? [])
+    .slice()
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(-8)
+    .map((s) => ({
+      label: formatDate(s.date, locale).split(" ").slice(0, 2).join(" "),
+      value: primaryTeaching ? Math.min(s.presentCount / Math.max(primaryTeaching.studentCount, 1), 1) : 0,
+      count: s.presentCount,
+    }));
+
+  const historyBars = (myHistory ?? [])
+    .slice()
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(-14);
 
   return (
     <ClickRippleLayer className="relative min-h-screen">
@@ -100,151 +134,190 @@ export default function HomePage() {
           </h1>
         </div>
 
-        {isAttendee ? (
-          <div className="mt-7 flex gap-3">
-            <RingStat
-              value={bestStreak ? Math.min(bestStreak.streak / 14, 1) : 0}
-              display={String(bestStreak?.streak ?? 0)}
-              label={bestStreak ? t("home.streakDays", { count: bestStreak.streak }) : t("home.streakNone")}
-              sublabel={bestStreak?.name}
-              accent="#ff2d55"
-              icon={<FlameIcon lit={!!bestStreak && bestStreak.streak > 0} />}
-            />
-            <RingStat value={overallRate} display={`${Math.round(overallRate * 100)}%`} label={t("home.overallRateLabel")} accent="#5ff4ff" />
-          </div>
-        ) : isTeacher ? (
-          <div className="mt-7 flex gap-3">
-            <CountCircle value={teacherTotals.students} label={t("home.studentsLabel")} accent="#5ff4ff" />
-            <CountCircle value={teacherTotals.classes} label={t("home.classesLabel")} accent="#ff2d55" />
-          </div>
-        ) : null}
-
-        {isAttendee && (
-          <div>
-            {next ? (
-              <Link
-                href={canCheckInNow ? `/attend/${next.event.id}` : `/events/${next.event.id}`}
-                className={`${CARD} group mt-4 block p-5 hover:border-shu-500/30`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-white/40">{t("home.nextEventHeading")}</span>
-                  {canCheckInNow && (
-                    <span className="flex items-center gap-1.5 rounded-full bg-kehai-500/15 px-2.5 py-1 text-[11px] font-semibold text-kehai-300">
-                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-kehai-400" />
-                      {t("home.checkInWindowOpen")}
-                    </span>
-                  )}
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          {isAttendee && (
+            <>
+              <Tile className="flex flex-col items-center gap-2.5 p-4">
+                <RingGlowRing
+                  value={bestStreak ? Math.min(bestStreak.streak / 14, 1) : 0}
+                  accent="#ff2d55"
+                  icon={<FlameIcon lit={!!bestStreak && bestStreak.streak > 0} />}
+                  display={String(bestStreak?.streak ?? 0)}
+                />
+                <div className="text-center">
+                  <p className="text-[11px] font-medium text-white/50">{bestStreak ? t("home.streakDays", { count: bestStreak.streak }) : t("home.streakNone")}</p>
+                  {bestStreak?.name && <p className="mt-0.5 truncate text-[10px] text-white/30">{bestStreak.name}</p>}
                 </div>
-                <p className="mt-2 font-display text-xl font-bold text-white">{next.event.name}</p>
-                <p className="mt-1 text-sm text-white/45">
-                  {formatDate(next.event.startsAt, locale)} · {next.event.venue}
-                </p>
-                {canCheckInNow && (
-                  <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-kehai-300 group-hover:text-kehai-200">
-                    {t("home.checkInNow")} →
-                  </span>
-                )}
-              </Link>
-            ) : (
-              <div className="mt-4 rounded-2xl border border-dashed border-white/[0.1] p-5 text-center">
-                <p className="text-sm font-medium text-white/60">{t("home.nextEventNone")}</p>
-                <p className="mt-1 text-xs text-white/35">{t("home.nextEventNoneHint")}</p>
+              </Tile>
+              <Tile className="flex flex-col items-center gap-2.5 p-4">
+                <RingGlowRing value={overallRate} accent="#5ff4ff" display={`${Math.round(overallRate * 100)}%`} />
+                <p className="text-center text-[11px] font-medium text-white/50">{t("home.overallRateLabel")}</p>
+              </Tile>
+            </>
+          )}
+
+          {!isAttendee && isTeacher && (
+            <>
+              <Tile className="flex flex-col items-center gap-2.5 p-4">
+                <CountBadge value={teacherTotals.students} accent="#5ff4ff" />
+                <p className="text-[11px] font-medium text-white/50">{t("home.studentsLabel")}</p>
+              </Tile>
+              <Tile className="flex flex-col items-center gap-2.5 p-4">
+                <CountBadge value={teacherTotals.classes} accent="#ff2d55" />
+                <p className="text-[11px] font-medium text-white/50">{t("home.classesLabel")}</p>
+              </Tile>
+            </>
+          )}
+
+          {/* Real chart #1: a teacher's recent-session attendance, one bar
+              per session, height = turnout for that day. */}
+          {primaryTeaching && sessionBars.length >= 2 && (
+            <Tile span={2} className="p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wider text-white/40">{primaryTeaching.name}</p>
+                <span className="text-[11px] text-white/30">{t("home.attendanceTrend")}</span>
               </div>
-            )}
-          </div>
-        )}
+              <BarChart bars={sessionBars} accent="#5ff4ff" />
+            </Tile>
+          )}
 
-        {later.length > 0 && (
-          <div className={`${CARD} mt-3 divide-y divide-white/[0.06]`}>
-            {later.map((r) => (
-              <Link key={r.event.id} href={`/events/${r.event.id}`} className="flex items-center justify-between gap-3 px-4 py-3">
-                <span className="truncate text-sm font-medium text-white/75">{r.event.name}</span>
-                <span className="shrink-0 text-xs text-white/40">{formatDate(r.event.startsAt, locale)}</span>
-              </Link>
-            ))}
-          </div>
-        )}
+          {/* Real chart #2: a student's own attendance history for their
+              best-streak classroom -- one dot per session, filled if they
+              were present. */}
+          {historyBars.length >= 3 && (
+            <Tile span={2} className="p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wider text-white/40">{bestStreak?.name}</p>
+                <span className="text-[11px] text-white/30">{t("home.attendanceHistory")}</span>
+              </div>
+              <div className="mt-4 flex items-end justify-between gap-1.5">
+                {historyBars.map((h) => (
+                  <div key={h.id} className="flex flex-1 flex-col items-center gap-1.5">
+                    <span
+                      className={`h-2.5 w-2.5 rounded-full ${h.present ? "bg-kehai-400 shadow-[0_0_8px_rgba(95,244,255,0.6)]" : "bg-white/10"}`}
+                      aria-hidden
+                    />
+                  </div>
+                ))}
+              </div>
+            </Tile>
+          )}
 
-        {enrolled && enrolled.length > 0 && (
-          <div className="mt-8">
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/40">{t("home.classroomsHeading")}</h2>
-            <div className="scroll-thin -mx-5 flex gap-4 overflow-x-auto px-5 pb-1 sm:-mx-6 sm:px-6">
-              {enrolled.map((e) => (
-                <Link
-                  key={e.classroom.id}
-                  href={`/classrooms/${e.classroom.id}`}
-                  className="flex shrink-0 flex-col items-center gap-2 transition-transform active:scale-[0.94]"
-                  style={{ width: "76px" }}
-                >
-                  <div className="relative">
-                    <ProgressRing value={e.attendanceRate} size={60} strokeWidth={5} accent="#5ff4ff">
-                      <span className="font-display text-xs font-bold text-white">{Math.round(e.attendanceRate * 100)}%</span>
-                    </ProgressRing>
-                    {e.currentStreak > 0 && (
-                      <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-void-950 bg-shu-500 px-1 text-[10px] font-bold text-white">
-                        {e.currentStreak}
+          {isAttendee && (
+            <Tile
+              span={2}
+              className={`group block p-5 ${next ? "hover:border-shu-500/30" : "border-dashed"}`}
+            >
+              {next ? (
+                <Link href={canCheckInNow ? `/attend/${next.event.id}` : `/events/${next.event.id}`} className="block">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-white/40">{t("home.nextEventHeading")}</span>
+                    {canCheckInNow && (
+                      <span className="flex items-center gap-1.5 rounded-full bg-kehai-500/15 px-2.5 py-1 text-[11px] font-semibold text-kehai-300">
+                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-kehai-400" />
+                        {t("home.checkInWindowOpen")}
                       </span>
                     )}
                   </div>
-                  <span className="w-full truncate text-center text-[11px] font-medium text-white/60">{e.classroom.name}</span>
+                  <p className="mt-2 font-display text-xl font-bold text-white">{next.event.name}</p>
+                  <p className="mt-1 text-sm text-white/45">
+                    {formatDate(next.event.startsAt, locale)} · {next.event.venue}
+                  </p>
+                  {canCheckInNow && (
+                    <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-kehai-300 group-hover:text-kehai-200">
+                      {t("home.checkInNow")} →
+                    </span>
+                  )}
                 </Link>
-              ))}
-            </div>
-          </div>
-        )}
+              ) : (
+                <div className="text-center">
+                  <p className="text-sm font-medium text-white/60">{t("home.nextEventNone")}</p>
+                  <p className="mt-1 text-xs text-white/35">{t("home.nextEventNoneHint")}</p>
+                </div>
+              )}
+            </Tile>
+          )}
 
-        {needsAttention.length > 0 && (
-          <div className="mt-8">
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-amber-300/70">{t("home.attentionHeading")}</h2>
-            <div className="space-y-2">
-              {needsAttention.map((e) => (
-                <Link
-                  key={e.classroom.id}
-                  href={`/classrooms/${e.classroom.id}`}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-amber-400/15 bg-amber-400/[0.04] px-4 py-3 transition-transform active:scale-[0.97]"
-                >
-                  <span className="truncate text-sm font-medium text-amber-100/85">{e.classroom.name}</span>
-                  <span className="shrink-0 text-sm font-semibold text-amber-300">{Math.round(e.attendanceRate * 100)}%</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
+          {later.map((r) => (
+            <Tile key={r.event.id} span={2} className="block">
+              <Link href={`/events/${r.event.id}`} className="flex items-center justify-between gap-3 px-4 py-3">
+                <span className="truncate text-sm font-medium text-white/75">{r.event.name}</span>
+                <span className="shrink-0 text-xs text-white/40">{formatDate(r.event.startsAt, locale)}</span>
+              </Link>
+            </Tile>
+          ))}
 
-        {teaching && teaching.length > 0 && (
-          <div className="mt-8">
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/40">{t("classroomHub.teachingHeading")}</h2>
-            <div className="scroll-thin -mx-5 flex gap-3 overflow-x-auto px-5 pb-1 sm:-mx-6 sm:px-6">
-              {teaching.map((c) => (
-                <TeachingClassCard key={c.id} classroom={c} t={t} />
-              ))}
-            </div>
-          </div>
-        )}
+          {enrolled?.map((e) => (
+            <Tile key={e.classroom.id} className="block p-3.5 hover:border-kehai-500/30">
+              <Link href={`/classrooms/${e.classroom.id}`} className="flex items-center gap-3">
+                <div className="relative shrink-0">
+                  <ProgressRing value={e.attendanceRate} size={46} strokeWidth={4} accent="#5ff4ff">
+                    <span className="text-[10px] font-bold text-white">{Math.round(e.attendanceRate * 100)}%</span>
+                  </ProgressRing>
+                  {e.currentStreak > 0 && (
+                    <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-void-950 bg-shu-500 px-0.5 text-[9px] font-bold text-white">
+                      {e.currentStreak}
+                    </span>
+                  )}
+                </div>
+                <span className="truncate text-[13px] font-medium text-white/70">{e.classroom.name}</span>
+              </Link>
+            </Tile>
+          ))}
 
-        {primaryOrg && orgOverview && (
-          <div className="mt-8">
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/40">{primaryOrg.name}</h2>
-            <div className="scroll-thin -mx-5 flex gap-2.5 overflow-x-auto px-5 pb-1 sm:-mx-6 sm:px-6">
-              <SnapshotStat value={orgOverview.totalEvents} label={t("orgDetail.statEvents")} />
-              <SnapshotStat value={orgOverview.totalAttendance} label={t("orgDetail.statAttendance")} />
-              <SnapshotStat value={`${Math.round((orgOverview.averageAttendanceRate ?? 0) * 100)}%`} label={t("orgDetail.statAvgRateShort")} />
-            </div>
-          </div>
-        )}
+          {needsAttention.map((e) => (
+            <Tile key={e.classroom.id} span={2} className="block border-amber-400/15 bg-amber-400/[0.04]">
+              <Link href={`/classrooms/${e.classroom.id}`} className="flex items-center justify-between gap-3 px-4 py-3">
+                <span className="flex items-center gap-2 truncate text-sm font-medium text-amber-100/85">
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
+                  {e.classroom.name}
+                </span>
+                <span className="shrink-0 text-sm font-semibold text-amber-300">{Math.round(e.attendanceRate * 100)}%</span>
+              </Link>
+            </Tile>
+          ))}
 
-        {hasNothing && (
-          <div className="mt-8 rounded-2xl border border-dashed border-white/[0.1] p-6 text-center">
-            <p className="text-sm font-medium text-white/60">{t("home.getStartedTitle")}</p>
-            <p className="mt-1 text-xs text-white/35">{t("home.getStartedHint")}</p>
-          </div>
-        )}
+          {teaching?.map((c) => (
+            <TeachingTile key={c.id} classroom={c} t={t} />
+          ))}
+
+          {primaryOrg && orgOverview && (
+            <>
+              <Tile className="p-3.5">
+                <div className="font-display text-xl font-bold text-white">{orgOverview.totalEvents}</div>
+                <div className="mt-0.5 text-[10px] uppercase tracking-wider text-white/40">{t("orgDetail.statEvents")}</div>
+              </Tile>
+              <Tile className="p-3.5">
+                <div className="font-display text-xl font-bold text-white">{orgOverview.totalAttendance}</div>
+                <div className="mt-0.5 text-[10px] uppercase tracking-wider text-white/40">{t("orgDetail.statAttendance")}</div>
+              </Tile>
+              <Tile span={2} className="p-3.5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-display text-xl font-bold text-white">{Math.round((orgOverview.averageAttendanceRate ?? 0) * 100)}%</div>
+                    <div className="mt-0.5 text-[10px] uppercase tracking-wider text-white/40">{t("orgDetail.statAvgRateShort")}</div>
+                  </div>
+                  <Link href={`/orgs/${primaryOrg.slug}`} className="text-xs font-semibold text-shu-300">
+                    {primaryOrg.name} →
+                  </Link>
+                </div>
+              </Tile>
+            </>
+          )}
+
+          {hasNothing && (
+            <Tile span={2} className="border-dashed p-6 text-center">
+              <p className="text-sm font-medium text-white/60">{t("home.getStartedTitle")}</p>
+              <p className="mt-1 text-xs text-white/35">{t("home.getStartedHint")}</p>
+            </Tile>
+          )}
+        </div>
       </div>
     </ClickRippleLayer>
   );
 }
 
-function TeachingClassCard({
+function TeachingTile({
   classroom,
   t,
 }: {
@@ -255,94 +328,71 @@ function TeachingClassCard({
   const isLive = !!detail?.openSession;
 
   return (
-    <Link
-      href={`/classrooms/${classroom.id}`}
-      className={`flex shrink-0 flex-col gap-2 rounded-2xl border p-4 transition-transform active:scale-[0.97] ${
-        isLive ? "border-kehai-500/30 bg-gradient-to-b from-kehai-500/[0.08] to-transparent" : `${CARD} hover:border-shu-500/30`
-      }`}
-      style={{ width: "168px" }}
-    >
-      <div className="flex items-center justify-between gap-2">
-        <p className="truncate text-sm font-bold text-white">{classroom.name}</p>
-        {isLive && <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-kehai-400" aria-hidden />}
-      </div>
-      <p className={`text-xs font-semibold ${isLive ? "text-kehai-300" : "text-white/35"}`}>
-        {isLive ? t("home.liveNow") : t("home.noSessionOpen")}
-      </p>
-      <p className="text-[11px] text-white/40">{t("home.studentsCount", { count: classroom.studentCount })}</p>
-    </Link>
-  );
-}
-
-function SnapshotStat({ value, label }: { value: React.ReactNode; label: string }) {
-  return (
-    <div className={`${CARD} shrink-0 px-3.5 py-3`} style={{ minWidth: "100px" }}>
-      <div className="font-display text-xl font-bold text-white">{value}</div>
-      <div className="mt-0.5 whitespace-nowrap text-[10px] uppercase tracking-wider text-white/40">{label}</div>
-    </div>
-  );
-}
-
-// A tight ambient glow sitting directly behind the ring -- not the
-// page-wide PageGlow blob, a small tuned-to-the-widget one, so the ring
-// reads as an emitting object rather than a flat icon sitting on a card.
-function RingGlow({ accent }: { accent: string }) {
-  return (
-    <div
-      aria-hidden
-      className="absolute h-20 w-20 rounded-full blur-xl"
-      style={{ background: accent, opacity: 0.22 }}
-    />
-  );
-}
-
-function RingStat({
-  value,
-  display,
-  label,
-  sublabel,
-  accent,
-  icon,
-}: {
-  value: number;
-  display: string;
-  label: string;
-  sublabel?: string;
-  accent: string;
-  icon?: React.ReactNode;
-}) {
-  return (
-    <div className={`${CARD} flex flex-1 flex-col items-center gap-2.5 p-4`}>
-      <div className="relative flex items-center justify-center">
-        <RingGlow accent={accent} />
-        <ProgressRing value={value} size={72} strokeWidth={6} accent={accent}>
-          <div className="flex flex-col items-center gap-0.5">
-            {icon}
-            <span className="font-display text-base font-bold leading-none text-white">{display}</span>
-          </div>
-        </ProgressRing>
-      </div>
-      <div className="text-center">
-        <p className="text-[11px] font-medium text-white/50">{label}</p>
-        {sublabel && <p className="mt-0.5 truncate text-[10px] text-white/30">{sublabel}</p>}
-      </div>
-    </div>
-  );
-}
-
-function CountCircle({ value, label, accent }: { value: number; label: string; accent: string }) {
-  return (
-    <div className={`${CARD} flex flex-1 flex-col items-center gap-2.5 p-4`}>
-      <div className="relative flex items-center justify-center">
-        <RingGlow accent={accent} />
-        <div
-          className="relative flex h-[72px] w-[72px] items-center justify-center rounded-full"
-          style={{ background: `radial-gradient(circle at 35% 30%, ${accent}40, ${accent}0d)`, border: `1px solid ${accent}45` }}
-        >
-          <span className="font-display text-2xl font-black text-white">{value}</span>
+    <div className={`${TILE} col-span-2 flex items-center justify-between gap-3 p-4 ${isLive ? "border-kehai-500/30 bg-gradient-to-r from-kehai-500/[0.08] to-transparent" : ""}`}>
+      <Link href={`/classrooms/${classroom.id}`} className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          {isLive && <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-kehai-400" aria-hidden />}
+          <p className="truncate text-sm font-bold text-white">{classroom.name}</p>
         </div>
+        <p className={`mt-1 text-xs font-semibold ${isLive ? "text-kehai-300" : "text-white/35"}`}>
+          {isLive ? t("home.liveNow") : t("home.noSessionOpen")} · {t("home.studentsCount", { count: classroom.studentCount })}
+        </p>
+      </Link>
+      <Link href={`/classrooms/${classroom.id}`}>
+        <Button size="sm" variant={isLive ? "cyan" : "secondary"}>
+          {isLive ? t("home.manage") : t("home.startSession")}
+        </Button>
+      </Link>
+    </div>
+  );
+}
+
+function BarChart({ bars, accent }: { bars: { label: string; value: number; count: number }[]; accent: string }) {
+  return (
+    <div className="mt-4 flex items-end justify-between gap-2">
+      {bars.map((b, i) => (
+        <div key={i} className="flex flex-1 flex-col items-center gap-1.5">
+          <span className="text-[10px] font-semibold text-white/50">{b.count}</span>
+          {/* Fixed-height track, bar grows up from the bottom -- items-end
+              on the track does the alignment, the bar's own height is
+              just its real percentage, no manual offset math. */}
+          <div className="flex h-14 w-full items-end overflow-hidden rounded-md bg-white/[0.06]">
+            <div
+              className="w-full rounded-md transition-[height] duration-500"
+              style={{ height: `${Math.max(b.value * 100, 6)}%`, background: `linear-gradient(180deg, ${accent}, ${accent}66)` }}
+            />
+          </div>
+          <span className="text-[9px] text-white/30">{b.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RingGlowRing({ value, accent, icon, display }: { value: number; accent: string; icon?: React.ReactNode; display: string }) {
+  return (
+    <div className="relative flex items-center justify-center">
+      <div aria-hidden className="absolute h-20 w-20 rounded-full blur-xl" style={{ background: accent, opacity: 0.22 }} />
+      <ProgressRing value={value} size={72} strokeWidth={6} accent={accent}>
+        <div className="flex flex-col items-center gap-0.5">
+          {icon}
+          <span className="font-display text-base font-bold leading-none text-white">{display}</span>
+        </div>
+      </ProgressRing>
+    </div>
+  );
+}
+
+function CountBadge({ value, accent }: { value: number; accent: string }) {
+  return (
+    <div className="relative flex items-center justify-center">
+      <div aria-hidden className="absolute h-20 w-20 rounded-full blur-xl" style={{ background: accent, opacity: 0.22 }} />
+      <div
+        className="relative flex h-[72px] w-[72px] items-center justify-center rounded-full"
+        style={{ background: `radial-gradient(circle at 35% 30%, ${accent}40, ${accent}0d)`, border: `1px solid ${accent}45` }}
+      >
+        <span className="font-display text-2xl font-black text-white">{value}</span>
       </div>
-      <p className="text-[11px] font-medium text-white/50">{label}</p>
     </div>
   );
 }

@@ -188,6 +188,10 @@ const dict = {
     studentsCount: { en: "{count} students", ja: "学生 {count} 名" },
     getStartedTitle: { en: "Nothing here yet", ja: "まだ何もありません" },
     getStartedHint: { en: "Join a classroom or browse events to get started.", ja: "クラスに参加するか、イベントを探してみましょう。" },
+    attendanceTrend: { en: "Recent sessions", ja: "最近のセッション" },
+    attendanceHistory: { en: "Last 14 sessions", ja: "直近14回" },
+    manage: { en: "Manage", ja: "管理" },
+    startSession: { en: "Start session", ja: "セッション開始" },
   },
   dashboard: {
     kicker: { en: "Organizer console", ja: "主催者コンソール" },
