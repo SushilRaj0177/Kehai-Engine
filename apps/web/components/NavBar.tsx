@@ -77,7 +77,17 @@ export function NavBar() {
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <LocaleSwitch locale={locale} onToggle={toggle} />
+          {/* Hidden below sm, same as "Sign in" further down — with the
+              logo, an unauthenticated "Get started" button (whose HUD
+              corner brackets deliberately float outside its own box), and
+              the hamburger all needing room in the same row, this was the
+              one element still shown unconditionally on every width and
+              the thing actually causing the bar to overflow/crowd on a
+              real phone. Reachable instead as its own row in the mobile
+              menu below. */}
+          <div className="hidden sm:block">
+            <LocaleSwitch locale={locale} onToggle={toggle} />
+          </div>
 
           {user ? (
             <>
@@ -146,24 +156,29 @@ export function NavBar() {
 
       {menuOpen && (
         <div className="mx-auto mt-2 max-w-6xl rounded-2xl border border-white/[0.08] bg-white/[0.06] p-2 backdrop-blur-2xl sm:hidden">
-          <MobileMenuLink href="/events" onNavigate={() => setMenuOpen(false)}>
+          <MobileMenuLink href="/events" active={!!pathname?.startsWith("/events")} onNavigate={() => setMenuOpen(false)}>
             {t("nav.discover")}
           </MobileMenuLink>
           {user && (
-            <MobileMenuLink href="/my-events" onNavigate={() => setMenuOpen(false)}>
+            <MobileMenuLink href="/my-events" active={pathname === "/my-events"} onNavigate={() => setMenuOpen(false)}>
               {t("nav.myEvents")}
             </MobileMenuLink>
           )}
-          <MobileMenuLink href="/classrooms" onNavigate={() => setMenuOpen(false)}>
+          <MobileMenuLink href="/classrooms" active={!!pathname?.startsWith("/classrooms")} onNavigate={() => setMenuOpen(false)}>
             {t("nav.classrooms")}
           </MobileMenuLink>
           {user && (
-            <MobileMenuLink href={primaryOrg ? `/orgs/${primaryOrg.slug}` : "/dashboard"} onNavigate={() => setMenuOpen(false)}>
+            <MobileMenuLink
+              href={primaryOrg ? `/orgs/${primaryOrg.slug}` : "/dashboard"}
+              active={!!pathname?.startsWith("/orgs") || pathname === "/dashboard"}
+              onNavigate={() => setMenuOpen(false)}
+            >
               {t("nav.console")}
             </MobileMenuLink>
           )}
+          {user && <div className="my-1 h-px bg-white/[0.06]" />}
           {user && (
-            <MobileMenuLink href="/settings" onNavigate={() => setMenuOpen(false)}>
+            <MobileMenuLink href="/settings" active={pathname === "/settings"} onNavigate={() => setMenuOpen(false)}>
               {t("nav.settings")}
             </MobileMenuLink>
           )}
@@ -172,6 +187,11 @@ export function NavBar() {
               {t("nav.signIn")}
             </MobileMenuLink>
           )}
+          <div className="my-1 h-px bg-white/[0.06]" />
+          <div className="flex items-center justify-between px-4 py-2">
+            <span className="text-xs font-semibold uppercase tracking-wide text-white/35">{t("nav.toggleLanguage")}</span>
+            <LocaleSwitch locale={locale} onToggle={toggle} />
+          </div>
         </div>
       )}
       {EMAIL_VERIFICATION_UI_ENABLED && user && !user.emailVerifiedAt && <VerifyEmailBanner />}
@@ -179,12 +199,24 @@ export function NavBar() {
   );
 }
 
-function MobileMenuLink({ href, onNavigate, children }: { href: string; onNavigate: () => void; children: React.ReactNode }) {
+function MobileMenuLink({
+  href,
+  active,
+  onNavigate,
+  children,
+}: {
+  href: string;
+  active?: boolean;
+  onNavigate: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <Link
       href={href}
       onClick={onNavigate}
-      className="block rounded-xl px-4 py-3 text-sm font-semibold text-white/70 transition-colors hover:bg-white/[0.06] hover:text-white"
+      className={`block rounded-xl px-4 py-3 text-sm font-semibold transition-colors ${
+        active ? "bg-white/[0.08] text-white" : "text-white/70 hover:bg-white/[0.06] hover:text-white"
+      }`}
     >
       {children}
     </Link>
