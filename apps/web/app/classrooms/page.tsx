@@ -13,10 +13,13 @@ import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
 import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { JoinClassroomForm } from "@/components/JoinClassroomForm";
+import { SURFACE, FlameIcon } from "@/components/ui/Hud";
+import { useIsStandalone } from "@/lib/useStandalone";
 import { useAuth } from "@/lib/auth-context";
 import { useMyClassrooms, useEnrolledClassrooms } from "@/lib/hooks";
 import { apiFetch, ApiError } from "@/lib/api";
 import { useLocale } from "@/lib/i18n";
+import type { ClassroomSummary, EnrolledClassroom } from "@/lib/types";
 
 export default function ClassroomsHubPage() {
   const { t } = useLocale();
@@ -28,6 +31,7 @@ export default function ClassroomsHubPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const router = useRouter();
+  const isStandalone = useIsStandalone();
 
   const needle = q.trim().toLowerCase();
   const filteredEnrolled = useMemo(
@@ -72,6 +76,133 @@ export default function ClassroomsHubPage() {
       .then(() => setCopiedId(id))
       .catch(() => setCopiedId(null));
     setTimeout(() => setCopiedId((cur) => (cur === id ? null : cur)), 1800);
+  }
+
+  if (isStandalone) {
+    return (
+      <ClickRippleLayer className="relative min-h-screen">
+        <PageGlow />
+        <NavBar />
+        <div className="relative mx-auto max-w-2xl px-4 pb-28 pt-5 sm:px-6 sm:pt-8">
+          <div className="flex items-start justify-between gap-3 px-1">
+            <h1 className="font-display text-2xl font-black text-white">{t("classroomHub.title")}</h1>
+            <div className="flex shrink-0 gap-2">
+              <Button
+                size="sm"
+                variant={showJoin ? "secondary" : "primary"}
+                onClick={() => {
+                  setShowJoin((s) => !s);
+                  setShowCreate(false);
+                }}
+              >
+                {showJoin ? t("common.cancel") : t("classroomHub.joinClassroom")}
+              </Button>
+              <Button
+                size="sm"
+                variant={showCreate ? "secondary" : "cyan"}
+                onClick={() => {
+                  setShowCreate((s) => !s);
+                  setShowJoin(false);
+                }}
+              >
+                {showCreate ? t("common.cancel") : t("classroomHub.newClassroom")}
+              </Button>
+            </div>
+          </div>
+
+          {showJoin && (
+            <div className={`${SURFACE} mt-4 p-4`}>
+              <JoinClassroomForm
+                onJoined={(result) => {
+                  void mutateEnrolled();
+                  router.push(`/classrooms/${result.classroom.id}`);
+                }}
+              />
+            </div>
+          )}
+
+          {showCreate && (
+            <div className={`${SURFACE} mt-4 p-4`}>
+              <CreateClassroomForm
+                compact
+                onCreated={() => {
+                  setShowCreate(false);
+                  void mutateTeaching();
+                }}
+              />
+            </div>
+          )}
+
+          {((enrolled && enrolled.length > 0) || (teaching && teaching.length > 0)) && (
+            <div className="relative mt-5">
+              <SearchIcon className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder={t("classroomHub.searchPlaceholder")}
+                className="h-11 w-full rounded-full border border-white/[0.08] bg-white/[0.04] pl-10 pr-4 text-sm text-white placeholder:text-white/30 focus:border-shu-500/40 focus:outline-none"
+              />
+            </div>
+          )}
+
+          <section className="mt-7">
+            <h2 className="mb-3 px-1 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-white/35">
+              {t("classroomHub.enrolledHeading")}
+            </h2>
+            {enrolledLoading ? (
+              <LoadingBlock />
+            ) : !enrolled?.length ? (
+              <EmptyState
+                glyph="学"
+                title={t("classroomHub.enrolledEmptyTitle")}
+                description={t("classroomHub.enrolledEmptyDescription")}
+                action={
+                  <Button variant="terminal" size="sm" onClick={() => setShowJoin(true)}>
+                    {t("classroomHub.joinClassroom")}
+                  </Button>
+                }
+              />
+            ) : !filteredEnrolled?.length ? (
+              <EmptyState glyph="学" title={t("classroomHub.noMatchTitle")} description={t("classroomHub.noMatchDescription")} />
+            ) : (
+              <div className={`${SURFACE} divide-y divide-white/[0.05] overflow-hidden`}>
+                {filteredEnrolled.map((e) => (
+                  <EnrolledRow key={e.classroom.id} enrollment={e} t={t} />
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="mt-8">
+            <h2 className="mb-3 px-1 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-white/35">
+              {t("classroomHub.teachingHeading")}
+            </h2>
+            {teachingLoading ? (
+              <LoadingBlock />
+            ) : !teaching?.length ? (
+              <EmptyState
+                glyph="級"
+                title={t("classroomHub.teachingEmptyTitle")}
+                description={t("classroomHub.teachingEmptyDescription")}
+                action={
+                  <Button variant="terminal" size="sm" onClick={() => setShowCreate(true)}>
+                    {t("classroomHub.newClassroom")}
+                  </Button>
+                }
+              />
+            ) : !filteredTeaching?.length ? (
+              <EmptyState glyph="級" title={t("classroomHub.noMatchTitle")} description={t("classroomHub.noMatchDescription")} />
+            ) : (
+              <div className={`${SURFACE} divide-y divide-white/[0.05] overflow-hidden`}>
+                {filteredTeaching.map((c) => (
+                  <TeachingRow key={c.id} classroom={c} copiedId={copiedId} onCopy={copy} t={t} />
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+      </ClickRippleLayer>
+    );
   }
 
   return (
@@ -270,7 +401,7 @@ export default function ClassroomsHubPage() {
   );
 }
 
-function CreateClassroomForm({ onCreated }: { onCreated: () => void }) {
+function CreateClassroomForm({ onCreated, compact = false }: { onCreated: () => void; compact?: boolean }) {
   const { t } = useLocale();
   const router = useRouter();
   const [name, setName] = useState("");
@@ -323,71 +454,144 @@ function CreateClassroomForm({ onCreated }: { onCreated: () => void }) {
     }
   }
 
+  const form = (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="sm:col-span-1">
+          <Label htmlFor="classroom-name">{t("classroomHub.nameLabel")}</Label>
+          <Input id="classroom-name" required value={name} onChange={(e) => setName(e.target.value)} placeholder={t("classroomHub.namePlaceholder")} />
+        </div>
+        <div>
+          <Label htmlFor="classroom-course">{t("classroomHub.courseCodeLabel")}</Label>
+          <Input id="classroom-course" value={courseCode} onChange={(e) => setCourseCode(e.target.value)} placeholder={t("classroomHub.courseCodePlaceholder")} />
+        </div>
+        <div>
+          <Label htmlFor="classroom-semester">{t("classroomHub.semesterLabelLabel")}</Label>
+          <Input id="classroom-semester" value={semesterLabel} onChange={(e) => setSemesterLabel(e.target.value)} placeholder={t("classroomHub.semesterPlaceholder")} />
+        </div>
+      </div>
+
+      <div className="border-t border-white/[0.06] pt-4">
+        <label className="flex items-center gap-2 text-sm text-white/70">
+          <input
+            type="checkbox"
+            checked={enableGeofence}
+            onChange={(e) => setEnableGeofence(e.target.checked)}
+            className="h-4 w-4 rounded border-white/20 bg-white/5 accent-kehai-500"
+          />
+          {t("classroomHub.enableGeofence")}
+        </label>
+        <p className="mt-1.5 text-[11px] text-white/35">{t("classroomHub.geofenceHelp")}</p>
+
+        {enableGeofence && (
+          <div className="mt-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-white/40">{t("classroomHub.geofenceHeading")}</span>
+              <button type="button" onClick={useMyLocation} className="text-xs font-medium text-shu-400 hover:text-shu-300">
+                {locating ? t("classroomHub.locating") : t("classroomHub.useMyLocation")}
+              </button>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div>
+                <Label htmlFor="classroom-lat">{t("classroomHub.latitudeLabel")}</Label>
+                <Input id="classroom-lat" value={latitude} onChange={(e) => setLatitude(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="classroom-lng">{t("classroomHub.longitudeLabel")}</Label>
+                <Input id="classroom-lng" value={longitude} onChange={(e) => setLongitude(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="classroom-radius">{t("classroomHub.radiusLabel")}</Label>
+                <Input id="classroom-radius" type="number" min={10} max={5000} value={radius} onChange={(e) => setRadius(e.target.value)} />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center gap-3">
+        <Button type="submit" loading={loading}>
+          {t("common.create")}
+        </Button>
+      </div>
+      {error && <ErrorBlock message={error} />}
+    </form>
+  );
+
+  if (compact) return form;
+
   return (
     <Card className="relative z-20 mt-6">
-      <CardBody>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="sm:col-span-1">
-              <Label htmlFor="classroom-name">{t("classroomHub.nameLabel")}</Label>
-              <Input id="classroom-name" required value={name} onChange={(e) => setName(e.target.value)} placeholder={t("classroomHub.namePlaceholder")} />
-            </div>
-            <div>
-              <Label htmlFor="classroom-course">{t("classroomHub.courseCodeLabel")}</Label>
-              <Input id="classroom-course" value={courseCode} onChange={(e) => setCourseCode(e.target.value)} placeholder={t("classroomHub.courseCodePlaceholder")} />
-            </div>
-            <div>
-              <Label htmlFor="classroom-semester">{t("classroomHub.semesterLabelLabel")}</Label>
-              <Input id="classroom-semester" value={semesterLabel} onChange={(e) => setSemesterLabel(e.target.value)} placeholder={t("classroomHub.semesterPlaceholder")} />
-            </div>
-          </div>
-
-          <div className="border-t border-white/[0.06] pt-4">
-            <label className="flex items-center gap-2 text-sm text-white/70">
-              <input
-                type="checkbox"
-                checked={enableGeofence}
-                onChange={(e) => setEnableGeofence(e.target.checked)}
-                className="h-4 w-4 rounded border-white/20 bg-white/5 accent-kehai-500"
-              />
-              {t("classroomHub.enableGeofence")}
-            </label>
-            <p className="mt-1.5 text-[11px] text-white/35">{t("classroomHub.geofenceHelp")}</p>
-
-            {enableGeofence && (
-              <div className="mt-4 space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-white/40">{t("classroomHub.geofenceHeading")}</span>
-                  <button type="button" onClick={useMyLocation} className="text-xs font-medium text-shu-400 hover:text-shu-300">
-                    {locating ? t("classroomHub.locating") : t("classroomHub.useMyLocation")}
-                  </button>
-                </div>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                  <div>
-                    <Label htmlFor="classroom-lat">{t("classroomHub.latitudeLabel")}</Label>
-                    <Input id="classroom-lat" value={latitude} onChange={(e) => setLatitude(e.target.value)} />
-                  </div>
-                  <div>
-                    <Label htmlFor="classroom-lng">{t("classroomHub.longitudeLabel")}</Label>
-                    <Input id="classroom-lng" value={longitude} onChange={(e) => setLongitude(e.target.value)} />
-                  </div>
-                  <div>
-                    <Label htmlFor="classroom-radius">{t("classroomHub.radiusLabel")}</Label>
-                    <Input id="classroom-radius" type="number" min={10} max={5000} value={radius} onChange={(e) => setRadius(e.target.value)} />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Button type="submit" loading={loading}>
-              {t("common.create")}
-            </Button>
-          </div>
-          {error && <ErrorBlock message={error} />}
-        </form>
-      </CardBody>
+      <CardBody>{form}</CardBody>
     </Card>
+  );
+}
+
+function SearchIcon({ className }: { className?: string }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={className}>
+      <circle cx="11" cy="11" r="7" />
+      <path d="M21 21l-4.35-4.35" />
+    </svg>
+  );
+}
+
+function EnrolledRow({ enrollment: e, t }: { enrollment: EnrolledClassroom; t: (key: string, vars?: Record<string, string | number>) => string }) {
+  return (
+    <Link href={`/classrooms/${e.classroom.id}`} className="flex items-center gap-3 px-4 py-3.5">
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[14px] font-semibold text-white/85">{e.classroom.name}</p>
+        <p className="mt-0.5 truncate text-[12px] text-white/35">
+          {[e.classroom.courseCode, e.classroom.teacherName].filter(Boolean).join(" · ")}
+        </p>
+      </div>
+      <div className="shrink-0 text-right">
+        <p className="font-mono text-[15px] font-black text-white">{Math.round(e.attendanceRate * 100)}%</p>
+        {e.currentStreak > 0 && (
+          <p className="mt-0.5 flex items-center justify-end gap-1 font-mono text-[11px] font-bold text-shu-300">
+            {e.currentStreak}
+            <FlameIcon lit size={11} />
+          </p>
+        )}
+      </div>
+    </Link>
+  );
+}
+
+function TeachingRow({
+  classroom: c,
+  copiedId,
+  onCopy,
+  t,
+}: {
+  classroom: ClassroomSummary;
+  copiedId: string | null;
+  onCopy: (text: string, id: string) => void;
+  t: (key: string, vars?: Record<string, string | number>) => string;
+}) {
+  return (
+    <div className="px-4 py-3.5">
+      <Link href={`/classrooms/${c.id}`} className="block">
+        <p className="truncate text-[14px] font-semibold text-white/85">{c.name}</p>
+        <p className="mt-0.5 truncate text-[12px] text-white/35">
+          {[c.courseCode, c.semesterLabel].filter(Boolean).join(" · ") || " "}
+        </p>
+        <p className="mt-1 text-[12px] text-white/40">
+          {t("classroomHub.studentCount", { count: c.studentCount })} · {t("classroomHub.sessionCount", { count: c.sessionCount })}
+        </p>
+      </Link>
+      <div className="mt-2.5 flex flex-wrap items-center gap-2">
+        <span className="rounded-full border border-kehai-500/30 bg-kehai-500/10 px-2.5 py-1 font-mono text-[11px] font-bold tracking-[0.2em] text-kehai-300">
+          {c.joinCode}
+        </span>
+        <button
+          type="button"
+          onClick={() => onCopy(c.joinCode, `${c.id}-code`)}
+          className="font-mono text-[11px] font-medium uppercase tracking-wide text-white/45"
+        >
+          {copiedId === `${c.id}-code` ? t("classroomHub.copied") : t("classroomHub.copyCode")}
+        </button>
+      </div>
+    </div>
   );
 }

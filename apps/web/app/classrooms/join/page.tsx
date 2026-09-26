@@ -7,6 +7,8 @@ import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
 import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { JoinClassroomForm } from "@/components/JoinClassroomForm";
+import { SURFACE } from "@/components/ui/Hud";
+import { useIsStandalone } from "@/lib/useStandalone";
 import { useLocale } from "@/lib/i18n";
 
 export default function ClassroomJoinLandingPage() {
@@ -14,6 +16,27 @@ export default function ClassroomJoinLandingPage() {
   const search = useSearchParams();
   const router = useRouter();
   const code = search.get("code") ?? "";
+  const isStandalone = useIsStandalone();
+
+  if (isStandalone) {
+    return (
+      <ClickRippleLayer className="relative min-h-screen">
+        <PageGlow />
+        <NavBar />
+        <div className="relative mx-auto flex min-h-[calc(100vh-220px)] max-w-md flex-col justify-center px-5 py-10">
+          <p className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-white/35">
+            {t("classroomJoinPage.kicker")}
+          </p>
+          <h1 className="mt-1.5 font-display text-[26px] font-black leading-tight text-white">{t("classroomJoinPage.title")}</h1>
+          <p className="mt-2 text-[14px] leading-relaxed text-white/45">{t("classroomJoinPage.subtitle")}</p>
+
+          <div className={`${SURFACE} mt-8 p-5`}>
+            <JoinClassroomForm initialCode={code} onJoined={(result) => router.push(`/classrooms/${result.classroom.id}`)} />
+          </div>
+        </div>
+      </ClickRippleLayer>
+    );
+  }
 
   return (
     <ClickRippleLayer className="relative min-h-screen">
