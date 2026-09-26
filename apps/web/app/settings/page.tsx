@@ -14,10 +14,13 @@ import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { useAuth } from "@/lib/auth-context";
 import { apiFetch, ApiError, clearTokens } from "@/lib/api";
 import { useLocale } from "@/lib/i18n";
+import { SURFACE, SectionHead } from "@/components/ui/Hud";
+import { useIsStandalone } from "@/lib/useStandalone";
 
 export default function SettingsPage() {
   const { t } = useLocale();
   const { user, loading } = useAuth();
+  const isStandalone = useIsStandalone();
 
   if (loading) return <LoadingBlock label={t("states.checkingSession")} />;
 
@@ -31,6 +34,23 @@ export default function SettingsPage() {
           <Link href="/login">
             <Button className="mt-4">{t("common.signIn")}</Button>
           </Link>
+        </div>
+      </ClickRippleLayer>
+    );
+  }
+
+  if (isStandalone) {
+    return (
+      <ClickRippleLayer className="relative min-h-screen">
+        <PageGlow />
+        <NavBar />
+        <div className="relative mx-auto max-w-2xl space-y-6 px-4 pb-28 pt-5 sm:px-6 sm:pt-8">
+          <h1 className="px-1 font-display text-2xl font-black text-white">{t("settings.title")}</h1>
+          <AccountSection standalone />
+          <ProfileSection standalone />
+          <NotificationsSection standalone />
+          {user.provider !== "GOOGLE" && <ChangePasswordSection standalone />}
+          <DeleteAccountSection standalone />
         </div>
       </ClickRippleLayer>
     );
@@ -60,40 +80,68 @@ export default function SettingsPage() {
   );
 }
 
-function AccountSection() {
+// Wraps a settings section's content in either the desktop Card chrome
+// or the PWA's flat SURFACE + mono SectionHead, so every section below
+// only writes its fields and logic once and gets both presentations for
+// free.
+function SettingsFrame({
+  title,
+  standalone,
+  danger,
+  children,
+}: {
+  title: string;
+  standalone?: boolean;
+  danger?: boolean;
+  children: React.ReactNode;
+}) {
+  if (standalone) {
+    return (
+      <section>
+        <SectionHead title={title} accent={danger ? "text-shu-400" : undefined} />
+        <div className={`${SURFACE} space-y-4 p-4 ${danger ? "border-shu-500/20" : ""}`}>{children}</div>
+      </section>
+    );
+  }
+  return (
+    <Card className={danger ? "border-shu-500/20" : undefined}>
+      <CardHeader className={`text-xs font-semibold uppercase tracking-wider ${danger ? "text-shu-400" : "text-white/40"}`}>
+        {title}
+      </CardHeader>
+      <CardBody className="space-y-4">{children}</CardBody>
+    </Card>
+  );
+}
+
+function AccountSection({ standalone }: { standalone?: boolean }) {
   const { t, locale, toggle } = useLocale();
   const { logout } = useAuth();
   const router = useRouter();
 
   return (
-    <Card>
-      <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">
-        {t("settings.preferencesHeading")}
-      </CardHeader>
-      <CardBody className="space-y-4">
-        <div className="flex items-center justify-between gap-4">
-          <p className="text-sm font-medium text-white/85">{t("settings.languageLabel")}</p>
-          <LocaleSwitch locale={locale} onToggle={toggle} />
-        </div>
-        <div className="flex items-center justify-between gap-4 border-t border-white/[0.06] pt-4">
-          <p className="text-sm font-medium text-white/85">{t("nav.signOut")}</p>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => {
-              logout();
-              router.push("/");
-            }}
-          >
-            {t("nav.signOut")}
-          </Button>
-        </div>
-      </CardBody>
-    </Card>
+    <SettingsFrame title={t("settings.preferencesHeading")} standalone={standalone}>
+      <div className="flex items-center justify-between gap-4">
+        <p className="text-sm font-medium text-white/85">{t("settings.languageLabel")}</p>
+        <LocaleSwitch locale={locale} onToggle={toggle} />
+      </div>
+      <div className="flex items-center justify-between gap-4 border-t border-white/[0.06] pt-4">
+        <p className="text-sm font-medium text-white/85">{t("nav.signOut")}</p>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => {
+            logout();
+            router.push("/");
+          }}
+        >
+          {t("nav.signOut")}
+        </Button>
+      </div>
+    </SettingsFrame>
   );
 }
 
-function ProfileSection() {
+function ProfileSection({ standalone }: { standalone?: boolean }) {
   const { t } = useLocale();
   const { user, refreshProfile } = useAuth();
   const [name, setName] = useState(user?.name ?? "");
@@ -117,30 +165,27 @@ function ProfileSection() {
   }
 
   return (
-    <Card>
-      <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">{t("settings.profileHeading")}</CardHeader>
-      <CardBody className="space-y-4">
-        <div>
-          <Label htmlFor="settings-name">{t("auth.fullNameLabel")}</Label>
-          <Input id="settings-name" required value={name} onChange={(e) => setName(e.target.value)} />
-        </div>
-        <div>
-          <Label>{t("settings.emailLabel")}</Label>
-          <p className="px-4 py-3.5 text-base text-white/40">{user?.email}</p>
-        </div>
-        {error && <ErrorBlock message={error} />}
-        <div className="flex items-center gap-3">
-          <Button size="sm" loading={saving} onClick={save} disabled={!name.trim()}>
-            {t("settings.saveChanges")}
-          </Button>
-          {saved && <span className="text-sm text-kehai-400">✓ {t("settings.saved")}</span>}
-        </div>
-      </CardBody>
-    </Card>
+    <SettingsFrame title={t("settings.profileHeading")} standalone={standalone}>
+      <div>
+        <Label htmlFor="settings-name">{t("auth.fullNameLabel")}</Label>
+        <Input id="settings-name" required value={name} onChange={(e) => setName(e.target.value)} />
+      </div>
+      <div>
+        <Label>{t("settings.emailLabel")}</Label>
+        <p className="px-4 py-3.5 text-base text-white/40">{user?.email}</p>
+      </div>
+      {error && <ErrorBlock message={error} />}
+      <div className="flex items-center gap-3">
+        <Button size="sm" loading={saving} onClick={save} disabled={!name.trim()}>
+          {t("settings.saveChanges")}
+        </Button>
+        {saved && <span className="text-sm text-kehai-400">✓ {t("settings.saved")}</span>}
+      </div>
+    </SettingsFrame>
   );
 }
 
-function NotificationsSection() {
+function NotificationsSection({ standalone }: { standalone?: boolean }) {
   const { t } = useLocale();
   const { user, refreshProfile } = useAuth();
   const [enabled, setEnabled] = useState(user?.emailNotificationsEnabled ?? true);
@@ -164,38 +209,35 @@ function NotificationsSection() {
   }
 
   return (
-    <Card>
-      <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">{t("settings.notificationsHeading")}</CardHeader>
-      <CardBody className="space-y-3">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-white/85">{t("settings.emailNotificationsLabel")}</p>
-            <p className="mt-1 text-xs text-white/40">{t("settings.emailNotificationsHint")}</p>
-          </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={enabled}
-            onClick={toggle}
-            disabled={saving}
-            className={`relative h-7 w-12 shrink-0 rounded-full border transition-colors disabled:opacity-50 ${
-              enabled ? "border-kehai-500/50 bg-kehai-500/30" : "border-white/15 bg-white/5"
-            }`}
-          >
-            <span
-              className={`absolute left-1 top-1/2 h-5 w-5 -translate-y-1/2 rounded-full transition-transform ${
-                enabled ? "translate-x-5 bg-kehai-400" : "translate-x-0 bg-white/40"
-              }`}
-            />
-          </button>
+    <SettingsFrame title={t("settings.notificationsHeading")} standalone={standalone}>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="text-sm font-medium text-white/85">{t("settings.emailNotificationsLabel")}</p>
+          <p className="mt-1 text-xs text-white/40">{t("settings.emailNotificationsHint")}</p>
         </div>
-        {error && <ErrorBlock message={error} />}
-      </CardBody>
-    </Card>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={enabled}
+          onClick={toggle}
+          disabled={saving}
+          className={`relative h-7 w-12 shrink-0 rounded-full border transition-colors disabled:opacity-50 ${
+            enabled ? "border-kehai-500/50 bg-kehai-500/30" : "border-white/15 bg-white/5"
+          }`}
+        >
+          <span
+            className={`absolute left-1 top-1/2 h-5 w-5 -translate-y-1/2 rounded-full transition-transform ${
+              enabled ? "translate-x-5 bg-kehai-400" : "translate-x-0 bg-white/40"
+            }`}
+          />
+        </button>
+      </div>
+      {error && <ErrorBlock message={error} />}
+    </SettingsFrame>
   );
 }
 
-function ChangePasswordSection() {
+function ChangePasswordSection({ standalone }: { standalone?: boolean }) {
   const { t } = useLocale();
   const router = useRouter();
   const [currentPassword, setCurrentPassword] = useState("");
@@ -227,57 +269,54 @@ function ChangePasswordSection() {
   }
 
   return (
-    <Card>
-      <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">{t("settings.passwordHeading")}</CardHeader>
-      <CardBody className="space-y-4">
-        <div>
-          <Label htmlFor="settings-current-password">{t("settings.currentPasswordLabel")}</Label>
-          <Input
-            id="settings-current-password"
-            type="password"
-            required
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-          />
-        </div>
-        <div>
-          <Label htmlFor="settings-new-password">{t("settings.newPasswordLabel")}</Label>
-          <Input
-            id="settings-new-password"
-            type="password"
-            required
-            minLength={8}
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-          />
-        </div>
-        <div>
-          <Label htmlFor="settings-confirm-password">{t("auth.confirmPasswordLabel")}</Label>
-          <Input
-            id="settings-confirm-password"
-            type="password"
-            required
-            minLength={8}
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-          />
-          {mismatch && <p className="mt-2 text-xs text-shu-400">{t("auth.passwordMismatch")}</p>}
-        </div>
-        {error && <ErrorBlock message={error} />}
-        <Button
-          size="sm"
-          loading={saving}
-          onClick={save}
-          disabled={!currentPassword || newPassword.length < 8 || mismatch || confirmPassword.length === 0}
-        >
-          {t("settings.changePassword")}
-        </Button>
-      </CardBody>
-    </Card>
+    <SettingsFrame title={t("settings.passwordHeading")} standalone={standalone}>
+      <div>
+        <Label htmlFor="settings-current-password">{t("settings.currentPasswordLabel")}</Label>
+        <Input
+          id="settings-current-password"
+          type="password"
+          required
+          value={currentPassword}
+          onChange={(e) => setCurrentPassword(e.target.value)}
+        />
+      </div>
+      <div>
+        <Label htmlFor="settings-new-password">{t("settings.newPasswordLabel")}</Label>
+        <Input
+          id="settings-new-password"
+          type="password"
+          required
+          minLength={8}
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+        />
+      </div>
+      <div>
+        <Label htmlFor="settings-confirm-password">{t("auth.confirmPasswordLabel")}</Label>
+        <Input
+          id="settings-confirm-password"
+          type="password"
+          required
+          minLength={8}
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+        />
+        {mismatch && <p className="mt-2 text-xs text-shu-400">{t("auth.passwordMismatch")}</p>}
+      </div>
+      {error && <ErrorBlock message={error} />}
+      <Button
+        size="sm"
+        loading={saving}
+        onClick={save}
+        disabled={!currentPassword || newPassword.length < 8 || mismatch || confirmPassword.length === 0}
+      >
+        {t("settings.changePassword")}
+      </Button>
+    </SettingsFrame>
   );
 }
 
-function DeleteAccountSection() {
+function DeleteAccountSection({ standalone }: { standalone?: boolean }) {
   const { t } = useLocale();
   const { user } = useAuth();
   const router = useRouter();
@@ -306,56 +345,53 @@ function DeleteAccountSection() {
   }
 
   return (
-    <Card className="border-shu-500/20">
-      <CardHeader className="text-xs font-semibold uppercase tracking-wider text-shu-400">{t("settings.dangerZoneHeading")}</CardHeader>
-      <CardBody className="space-y-4">
-        <div>
-          <p className="text-sm font-medium text-white/85">{t("settings.deleteAccountLabel")}</p>
-          <p className="mt-1 text-xs text-white/40">{t("settings.deleteAccountHint")}</p>
-        </div>
-        {error && <ErrorBlock message={error} />}
-        {confirming ? (
-          <div className="space-y-3 rounded-lg border border-shu-500/20 bg-shu-500/5 p-4">
-            {needsPassword && (
-              <div>
-                <Label htmlFor="settings-delete-password">{t("settings.confirmPasswordToDelete")}</Label>
-                <Input
-                  id="settings-delete-password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-            )}
-            <div className="flex items-center gap-3">
-              <Button
-                variant="danger"
-                size="sm"
-                loading={deleting}
-                onClick={confirmDelete}
-                disabled={needsPassword && !password}
-              >
-                {t("settings.deleteAccountConfirm")}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setConfirming(false);
-                  setPassword("");
-                }}
-              >
-                {t("common.cancel")}
-              </Button>
+    <SettingsFrame title={t("settings.dangerZoneHeading")} standalone={standalone} danger>
+      <div>
+        <p className="text-sm font-medium text-white/85">{t("settings.deleteAccountLabel")}</p>
+        <p className="mt-1 text-xs text-white/40">{t("settings.deleteAccountHint")}</p>
+      </div>
+      {error && <ErrorBlock message={error} />}
+      {confirming ? (
+        <div className="space-y-3 rounded-lg border border-shu-500/20 bg-shu-500/5 p-4">
+          {needsPassword && (
+            <div>
+              <Label htmlFor="settings-delete-password">{t("settings.confirmPasswordToDelete")}</Label>
+              <Input
+                id="settings-delete-password"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
             </div>
+          )}
+          <div className="flex items-center gap-3">
+            <Button
+              variant="danger"
+              size="sm"
+              loading={deleting}
+              onClick={confirmDelete}
+              disabled={needsPassword && !password}
+            >
+              {t("settings.deleteAccountConfirm")}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setConfirming(false);
+                setPassword("");
+              }}
+            >
+              {t("common.cancel")}
+            </Button>
           </div>
-        ) : (
-          <Button variant="danger" size="sm" onClick={() => setConfirming(true)}>
-            {t("settings.deleteAccountLabel")}
-          </Button>
-        )}
-      </CardBody>
-    </Card>
+        </div>
+      ) : (
+        <Button variant="danger" size="sm" onClick={() => setConfirming(true)}>
+          {t("settings.deleteAccountLabel")}
+        </Button>
+      )}
+    </SettingsFrame>
   );
 }
