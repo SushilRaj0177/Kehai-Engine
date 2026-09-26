@@ -18,8 +18,10 @@ import { OrgMembers } from "@/components/OrgMembers";
 import { AuditLogPanel } from "@/components/AuditLogPanel";
 import { useMyOrganizations, useOrgEvents, useOrgOverview } from "@/lib/hooks";
 import { apiFetch, ApiError } from "@/lib/api";
-import { formatDateRange } from "@/lib/format";
+import { formatDateRange, formatDate } from "@/lib/format";
 import { useLocale } from "@/lib/i18n";
+import { SURFACE, SectionHead, MetricStrip, HudTabs } from "@/components/ui/Hud";
+import { useIsStandalone } from "@/lib/useStandalone";
 import type { EventSummary, Organization, OrgOverview } from "@/lib/types";
 
 type MobileTab = "events" | "team" | "activity" | "settings";
@@ -34,6 +36,7 @@ export default function OrgPage() {
   const { data: overview } = useOrgOverview(org?.id);
   const [q, setQ] = useState("");
   const [mobileTab, setMobileTab] = useState<MobileTab>("events");
+  const isStandalone = useIsStandalone();
 
   const filteredEvents = useMemo(() => {
     if (!events) return events;
@@ -56,6 +59,126 @@ export default function OrgPage() {
   }
 
   const isAdmin = org.role === "ADMIN" || org.role === "OWNER";
+
+  if (isStandalone) {
+    return (
+      <ClickRippleLayer className="relative min-h-screen">
+        <PageGlow />
+        <NavBar />
+        <div className="relative mx-auto max-w-2xl space-y-6 px-4 pb-28 pt-5 sm:px-6 sm:pt-8">
+          <div className="flex items-start justify-between gap-3 px-1">
+            <div className="min-w-0">
+              <h1 className="truncate font-display text-2xl font-black text-white">{org.name}</h1>
+              <p className="mt-0.5 truncate text-[12px] text-white/35">/{org.slug}</p>
+            </div>
+            <Link href={`/orgs/${org.slug}/events/new`}>
+              <Button size="sm">{t("orgDetail.newEvent")}</Button>
+            </Link>
+          </div>
+
+          {overview && (
+            <MetricStrip
+              items={[
+                { value: overview.totalEvents, label: t("orgDetail.statEvents") },
+                { value: overview.totalAttendance, label: t("orgDetail.statAttendance") },
+                { value: `${Math.round((overview.averageAttendanceRate ?? 0) * 100)}%`, label: t("orgDetail.statAvgRateShort") },
+              ]}
+            />
+          )}
+
+          <HudTabs
+            tabs={[
+              { id: "events" as const, label: t("orgDetail.eventsHeading") },
+              { id: "team" as const, label: t("orgMembers.heading") },
+              { id: "activity" as const, label: t("orgDetail.tabActivity") },
+              ...(isAdmin ? [{ id: "settings" as const, label: t("orgDetail.tabSettings") }] : []),
+            ]}
+            active={mobileTab}
+            onChange={setMobileTab}
+          />
+
+          {mobileTab === "events" && (
+            <div className="space-y-6">
+              {overview && overview.events.length > 0 && (
+                <section>
+                  <SectionHead title={t("orgDetail.trendHeading")} />
+                  <div className={`${SURFACE} p-4`}>
+                    <OrgAttendanceTrendChart events={overview.events} />
+                  </div>
+                </section>
+              )}
+
+              {events && events.length > 0 && (
+                <div className="relative">
+                  <SearchIcon className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
+                  <input
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder={t("orgDetail.searchPlaceholder")}
+                    className="h-11 w-full rounded-full border border-white/[0.08] bg-white/[0.04] pl-10 pr-4 text-sm text-white placeholder:text-white/30 focus:border-shu-500/40 focus:outline-none"
+                  />
+                </div>
+              )}
+
+              {eventsLoading ? (
+                <LoadingBlock />
+              ) : !events?.length ? (
+                <EmptyState
+                  glyph="催"
+                  title={t("orgDetail.emptyTitle")}
+                  description={t("orgDetail.emptyDescription")}
+                  action={
+                    <Link href={`/orgs/${org.slug}/events/new`}>
+                      <Button size="sm">{t("orgDetail.createEvent")}</Button>
+                    </Link>
+                  }
+                />
+              ) : !filteredEvents?.length ? (
+                <EmptyState glyph="催" title={t("orgDetail.noMatchTitle")} description={t("orgDetail.noMatchDescription")} />
+              ) : (
+                <div className={`${SURFACE} divide-y divide-white/[0.05] overflow-hidden`}>
+                  {filteredEvents.map((event) => (
+                    <StandaloneEventRow key={event.id} org={org} event={event} locale={locale} t={t} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {mobileTab === "team" && (
+            <div className={`${SURFACE} p-4`}>
+              <OrgMembers orgId={org.id} callerRole={org.role} />
+            </div>
+          )}
+
+          {mobileTab === "activity" && (
+            <div className={`${SURFACE} p-4`}>
+              <AuditLogPanel orgId={org.id} />
+            </div>
+          )}
+
+          {mobileTab === "settings" && isAdmin && (
+            <div className="space-y-6">
+              <section>
+                <SectionHead title={t("orgDetail.webhookHeading")} />
+                <div className={`${SURFACE} space-y-4 p-4`}>
+                  <WebhookFields org={org} />
+                </div>
+              </section>
+              {org.role === "OWNER" && (
+                <section>
+                  <SectionHead title={t("orgDetail.dangerZoneHeading")} accent="text-shu-400" />
+                  <div className={`${SURFACE} space-y-4 border-shu-500/20 p-4`}>
+                    <DeleteOrgFields org={org} />
+                  </div>
+                </section>
+              )}
+            </div>
+          )}
+        </div>
+      </ClickRippleLayer>
+    );
+  }
 
   return (
     <ClickRippleLayer className="relative min-h-screen">
@@ -370,6 +493,16 @@ function EventCard({
 }
 
 function WebhookSection({ org }: { org: NonNullable<ReturnType<typeof useMyOrganizations>["data"]>[number] }) {
+  return (
+    <Card>
+      <CardBody className="space-y-4">
+        <WebhookFields org={org} />
+      </CardBody>
+    </Card>
+  );
+}
+
+function WebhookFields({ org }: { org: NonNullable<ReturnType<typeof useMyOrganizations>["data"]>[number] }) {
   const { t } = useLocale();
   const { mutate } = useMyOrganizations();
   const [url, setUrl] = useState(org.webhookUrl ?? "");
@@ -393,31 +526,34 @@ function WebhookSection({ org }: { org: NonNullable<ReturnType<typeof useMyOrgan
   }
 
   return (
-    <Card>
+    <>
+      <div>
+        <p className="text-sm font-medium text-white/85">{t("orgDetail.webhookLabel")}</p>
+        <p className="mt-1 text-xs text-white/40">{t("orgDetail.webhookHint")}</p>
+      </div>
+      <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder={t("orgDetail.webhookPlaceholder")} underline={false} />
+      {error && <ErrorBlock message={error} />}
+      <div className="flex items-center gap-3">
+        <Button size="sm" loading={saving} onClick={save}>
+          {t("settings.saveChanges")}
+        </Button>
+        {saved && <span className="text-sm text-kehai-400">✓ {t("settings.saved")}</span>}
+      </div>
+    </>
+  );
+}
+
+function DeleteOrgSection({ org }: { org: NonNullable<ReturnType<typeof useMyOrganizations>["data"]>[number] }) {
+  return (
+    <Card className="border-shu-500/20">
       <CardBody className="space-y-4">
-        <div>
-          <p className="text-sm font-medium text-white/85">{t("orgDetail.webhookLabel")}</p>
-          <p className="mt-1 text-xs text-white/40">{t("orgDetail.webhookHint")}</p>
-        </div>
-        <Input
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder={t("orgDetail.webhookPlaceholder")}
-          underline={false}
-        />
-        {error && <ErrorBlock message={error} />}
-        <div className="flex items-center gap-3">
-          <Button size="sm" loading={saving} onClick={save}>
-            {t("settings.saveChanges")}
-          </Button>
-          {saved && <span className="text-sm text-kehai-400">✓ {t("settings.saved")}</span>}
-        </div>
+        <DeleteOrgFields org={org} />
       </CardBody>
     </Card>
   );
 }
 
-function DeleteOrgSection({ org }: { org: NonNullable<ReturnType<typeof useMyOrganizations>["data"]>[number] }) {
+function DeleteOrgFields({ org }: { org: NonNullable<ReturnType<typeof useMyOrganizations>["data"]>[number] }) {
   const { t } = useLocale();
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
@@ -439,42 +575,79 @@ function DeleteOrgSection({ org }: { org: NonNullable<ReturnType<typeof useMyOrg
   }
 
   return (
-    <Card className="border-shu-500/20">
-      <CardBody className="space-y-4">
-        <div>
-          <p className="text-sm font-medium text-white/85">{t("orgDetail.deleteOrgLabel")}</p>
-          <p className="mt-1 text-xs text-white/40">{t("orgDetail.deleteOrgHint")}</p>
-        </div>
-        {error && <ErrorBlock message={error} />}
-        {confirming ? (
-          <div className="space-y-3 rounded-lg border border-shu-500/20 bg-shu-500/5 p-4">
-            <div>
-              <Label htmlFor="delete-org-confirm">{t("orgDetail.typeNameToConfirm", { name: org.name })}</Label>
-              <Input id="delete-org-confirm" value={typedName} onChange={(e) => setTypedName(e.target.value)} />
-            </div>
-            <div className="flex items-center gap-3">
-              <Button variant="danger" size="sm" loading={deleting} onClick={confirmDelete} disabled={typedName !== org.name}>
-                {t("orgDetail.deleteOrgConfirm")}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setConfirming(false);
-                  setTypedName("");
-                }}
-              >
-                {t("common.cancel")}
-              </Button>
-            </div>
+    <>
+      <div>
+        <p className="text-sm font-medium text-white/85">{t("orgDetail.deleteOrgLabel")}</p>
+        <p className="mt-1 text-xs text-white/40">{t("orgDetail.deleteOrgHint")}</p>
+      </div>
+      {error && <ErrorBlock message={error} />}
+      {confirming ? (
+        <div className="space-y-3 rounded-lg border border-shu-500/20 bg-shu-500/5 p-4">
+          <div>
+            <Label htmlFor="delete-org-confirm">{t("orgDetail.typeNameToConfirm", { name: org.name })}</Label>
+            <Input id="delete-org-confirm" value={typedName} onChange={(e) => setTypedName(e.target.value)} />
           </div>
-        ) : (
-          <Button variant="danger" size="sm" onClick={() => setConfirming(true)}>
-            {t("orgDetail.deleteOrgLabel")}
-          </Button>
-        )}
-      </CardBody>
-    </Card>
+          <div className="flex items-center gap-3">
+            <Button variant="danger" size="sm" loading={deleting} onClick={confirmDelete} disabled={typedName !== org.name}>
+              {t("orgDetail.deleteOrgConfirm")}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setConfirming(false);
+                setTypedName("");
+              }}
+            >
+              {t("common.cancel")}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Button variant="danger" size="sm" onClick={() => setConfirming(true)}>
+          {t("orgDetail.deleteOrgLabel")}
+        </Button>
+      )}
+    </>
+  );
+}
+
+function SearchIcon({ className }: { className?: string }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={className}>
+      <circle cx="11" cy="11" r="7" />
+      <path d="M21 21l-4.35-4.35" />
+    </svg>
+  );
+}
+
+function StandaloneEventRow({
+  org,
+  event,
+  locale,
+  t,
+}: {
+  org: Organization;
+  event: EventSummary;
+  locale: "en" | "ja";
+  t: (key: string, vars?: Record<string, string | number>) => string;
+}) {
+  return (
+    <Link href={`/orgs/${org.slug}/events/${event.id}`} className="flex items-center gap-3 px-4 py-3.5">
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <p className="truncate text-[14px] font-semibold text-white/85">{event.name}</p>
+          <Badge status={event.status}>{t(`badge.status.${event.status}`)}</Badge>
+        </div>
+        <p className="mt-0.5 truncate text-[12px] text-white/35">
+          {formatDate(event.startsAt, locale)} · {event.venue}
+        </p>
+      </div>
+      <div className="shrink-0 text-right font-mono text-[11px] text-white/40">
+        <p>{t("orgDetail.registeredCount", { count: event._count.registrations })}</p>
+        <p className="mt-0.5">{t("orgDetail.attendedCount", { count: event._count.attendances })}</p>
+      </div>
+    </Link>
   );
 }
 
