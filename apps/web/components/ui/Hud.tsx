@@ -18,10 +18,20 @@ export const KEHAI = "#5ff4ff";
 // gradient.
 export const SURFACE = "rounded-2xl border border-white/[0.07] bg-void-900/60";
 
-export function SectionHead({ title, action, trailing }: { title: string; action?: React.ReactNode; trailing?: string }) {
+export function SectionHead({
+  title,
+  action,
+  trailing,
+  accent,
+}: {
+  title: string;
+  action?: React.ReactNode;
+  trailing?: string;
+  accent?: string;
+}) {
   return (
     <div className="mb-3 flex items-center justify-between gap-3 px-1">
-      <h2 className="truncate font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-white/35">{title}</h2>
+      <h2 className={`truncate font-mono text-[11px] font-bold uppercase tracking-[0.16em] ${accent ?? "text-white/35"}`}>{title}</h2>
       {trailing && <span className="shrink-0 font-mono text-[11px] font-bold text-white/50">{trailing}</span>}
       {action}
     </div>

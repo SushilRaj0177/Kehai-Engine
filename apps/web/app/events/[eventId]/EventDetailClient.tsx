@@ -18,6 +18,8 @@ import { apiFetch, ApiError, getApiBase } from "@/lib/api";
 import { formatDateRange, formatDateTime } from "@/lib/format";
 import { getCheckInWindow } from "@/lib/checkin-window";
 import { useLocale } from "@/lib/i18n";
+import { SURFACE } from "@/components/ui/Hud";
+import { useIsStandalone } from "@/lib/useStandalone";
 
 const EventMap = dynamic(() => import("@/components/EventMap").then((m) => m.EventMap), { ssr: false });
 
@@ -31,6 +33,7 @@ export function EventDetailClient() {
   const [registering, setRegistering] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
+  const isStandalone = useIsStandalone();
 
   if (isLoading) return <LoadingBlock label={t("states.loadingEvent")} />;
 
@@ -84,6 +87,118 @@ export function EventDetailClient() {
 
   const isOpen = event.status === "PUBLISHED" || event.status === "ACTIVE";
   const checkInWindow = getCheckInWindow(event);
+
+  if (isStandalone) {
+    return (
+      <ClickRippleLayer className="relative min-h-screen">
+        <PageGlow />
+        <NavBar />
+        <div className="relative mx-auto max-w-md space-y-6 px-5 pb-28 pt-5">
+          <Link href="/events" className="inline-block font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-white/35">
+            {t("eventDetail.backToDiscover")}
+          </Link>
+
+          <div>
+            <div className="flex items-center gap-2">
+              <Badge status={event.status}>{t(`badge.status.${event.status}`)}</Badge>
+              <span className="truncate text-[12px] text-white/40">{event.organization?.name}</span>
+            </div>
+            <h1 className="mt-2 font-display text-[24px] font-black leading-tight text-white">{event.name}</h1>
+            <p className="mt-2 text-[13px] text-white/45">{formatDateRange(event.startsAt, event.endsAt, locale)}</p>
+            <p className="mt-0.5 text-[13px] text-white/35">{event.venue}</p>
+            <a
+              href={`${getApiBase()}/api/events/${event.id}/calendar.ics`}
+              className="mt-2 inline-block font-mono text-[11px] font-bold uppercase tracking-wide text-kehai-300"
+            >
+              {t("eventDetail.addToCalendar")}
+            </a>
+            {event.description && <p className="mt-4 text-[14px] leading-relaxed text-white/55">{event.description}</p>}
+          </div>
+
+          {error && <ErrorBlock message={error} />}
+
+          <div className={`${SURFACE} space-y-3 p-4`}>
+            {event.hasAttended ? (
+              <Badge status="COMPLETED">{t("badge.attendanceConfirmed")}</Badge>
+            ) : event.isRegistered && event.isWaitlisted ? (
+              <div className="space-y-2">
+                <Badge>{t("badge.waitlisted")}</Badge>
+                <p className="text-[12px] text-white/40">{t("eventDetail.waitlistedHint")}</p>
+                {confirmingCancel ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[12px] text-white/50">{t("eventDetail.confirmCancel")}</span>
+                    <Button variant="danger" size="sm" loading={cancelling} onClick={cancelRegistration}>
+                      {t("eventDetail.leaveWaitlist")}
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setConfirmingCancel(false)}>
+                      {t("common.cancel")}
+                    </Button>
+                  </div>
+                ) : (
+                  <Button variant="ghost" size="sm" onClick={cancelRegistration}>
+                    {t("eventDetail.leaveWaitlist")}
+                  </Button>
+                )}
+              </div>
+            ) : event.isRegistered ? (
+              isOpen ? (
+                <div className="space-y-2">
+                  <Link href={`/attend/${event.id}`} className="block">
+                    <Button variant="cyan" size="lg" className="w-full">
+                      {t("eventDetail.checkInWithQr")}
+                    </Button>
+                  </Link>
+                  {checkInWindow.status !== "open" && (
+                    <p className="text-center text-[12px] text-amber-300/80">
+                      {checkInWindow.status === "not_open"
+                        ? t("attend.windowNotOpenBody", { time: formatDateTime(checkInWindow.opensAt, locale) })
+                        : t("attend.windowClosedBody", { time: formatDateTime(checkInWindow.closesAt, locale) })}
+                    </p>
+                  )}
+                  {confirmingCancel ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="text-[12px] text-white/50">{t("eventDetail.confirmCancel")}</span>
+                      <Button variant="danger" size="sm" loading={cancelling} onClick={cancelRegistration}>
+                        {t("eventDetail.cancelRegistration")}
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setConfirmingCancel(false)}>
+                        {t("common.cancel")}
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button variant="ghost" size="sm" className="w-full" onClick={cancelRegistration}>
+                      {t("eventDetail.cancelRegistration")}
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <Badge>{t("badge.registered")}</Badge>
+              )
+            ) : isOpen ? (
+              <Button size="lg" className="w-full" onClick={register} loading={registering}>
+                {t("eventDetail.registerToAttend")}
+              </Button>
+            ) : (
+              <Badge>{t("badge.registrationClosed")}</Badge>
+            )}
+            <p className="text-center font-mono text-[11px] uppercase tracking-wide text-white/30">
+              {event.capacity
+                ? t("eventDetail.registeredWithCapacity", { count: event._count.registrations, capacity: event.capacity })
+                : t("eventDetail.registeredCount", { count: event._count.registrations })}{" "}
+              · {t("eventDetail.attendedCount", { count: event._count.attendances })}
+            </p>
+          </div>
+
+          <section>
+            <div className={`${SURFACE} p-4`}>
+              <EventMap latitude={event.latitude} longitude={event.longitude} radiusM={event.geofenceRadiusM} />
+              <p className="mt-3 text-[12px] text-white/35">{t("eventDetail.geofenceNote", { radius: event.geofenceRadiusM })}</p>
+            </div>
+          </section>
+        </div>
+      </ClickRippleLayer>
+    );
+  }
 
   return (
     <ClickRippleLayer className="relative min-h-screen">
