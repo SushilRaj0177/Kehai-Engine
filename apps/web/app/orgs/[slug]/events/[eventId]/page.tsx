@@ -24,8 +24,11 @@ import { apiFetch, ApiError } from "@/lib/api";
 import { formatDateRange, formatDateTime, toLocalDatetimeInputValue } from "@/lib/format";
 import { subscribeToEvent } from "@/lib/realtime";
 import { getCheckInWindow } from "@/lib/checkin-window";
-import type { EventStatus, EventSummary } from "@/lib/types";
+import type { EventStatus, EventSummary, Organization } from "@/lib/types";
+import type { CheckInWindow } from "@/lib/checkin-window";
 import { useLocale } from "@/lib/i18n";
+import { SURFACE, SectionHead, MetricStrip, HudTabs } from "@/components/ui/Hud";
+import { useIsStandalone } from "@/lib/useStandalone";
 
 // Same convention as the "restart" and event-creation flows — the
 // endsAt column stays non-nullable, so "no fixed end time" is
@@ -60,6 +63,7 @@ export default function EventControlRoomPage() {
   // sibling button in the group.
   const [transitioningTo, setTransitioningTo] = useState<EventStatus | null>(null);
   const [extendingBy, setExtendingBy] = useState<number | null>(null);
+  const isStandalone = useIsStandalone();
 
   useEffect(() => {
     if (!eventId) return;
@@ -131,6 +135,33 @@ export default function EventControlRoomPage() {
 
   const checkInWindow = getCheckInWindow(event);
   const showWindowWarning = (event.status === "ACTIVE" || event.status === "PUBLISHED") && checkInWindow.status !== "open";
+
+  if (isStandalone) {
+    return (
+      <ClickRippleLayer className="relative min-h-screen">
+        <PageGlow />
+        <NavBar />
+        <StandaloneEventControlRoom
+          event={event}
+          org={org}
+          locale={locale}
+          liveConnected={liveConnected}
+          attendance={attendance}
+          registrations={registrations}
+          rate={rate}
+          noShowRate={analytics?.noShowRate}
+          checkInWindow={checkInWindow}
+          showWindowWarning={showWindowWarning}
+          transitioningTo={transitioningTo}
+          extendingBy={extendingBy}
+          statusError={statusError}
+          onTransition={transition}
+          onExtend={extendWindow}
+          onSaved={() => mutate()}
+        />
+      </ClickRippleLayer>
+    );
+  }
 
   return (
     <ClickRippleLayer className="relative min-h-screen">
@@ -251,7 +282,7 @@ export default function EventControlRoomPage() {
   );
 }
 
-function EditTimingPanel({ event, onSaved }: { event: EventSummary; onSaved: () => void }) {
+function EditTimingPanel({ event, onSaved, bare = false }: { event: EventSummary; onSaved: () => void; bare?: boolean }) {
   const { t } = useLocale();
   const [open, setOpen] = useState(false);
   const [startsAt, setStartsAt] = useState(() => toLocalDatetimeInputValue(new Date(event.startsAt)));
@@ -302,46 +333,52 @@ function EditTimingPanel({ event, onSaved }: { event: EventSummary; onSaved: () 
     );
   }
 
+  const fields = (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <Label htmlFor="edit-startsAt">{t("eventNew.startsLabel")}</Label>
+          <Input id="edit-startsAt" type="datetime-local" required value={startsAt} onChange={(e) => setStartsAt(e.target.value)} />
+        </div>
+        <div>
+          <Label htmlFor="edit-endsAt">{t("eventNew.endsLabel")}</Label>
+          <Input
+            id="edit-endsAt"
+            type="datetime-local"
+            required={!openEnded}
+            disabled={openEnded}
+            value={endsAt}
+            onChange={(e) => setEndsAt(e.target.value)}
+          />
+        </div>
+      </div>
+      <label className="flex items-center gap-2 text-sm text-white/70">
+        <input
+          type="checkbox"
+          checked={openEnded}
+          onChange={(e) => setOpenEnded(e.target.checked)}
+          className="h-4 w-4 rounded border-white/20 bg-white/5 accent-kehai-500"
+        />
+        {t("eventNew.noEndTime")}
+      </label>
+      {error && <ErrorBlock message={error} />}
+      <div className="flex flex-wrap items-center gap-3">
+        <Button size="sm" loading={saving} onClick={save}>
+          {t("eventControl.saveChanges")}
+        </Button>
+        <Button variant="ghost" size="sm" onClick={toggle}>
+          {t("common.cancel")}
+        </Button>
+        {saved && <span className="text-sm text-kehai-400">✓ {t("eventControl.editSaved")}</span>}
+      </div>
+    </div>
+  );
+
+  if (bare) return fields;
+
   return (
     <Card className="w-full">
-      <CardBody className="space-y-4">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <Label htmlFor="edit-startsAt">{t("eventNew.startsLabel")}</Label>
-            <Input id="edit-startsAt" type="datetime-local" required value={startsAt} onChange={(e) => setStartsAt(e.target.value)} />
-          </div>
-          <div>
-            <Label htmlFor="edit-endsAt">{t("eventNew.endsLabel")}</Label>
-            <Input
-              id="edit-endsAt"
-              type="datetime-local"
-              required={!openEnded}
-              disabled={openEnded}
-              value={endsAt}
-              onChange={(e) => setEndsAt(e.target.value)}
-            />
-          </div>
-        </div>
-        <label className="flex items-center gap-2 text-sm text-white/70">
-          <input
-            type="checkbox"
-            checked={openEnded}
-            onChange={(e) => setOpenEnded(e.target.checked)}
-            className="h-4 w-4 rounded border-white/20 bg-white/5 accent-kehai-500"
-          />
-          {t("eventNew.noEndTime")}
-        </label>
-        {error && <ErrorBlock message={error} />}
-        <div className="flex flex-wrap items-center gap-3">
-          <Button size="sm" loading={saving} onClick={save}>
-            {t("eventControl.saveChanges")}
-          </Button>
-          <Button variant="ghost" size="sm" onClick={toggle}>
-            {t("common.cancel")}
-          </Button>
-          {saved && <span className="text-sm text-kehai-400">✓ {t("eventControl.editSaved")}</span>}
-        </div>
-      </CardBody>
+      <CardBody>{fields}</CardBody>
     </Card>
   );
 }
@@ -353,7 +390,7 @@ function EditTimingPanel({ event, onSaved }: { event: EventSummary; onSaved: () 
 // lat/long/radius stay out of scope here: editing where check-in is
 // physically anchored deserves the map picker the creation form has,
 // not a bare number field, and is a bigger, riskier change.
-function EditDetailsPanel({ event, onSaved }: { event: EventSummary; onSaved: () => void }) {
+function EditDetailsPanel({ event, onSaved, bare = false }: { event: EventSummary; onSaved: () => void; bare?: boolean }) {
   const { t } = useLocale();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(event.name);
@@ -457,69 +494,75 @@ function EditDetailsPanel({ event, onSaved }: { event: EventSummary; onSaved: ()
     );
   }
 
+  const fields = (
+    <div className="space-y-4">
+      <div>
+        <Label htmlFor="edit-name">{t("eventNew.eventNameLabel")}</Label>
+        <Input id="edit-name" required value={name} onChange={(e) => setName(e.target.value)} />
+      </div>
+      <div>
+        <Label htmlFor="edit-venue">{t("eventNew.venueLabel")}</Label>
+        <Input id="edit-venue" required value={venue} onChange={(e) => setVenue(e.target.value)} />
+      </div>
+      <div>
+        <Label htmlFor="edit-description">{t("eventNew.descriptionLabel")}</Label>
+        <Textarea id="edit-description" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
+      </div>
+      <div className="max-w-[12rem]">
+        <Label htmlFor="edit-capacity">{t("eventNew.capacityLabel")}</Label>
+        <Input id="edit-capacity" type="number" min={1} value={capacity} onChange={(e) => setCapacity(e.target.value)} />
+      </div>
+      <div className="border-t border-white/[0.06] pt-4">
+        <p className="mb-1 text-[11px] uppercase tracking-wider text-white/35">{t("eventControl.geofenceHeading")}</p>
+        <p className="mb-3 text-xs text-amber-300/70">{t("eventControl.geofenceEditWarning")}</p>
+        <div className="mb-3 flex flex-wrap items-center gap-3">
+          <Button type="button" variant="secondary" size="sm" loading={locating} onClick={useMyLocation}>
+            {locating ? t("eventNew.locating") : t("eventNew.useMyLocation")}
+          </Button>
+          <span className="text-sm text-white/45">
+            {latitude}, {longitude}
+          </span>
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div>
+            <Label htmlFor="edit-lat">{t("eventNew.latitudeLabel")}</Label>
+            <Input id="edit-lat" value={latitude} onChange={(e) => setLatitude(e.target.value)} />
+          </div>
+          <div>
+            <Label htmlFor="edit-lng">{t("eventNew.longitudeLabel")}</Label>
+            <Input id="edit-lng" value={longitude} onChange={(e) => setLongitude(e.target.value)} />
+          </div>
+          <div>
+            <Label htmlFor="edit-radius">{t("eventNew.radiusLabel")}</Label>
+            <Input
+              id="edit-radius"
+              type="number"
+              min={10}
+              max={5000}
+              value={geofenceRadiusM}
+              onChange={(e) => setGeofenceRadiusM(e.target.value)}
+            />
+          </div>
+        </div>
+      </div>
+      {error && <ErrorBlock message={error} />}
+      <div className="flex flex-wrap items-center gap-3">
+        <Button size="sm" loading={saving} onClick={save}>
+          {t("eventControl.saveChanges")}
+        </Button>
+        <Button variant="ghost" size="sm" onClick={toggle}>
+          {t("common.cancel")}
+        </Button>
+        {saved && <span className="text-sm text-kehai-400">✓ {t("eventControl.editSaved")}</span>}
+      </div>
+    </div>
+  );
+
+  if (bare) return fields;
+
   return (
     <Card className="w-full">
-      <CardBody className="space-y-4">
-        <div>
-          <Label htmlFor="edit-name">{t("eventNew.eventNameLabel")}</Label>
-          <Input id="edit-name" required value={name} onChange={(e) => setName(e.target.value)} />
-        </div>
-        <div>
-          <Label htmlFor="edit-venue">{t("eventNew.venueLabel")}</Label>
-          <Input id="edit-venue" required value={venue} onChange={(e) => setVenue(e.target.value)} />
-        </div>
-        <div>
-          <Label htmlFor="edit-description">{t("eventNew.descriptionLabel")}</Label>
-          <Textarea id="edit-description" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
-        </div>
-        <div className="max-w-[12rem]">
-          <Label htmlFor="edit-capacity">{t("eventNew.capacityLabel")}</Label>
-          <Input id="edit-capacity" type="number" min={1} value={capacity} onChange={(e) => setCapacity(e.target.value)} />
-        </div>
-        <div className="border-t border-white/[0.06] pt-4">
-          <p className="mb-1 text-[11px] uppercase tracking-wider text-white/35">{t("eventControl.geofenceHeading")}</p>
-          <p className="mb-3 text-xs text-amber-300/70">{t("eventControl.geofenceEditWarning")}</p>
-          <div className="mb-3 flex flex-wrap items-center gap-3">
-            <Button type="button" variant="secondary" size="sm" loading={locating} onClick={useMyLocation}>
-              {locating ? t("eventNew.locating") : t("eventNew.useMyLocation")}
-            </Button>
-            <span className="text-sm text-white/45">
-              {latitude}, {longitude}
-            </span>
-          </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div>
-              <Label htmlFor="edit-lat">{t("eventNew.latitudeLabel")}</Label>
-              <Input id="edit-lat" value={latitude} onChange={(e) => setLatitude(e.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="edit-lng">{t("eventNew.longitudeLabel")}</Label>
-              <Input id="edit-lng" value={longitude} onChange={(e) => setLongitude(e.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="edit-radius">{t("eventNew.radiusLabel")}</Label>
-              <Input
-                id="edit-radius"
-                type="number"
-                min={10}
-                max={5000}
-                value={geofenceRadiusM}
-                onChange={(e) => setGeofenceRadiusM(e.target.value)}
-              />
-            </div>
-          </div>
-        </div>
-        {error && <ErrorBlock message={error} />}
-        <div className="flex flex-wrap items-center gap-3">
-          <Button size="sm" loading={saving} onClick={save}>
-            {t("eventControl.saveChanges")}
-          </Button>
-          <Button variant="ghost" size="sm" onClick={toggle}>
-            {t("common.cancel")}
-          </Button>
-          {saved && <span className="text-sm text-kehai-400">✓ {t("eventControl.editSaved")}</span>}
-        </div>
-      </CardBody>
+      <CardBody>{fields}</CardBody>
     </Card>
   );
 }
@@ -576,4 +619,193 @@ function StatTile({
       </div>
     </div>
   );
+}
+
+/* ------------------------------------------------------------------ */
+/* Standalone (PWA)                                                    */
+/* ------------------------------------------------------------------ */
+
+type ControlTab = "live" | "attendees" | "settings";
+
+function StandaloneEventControlRoom({
+  event,
+  org,
+  locale,
+  liveConnected,
+  attendance,
+  registrations,
+  rate,
+  noShowRate,
+  checkInWindow,
+  showWindowWarning,
+  transitioningTo,
+  extendingBy,
+  statusError,
+  onTransition,
+  onExtend,
+  onSaved,
+}: {
+  event: EventSummary;
+  org: Organization | undefined;
+  locale: "en" | "ja";
+  liveConnected: boolean;
+  attendance: number;
+  registrations: number;
+  rate: number;
+  noShowRate: number | undefined;
+  checkInWindow: CheckInWindow;
+  showWindowWarning: boolean;
+  transitioningTo: EventStatus | null;
+  extendingBy: number | null;
+  statusError: string | null;
+  onTransition: (next: EventStatus) => void;
+  onExtend: (minutes: number) => void;
+  onSaved: () => void;
+}) {
+  const { t, locale: currentLocale } = useLocale();
+  const [tab, setTab] = useState<ControlTab>("live");
+
+  return (
+    <div className="relative mx-auto max-w-2xl space-y-6 px-4 pb-28 pt-5 sm:px-6 sm:pt-8">
+      <header className="px-1">
+        <div className="flex items-center gap-2">
+          <Badge status={event.status}>{t(`badge.status.${event.status}`)}</Badge>
+          <LiveIndicator connected={liveConnected} />
+        </div>
+        <h1 className="mt-1.5 truncate font-display text-[26px] font-black leading-tight text-white">{event.name}</h1>
+        <p className="mt-1 truncate text-[13px] text-white/40">
+          {formatDateRange(event.startsAt, event.endsAt, locale)} · {event.venue}
+        </p>
+      </header>
+
+      {statusError && <ErrorBlock message={statusError} />}
+
+      {showWindowWarning && (
+        <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
+          <p>
+            {checkInWindow.status === "not_open"
+              ? t("eventControl.windowWarningNotOpen", { time: formatDateTime(checkInWindow.opensAt, currentLocale) })
+              : t("eventControl.windowWarningClosed", { time: formatDateTime(checkInWindow.closesAt, currentLocale) })}
+          </p>
+          {checkInWindow.status === "closed" && (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-amber-200/60">{t("eventControl.extendPrompt")}</span>
+              {[15, 30, 60].map((minutes) => (
+                <Button
+                  key={minutes}
+                  variant="secondary"
+                  size="sm"
+                  loading={extendingBy === minutes}
+                  disabled={extendingBy !== null && extendingBy !== minutes}
+                  onClick={() => onExtend(minutes)}
+                >
+                  {t(`eventControl.extendBy${minutes}`)}
+                </Button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      <MetricStrip
+        items={[
+          { value: registrations, label: t("eventControl.statRegistrations") },
+          { value: attendance, label: t("eventControl.statAttendance") },
+          { value: `${Math.round(rate * 100)}%`, label: t("eventControl.statAttendanceRate") },
+          { value: `${Math.round((noShowRate ?? 1 - rate) * 100)}%`, label: t("eventControl.statNoShowRate") },
+        ]}
+      />
+
+      <HudTabs
+        tabs={[
+          { id: "live" as const, label: t("eventControl.tabLive") },
+          { id: "attendees" as const, label: t("eventControl.attendees") },
+          { id: "settings" as const, label: t("classroomDetail.tabSettings") },
+        ]}
+        active={tab}
+        onChange={setTab}
+      />
+
+      {tab === "live" && (
+        <div className="space-y-6">
+          <LiveQrPanel eventId={event.id} active={event.status === "PUBLISHED" || event.status === "ACTIVE"} editable={!!org} eventName={event.name} />
+          {org && <AiInsightsPanel eventId={event.id} orgId={org.id} />}
+        </div>
+      )}
+
+      {tab === "attendees" && (
+        <div className="space-y-6">
+          <section>
+            <SectionHead title={t("eventControl.arrivalTimeline")} />
+            <div className={`${SURFACE} p-4`}>
+              <StandaloneArrivalTimeline eventId={event.id} />
+            </div>
+          </section>
+          <section>
+            <SectionHead title={t("eventControl.attendees")} action={org && <ExportButtons eventId={event.id} />} />
+            <div className={`${SURFACE} p-4`}>
+              <AttendeeTable eventId={event.id} />
+            </div>
+          </section>
+        </div>
+      )}
+
+      {tab === "settings" && (
+        <div className="space-y-6">
+          <section>
+            <SectionHead title={t("eventControl.statusActions")} />
+            <div className={`${SURFACE} flex flex-wrap gap-2 p-4`}>
+              {TRANSITIONS[event.status].map((next) => (
+                <Button
+                  key={next}
+                  variant={next === "CANCELLED" ? "danger" : next === "ACTIVE" ? "primary" : "secondary"}
+                  size="sm"
+                  loading={transitioningTo === next}
+                  disabled={transitioningTo !== null && transitioningTo !== next}
+                  onClick={() => onTransition(next)}
+                >
+                  {labelFor(event.status, next, t)}
+                </Button>
+              ))}
+              {org && (
+                <Link href={`/orgs/${org.slug}/events/new?from=${event.id}`}>
+                  <Button variant="secondary" size="sm">
+                    {t("eventControl.duplicate")}
+                  </Button>
+                </Link>
+              )}
+            </div>
+          </section>
+
+          {org && event.status !== "COMPLETED" && event.status !== "CANCELLED" && (
+            <>
+              <section>
+                <SectionHead title={t("eventControl.editTiming")} />
+                <div className={`${SURFACE} p-4`}>
+                  <EditTimingPanel event={event} onSaved={onSaved} bare />
+                </div>
+              </section>
+              <section>
+                <SectionHead title={t("eventControl.editDetails")} />
+                <div className={`${SURFACE} p-4`}>
+                  <EditDetailsPanel event={event} onSaved={onSaved} bare />
+                </div>
+              </section>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// A thin standalone-only wrapper around ArrivalTimelineChart's data
+// source -- the desktop page reads `analytics` from its own closure, but
+// the standalone tree only needed the chart inside the Attendees tab, so
+// it fetches its own copy rather than threading four more props down
+// through StandaloneEventControlRoom for a chart that isn't even the
+// tab's default view.
+function StandaloneArrivalTimeline({ eventId }: { eventId: string }) {
+  const { data: analytics } = useEventAnalytics(eventId);
+  return analytics ? <ArrivalTimelineChart data={analytics.arrivalTimeline} /> : <LoadingBlock />;
 }

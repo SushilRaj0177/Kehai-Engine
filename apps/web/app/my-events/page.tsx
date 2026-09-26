@@ -50,7 +50,7 @@ export default function MyEventsPage() {
         <NavBar />
         <div className="relative mx-auto max-w-2xl space-y-7 px-4 pb-28 pt-5 sm:px-6 sm:pt-8">
           <div className="flex items-start justify-between gap-3 px-1">
-            <h1 className="font-display text-2xl font-black text-white">{t("myEvents.title")}</h1>
+            <h1 className="font-display text-[26px] font-black leading-tight text-white">{t("myEvents.title")}</h1>
             <Link href="/events">
               <Button size="sm" variant="secondary">
                 {t("myEvents.browseMore")}

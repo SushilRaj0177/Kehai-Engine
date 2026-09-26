@@ -13,12 +13,15 @@ import { PageGlow } from "@/components/ui/PageGlow";
 import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { apiFetch, ApiError } from "@/lib/api";
 import { useLocale } from "@/lib/i18n";
+import { SURFACE } from "@/components/ui/Hud";
+import { useIsStandalone } from "@/lib/useStandalone";
 
 export default function ResetPasswordPage() {
   const { t } = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? "";
+  const isStandalone = useIsStandalone();
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -68,6 +71,65 @@ export default function ResetPasswordPage() {
     );
   }
 
+  const formBody = done ? (
+    <div className="space-y-6">
+      <p className="text-base text-white/70">{t("auth.resetPasswordDone")}</p>
+      <Link href="/login">
+        <Button size="lg" className="w-full">
+          {t("auth.backToSignIn")}
+        </Button>
+      </Link>
+    </div>
+  ) : (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {error && <ErrorBlock message={error} />}
+      <div>
+        <Label htmlFor="password">{t("auth.newPasswordLabel")}</Label>
+        <Input id="password" type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
+      </div>
+      <div>
+        <Label htmlFor="confirmPassword">{t("auth.confirmPasswordLabel")}</Label>
+        <Input
+          id="confirmPassword"
+          type="password"
+          required
+          minLength={8}
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+        />
+        {confirmPassword.length > 0 && confirmPassword !== password && (
+          <p className="mt-2 text-xs text-shu-400">{t("auth.passwordMismatch")}</p>
+        )}
+      </div>
+      <Button
+        type="submit"
+        size="lg"
+        className="w-full"
+        loading={loading}
+        disabled={confirmPassword.length > 0 && confirmPassword !== password}
+      >
+        {t("auth.resetPasswordSubmit")}
+      </Button>
+    </form>
+  );
+
+  if (isStandalone) {
+    return (
+      <ClickRippleLayer className="relative min-h-screen">
+        <PageGlow />
+        <NavBar />
+        <div className="relative mx-auto flex min-h-[calc(100vh-220px)] max-w-md flex-col justify-center px-5 py-10">
+          <p className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-white/35">
+            {t("auth.resetPasswordKicker")}
+          </p>
+          <h1 className="mt-1.5 font-display text-[26px] font-black leading-tight text-white">{t("auth.resetPasswordTitle")}</h1>
+
+          <div className={`${SURFACE} mt-8 p-5`}>{formBody}</div>
+        </div>
+      </ClickRippleLayer>
+    );
+  }
+
   return (
     <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
@@ -83,56 +145,7 @@ export default function ResetPasswordPage() {
         </h1>
 
         <Card className="relative z-20 mt-12">
-          <CardBody>
-            {done ? (
-              <div className="space-y-6">
-                <p className="text-base text-white/70">{t("auth.resetPasswordDone")}</p>
-                <Link href="/login">
-                  <Button size="lg" className="w-full">
-                    {t("auth.backToSignIn")}
-                  </Button>
-                </Link>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {error && <ErrorBlock message={error} />}
-                <div>
-                  <Label htmlFor="password">{t("auth.newPasswordLabel")}</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    required
-                    minLength={8}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="confirmPassword">{t("auth.confirmPasswordLabel")}</Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    required
-                    minLength={8}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                  />
-                  {confirmPassword.length > 0 && confirmPassword !== password && (
-                    <p className="mt-2 text-xs text-shu-400">{t("auth.passwordMismatch")}</p>
-                  )}
-                </div>
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="w-full"
-                  loading={loading}
-                  disabled={confirmPassword.length > 0 && confirmPassword !== password}
-                >
-                  {t("auth.resetPasswordSubmit")}
-                </Button>
-              </form>
-            )}
-          </CardBody>
+          <CardBody>{formBody}</CardBody>
         </Card>
       </div>
     </ClickRippleLayer>

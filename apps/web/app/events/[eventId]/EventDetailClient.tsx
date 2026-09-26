@@ -93,7 +93,7 @@ export function EventDetailClient() {
       <ClickRippleLayer className="relative min-h-screen">
         <PageGlow />
         <NavBar />
-        <div className="relative mx-auto max-w-md space-y-6 px-5 pb-28 pt-5">
+        <div className="relative mx-auto max-w-md space-y-6 px-5 pb-28 pt-5 sm:px-6 sm:pt-8">
           <Link href="/events" className="inline-block font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-white/35">
             {t("eventDetail.backToDiscover")}
           </Link>
@@ -103,7 +103,7 @@ export function EventDetailClient() {
               <Badge status={event.status}>{t(`badge.status.${event.status}`)}</Badge>
               <span className="truncate text-[12px] text-white/40">{event.organization?.name}</span>
             </div>
-            <h1 className="mt-2 font-display text-[24px] font-black leading-tight text-white">{event.name}</h1>
+            <h1 className="mt-2 font-display text-[26px] font-black leading-tight text-white">{event.name}</h1>
             <p className="mt-2 text-[13px] text-white/45">{formatDateRange(event.startsAt, event.endsAt, locale)}</p>
             <p className="mt-0.5 text-[13px] text-white/35">{event.venue}</p>
             <a

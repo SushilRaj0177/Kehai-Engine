@@ -79,7 +79,7 @@ export default function HomePage() {
           <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-white/30">
             {formatDate(new Date().toISOString(), locale)}
           </p>
-          <h1 className="mt-1.5 font-display text-[28px] font-black leading-tight text-white">
+          <h1 className="mt-1.5 font-display text-[26px] font-black leading-tight text-white">
             {greeting},{" "}
             <span
               className="bg-gradient-to-r from-white via-shu-400 to-shu-600 bg-clip-text text-transparent"
@@ -356,7 +356,7 @@ function JoinCodeCard({ code, t }: { code: string; t: T }) {
           navigator.clipboard?.writeText(code).then(
             () => {
               setCopied(true);
-              setTimeout(() => setCopied(false), 1600);
+              setTimeout(() => setCopied(false), 1800);
             },
             () => undefined
           );

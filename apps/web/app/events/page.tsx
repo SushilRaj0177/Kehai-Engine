@@ -15,6 +15,7 @@ import { usePublicEvents } from "@/lib/hooks";
 import { formatDateRange, formatDate } from "@/lib/format";
 import { useLocale } from "@/lib/i18n";
 import { useIsStandalone } from "@/lib/useStandalone";
+import { SearchIcon } from "@/components/ui/Hud";
 import type { EventSummary } from "@/lib/types";
 
 type StatusFilter = "all" | "ACTIVE" | "PUBLISHED";
@@ -46,8 +47,8 @@ export default function DiscoverEventsPage() {
       <ClickRippleLayer className="relative min-h-screen">
         <PageGlow />
         <NavBar />
-        <div className="relative mx-auto max-w-2xl px-5 py-6">
-          <h1 className="font-display text-2xl font-black text-white">{t("eventDiscover.title")}</h1>
+        <div className="relative mx-auto max-w-2xl px-4 pb-28 pt-5 sm:px-6 sm:pt-8">
+          <h1 className="font-display text-[26px] font-black leading-tight text-white">{t("eventDiscover.title")}</h1>
 
           {events && events.length > 0 && (
             <div className="mt-4 space-y-3">
@@ -214,11 +215,3 @@ function EventRow({
   );
 }
 
-function SearchIcon({ className }: { className?: string }) {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={className}>
-      <circle cx="11" cy="11" r="7" />
-      <path d="M21 21l-4.35-4.35" />
-    </svg>
-  );
-}

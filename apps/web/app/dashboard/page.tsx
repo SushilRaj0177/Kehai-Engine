@@ -50,8 +50,8 @@ export default function DashboardPage() {
         <NavBar />
         <div className="relative mx-auto max-w-2xl px-4 pb-28 pt-5 sm:px-6 sm:pt-8">
           <div className="flex items-start justify-between gap-3 px-1">
-            <h1 className="font-display text-2xl font-black text-white">{t("dashboard.title")}</h1>
-            <Button size="sm" variant={showCreate ? "secondary" : "primary"} onClick={() => setShowCreate((s) => !s)}>
+            <h1 className="font-display text-[26px] font-black leading-tight text-white">{t("dashboard.title")}</h1>
+            <Button size="sm" onClick={() => setShowCreate((s) => !s)}>
               {showCreate ? t("common.cancel") : t("dashboard.newOrganization")}
             </Button>
           </div>
@@ -206,12 +206,12 @@ function CreateOrgForm({ onCreated, compact = false }: { onCreated: () => void; 
 
   const form = (
     <>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
-        <div className="flex-1">
+      <form onSubmit={handleSubmit} className={compact ? "space-y-4" : "flex flex-col gap-3 sm:flex-row sm:items-end"}>
+        <div className={compact ? "" : "flex-1"}>
           <Label htmlFor="org-name">{t("dashboard.orgNameLabel")}</Label>
           <Input id="org-name" required value={name} onChange={(e) => setName(e.target.value)} placeholder={t("dashboard.orgNamePlaceholder")} />
         </div>
-        <Button type="submit" loading={loading}>
+        <Button type="submit" loading={loading} size={compact ? "lg" : "md"} className={compact ? "w-full" : undefined}>
           {t("common.create")}
         </Button>
       </form>
