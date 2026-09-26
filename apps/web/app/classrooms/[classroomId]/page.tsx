@@ -352,7 +352,19 @@ export default function ClassroomDetailPage() {
 // of calling the API directly. Geofence lat/long/radius stay out of scope,
 // same reasoning as the event edit panel: relocating where check-in is
 // physically anchored deserves the map picker the creation form has.
-function EditClassroomDetailsPanel({ classroom, onSaved }: { classroom: ClassroomDetail; onSaved: () => void }) {
+function EditClassroomDetailsPanel({
+  classroom,
+  onSaved,
+  bare = false,
+}: {
+  classroom: ClassroomDetail;
+  onSaved: () => void;
+  // Set from the standalone Settings tab, which already wraps this panel
+  // in its own SURFACE background -- without this, the panel's own Card
+  // rendered a second, competing glass surface nested inside the first
+  // the moment it was opened.
+  bare?: boolean;
+}) {
   const { t } = useLocale();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(classroom.name);
@@ -397,39 +409,53 @@ function EditClassroomDetailsPanel({ classroom, onSaved }: { classroom: Classroo
     );
   }
 
+  const fields = (
+    <div className="space-y-4">
+      <div>
+        <Label htmlFor="edit-classroom-name">{t("classroomHub.nameLabel")}</Label>
+        <Input id="edit-classroom-name" required value={name} onChange={(e) => setName(e.target.value)} />
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <Label htmlFor="edit-classroom-course">{t("classroomHub.courseCodeLabel")}</Label>
+          <Input id="edit-classroom-course" value={courseCode} onChange={(e) => setCourseCode(e.target.value)} />
+        </div>
+        <div>
+          <Label htmlFor="edit-classroom-semester">{t("classroomHub.semesterLabelLabel")}</Label>
+          <Input id="edit-classroom-semester" value={semesterLabel} onChange={(e) => setSemesterLabel(e.target.value)} />
+        </div>
+      </div>
+      {error && <ErrorBlock message={error} />}
+      <div className="flex flex-wrap items-center gap-3">
+        <Button size="sm" loading={saving} onClick={save}>
+          {t("classroomDetail.saveChanges")}
+        </Button>
+        <Button variant="ghost" size="sm" onClick={toggle}>
+          {t("common.cancel")}
+        </Button>
+        {saved && <span className="text-sm text-kehai-400">✓ {t("classroomDetail.editSaved")}</span>}
+      </div>
+    </div>
+  );
+
+  if (bare) return fields;
+
   return (
     <Card className="max-w-lg">
-      <CardBody className="space-y-4">
-        <div>
-          <Label htmlFor="edit-classroom-name">{t("classroomHub.nameLabel")}</Label>
-          <Input id="edit-classroom-name" required value={name} onChange={(e) => setName(e.target.value)} />
-        </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <Label htmlFor="edit-classroom-course">{t("classroomHub.courseCodeLabel")}</Label>
-            <Input id="edit-classroom-course" value={courseCode} onChange={(e) => setCourseCode(e.target.value)} />
-          </div>
-          <div>
-            <Label htmlFor="edit-classroom-semester">{t("classroomHub.semesterLabelLabel")}</Label>
-            <Input id="edit-classroom-semester" value={semesterLabel} onChange={(e) => setSemesterLabel(e.target.value)} />
-          </div>
-        </div>
-        {error && <ErrorBlock message={error} />}
-        <div className="flex flex-wrap items-center gap-3">
-          <Button size="sm" loading={saving} onClick={save}>
-            {t("classroomDetail.saveChanges")}
-          </Button>
-          <Button variant="ghost" size="sm" onClick={toggle}>
-            {t("common.cancel")}
-          </Button>
-          {saved && <span className="text-sm text-kehai-400">✓ {t("classroomDetail.editSaved")}</span>}
-        </div>
-      </CardBody>
+      <CardBody>{fields}</CardBody>
     </Card>
   );
 }
 
-function DeleteClassroomSection({ classroomId, classroomName }: { classroomId: string; classroomName: string }) {
+function DeleteClassroomSection({
+  classroomId,
+  classroomName,
+  bare = false,
+}: {
+  classroomId: string;
+  classroomName: string;
+  bare?: boolean;
+}) {
   const { t } = useLocale();
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
@@ -450,42 +476,48 @@ function DeleteClassroomSection({ classroomId, classroomName }: { classroomId: s
     }
   }
 
+  const fields = (
+    <div className="space-y-4">
+      <div>
+        <p className="text-sm font-medium text-white/85">{t("classroomDetail.deleteClassroomLabel")}</p>
+        <p className="mt-1 text-xs text-white/40">{t("classroomDetail.deleteClassroomHint")}</p>
+      </div>
+      {error && <ErrorBlock message={error} />}
+      {confirming ? (
+        <div className="space-y-3 rounded-lg border border-shu-500/20 bg-shu-500/5 p-4">
+          <div>
+            <Label htmlFor="delete-classroom-confirm">{t("classroomDetail.typeNameToConfirm", { name: classroomName })}</Label>
+            <Input id="delete-classroom-confirm" value={typedName} onChange={(e) => setTypedName(e.target.value)} />
+          </div>
+          <div className="flex items-center gap-3">
+            <Button variant="danger" size="sm" loading={deleting} onClick={confirmDelete} disabled={typedName !== classroomName}>
+              {t("classroomDetail.deleteClassroomConfirm")}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setConfirming(false);
+                setTypedName("");
+              }}
+            >
+              {t("common.cancel")}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Button variant="danger" size="sm" onClick={() => setConfirming(true)}>
+          {t("classroomDetail.deleteClassroomLabel")}
+        </Button>
+      )}
+    </div>
+  );
+
+  if (bare) return fields;
+
   return (
     <Card className="border-shu-500/20">
-      <CardBody className="space-y-4">
-        <div>
-          <p className="text-sm font-medium text-white/85">{t("classroomDetail.deleteClassroomLabel")}</p>
-          <p className="mt-1 text-xs text-white/40">{t("classroomDetail.deleteClassroomHint")}</p>
-        </div>
-        {error && <ErrorBlock message={error} />}
-        {confirming ? (
-          <div className="space-y-3 rounded-lg border border-shu-500/20 bg-shu-500/5 p-4">
-            <div>
-              <Label htmlFor="delete-classroom-confirm">{t("classroomDetail.typeNameToConfirm", { name: classroomName })}</Label>
-              <Input id="delete-classroom-confirm" value={typedName} onChange={(e) => setTypedName(e.target.value)} />
-            </div>
-            <div className="flex items-center gap-3">
-              <Button variant="danger" size="sm" loading={deleting} onClick={confirmDelete} disabled={typedName !== classroomName}>
-                {t("classroomDetail.deleteClassroomConfirm")}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setConfirming(false);
-                  setTypedName("");
-                }}
-              >
-                {t("common.cancel")}
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <Button variant="danger" size="sm" onClick={() => setConfirming(true)}>
-            {t("classroomDetail.deleteClassroomLabel")}
-          </Button>
-        )}
-      </CardBody>
+      <CardBody>{fields}</CardBody>
     </Card>
   );
 }
@@ -617,7 +649,6 @@ function StandaloneClassroomView({
           <span className={`font-mono text-[10px] font-bold uppercase tracking-[0.16em] ${isLive ? "text-kehai-300" : "text-white/35"}`}>
             {isLive ? t("classroomDetail.sessionOpenBadge") : classroom.isTeacher ? t("home.sessionIdle") : t("classroomDetail.sessionClosedStatus")}
           </span>
-          {classroom.isTeacher && <LiveIndicator connected={liveConnected} />}
         </div>
         <h1 className="mt-1.5 truncate font-display text-[26px] font-black leading-tight text-white">{classroom.name}</h1>
         <p className="mt-1 truncate text-[13px] text-white/40">
@@ -629,6 +660,7 @@ function StandaloneClassroomView({
         <TeacherStandaloneBody
           classroom={classroom}
           classroomId={classroomId}
+          liveConnected={liveConnected}
           onSaved={onSaved}
           onEnrolled={onEnrolled}
           heatmap={heatmap}
@@ -655,6 +687,7 @@ type TeacherTab = "session" | "insights" | "roster" | "settings";
 function TeacherStandaloneBody({
   classroom,
   classroomId,
+  liveConnected,
   onSaved,
   onEnrolled,
   heatmap,
@@ -662,6 +695,7 @@ function TeacherStandaloneBody({
 }: {
   classroom: ClassroomDetail;
   classroomId: string;
+  liveConnected: boolean;
   onSaved: () => void;
   onEnrolled: () => void;
   heatmap: HeatmapResponse | undefined;
@@ -702,7 +736,12 @@ function TeacherStandaloneBody({
       />
 
       {tab === "session" && (
-        <ClassSessionManager classroomId={classroomId} openSession={classroom.openSession} onSessionsChanged={onSaved} />
+        <div className="space-y-3">
+          <div className="flex justify-end px-1">
+            <LiveIndicator connected={liveConnected} />
+          </div>
+          <ClassSessionManager classroomId={classroomId} openSession={classroom.openSession} onSessionsChanged={onSaved} />
+        </div>
       )}
 
       {tab === "insights" && (
@@ -762,7 +801,7 @@ function TeacherStandaloneBody({
           <section>
             <SectionHead title={t("classroomDetail.editDetails")} />
             <div className={`${SURFACE} p-4`}>
-              <EditClassroomDetailsPanel classroom={classroom} onSaved={onSaved} />
+              <EditClassroomDetailsPanel classroom={classroom} onSaved={onSaved} bare />
               <div className="mt-3">
                 <ClassroomCalendarButton classroomId={classroomId} />
               </div>
@@ -790,7 +829,12 @@ function TeacherStandaloneBody({
             </div>
           </section>
 
-          <DeleteClassroomSection classroomId={classroomId} classroomName={classroom.name} />
+          <section>
+            <SectionHead title={t("classroomDetail.dangerZoneHeading")} accent="text-shu-400" />
+            <div className={`${SURFACE} border-shu-500/20 p-4`}>
+              <DeleteClassroomSection classroomId={classroomId} classroomName={classroom.name} bare />
+            </div>
+          </section>
         </div>
       )}
     </div>
@@ -877,25 +921,28 @@ function StudentStandaloneBody({
         </div>
       </section>
 
-      <div className="rounded-2xl border border-shu-500/20 bg-shu-500/[0.04] p-4">
-        <p className="text-[13px] font-medium text-white/85">{t("classroomDetail.leaveClassroomLabel")}</p>
-        <p className="mt-1 text-[12px] text-white/40">{t("classroomDetail.leaveClassroomHint")}</p>
-        {leaveError && <p className="mt-2 text-[12px] text-shu-400">{leaveError}</p>}
-        {confirmingLeave ? (
-          <div className="mt-3 flex items-center gap-3">
-            <Button variant="danger" size="sm" loading={leaving} onClick={onLeave}>
-              {t("classroomDetail.confirmLeave")}
+      <section>
+        <SectionHead title={t("classroomDetail.dangerZoneHeading")} accent="text-shu-400" />
+        <div className={`${SURFACE} border-shu-500/20 p-4`}>
+          <p className="text-[13px] font-medium text-white/85">{t("classroomDetail.leaveClassroomLabel")}</p>
+          <p className="mt-1 text-[12px] text-white/40">{t("classroomDetail.leaveClassroomHint")}</p>
+          {leaveError && <p className="mt-2 text-[12px] text-shu-400">{leaveError}</p>}
+          {confirmingLeave ? (
+            <div className="mt-3 flex items-center gap-3">
+              <Button variant="danger" size="sm" loading={leaving} onClick={onLeave}>
+                {t("classroomDetail.confirmLeave")}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={onCancelLeave}>
+                {t("common.cancel")}
+              </Button>
+            </div>
+          ) : (
+            <Button variant="danger" size="sm" className="mt-3" onClick={onLeave}>
+              {t("classroomDetail.leaveClassroomLabel")}
             </Button>
-            <Button variant="ghost" size="sm" onClick={onCancelLeave}>
-              {t("common.cancel")}
-            </Button>
-          </div>
-        ) : (
-          <Button variant="danger" size="sm" className="mt-3" onClick={onLeave}>
-            {t("classroomDetail.leaveClassroomLabel")}
-          </Button>
-        )}
-      </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

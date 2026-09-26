@@ -31,7 +31,11 @@ export default function ClassroomJoinLandingPage() {
           <p className="mt-2 text-[14px] leading-relaxed text-white/45">{t("classroomJoinPage.subtitle")}</p>
 
           <div className={`${SURFACE} mt-8 p-5`}>
-            <JoinClassroomForm initialCode={code} onJoined={(result) => router.push(`/classrooms/${result.classroom.id}`)} />
+            <JoinClassroomForm
+              stacked
+              initialCode={code}
+              onJoined={(result) => router.push(`/classrooms/${result.classroom.id}`)}
+            />
           </div>
         </div>
       </ClickRippleLayer>

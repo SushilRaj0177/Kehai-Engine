@@ -20,7 +20,7 @@ import { useMyOrganizations, useOrgEvents, useOrgOverview } from "@/lib/hooks";
 import { apiFetch, ApiError } from "@/lib/api";
 import { formatDateRange, formatDate } from "@/lib/format";
 import { useLocale } from "@/lib/i18n";
-import { SURFACE, SectionHead, MetricStrip, HudTabs } from "@/components/ui/Hud";
+import { SURFACE, SectionHead, MetricStrip, HudTabs, SearchIcon } from "@/components/ui/Hud";
 import { useIsStandalone } from "@/lib/useStandalone";
 import type { EventSummary, Organization, OrgOverview } from "@/lib/types";
 
@@ -68,7 +68,7 @@ export default function OrgPage() {
         <div className="relative mx-auto max-w-2xl space-y-6 px-4 pb-28 pt-5 sm:px-6 sm:pt-8">
           <div className="flex items-start justify-between gap-3 px-1">
             <div className="min-w-0">
-              <h1 className="truncate font-display text-2xl font-black text-white">{org.name}</h1>
+              <h1 className="truncate font-display text-[26px] font-black leading-tight text-white">{org.name}</h1>
               <p className="mt-0.5 truncate text-[12px] text-white/35">/{org.slug}</p>
             </div>
             <Link href={`/orgs/${org.slug}/events/new`}>
@@ -612,14 +612,6 @@ function DeleteOrgFields({ org }: { org: NonNullable<ReturnType<typeof useMyOrga
   );
 }
 
-function SearchIcon({ className }: { className?: string }) {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={className}>
-      <circle cx="11" cy="11" r="7" />
-      <path d="M21 21l-4.35-4.35" />
-    </svg>
-  );
-}
 
 function StandaloneEventRow({
   org,

@@ -15,6 +15,8 @@ import { useMyOrganizations, useEvent } from "@/lib/hooks";
 import { apiFetch, ApiError } from "@/lib/api";
 import { toLocalDatetimeInputValue } from "@/lib/format";
 import { useLocale } from "@/lib/i18n";
+import { SURFACE, SectionHead } from "@/components/ui/Hud";
+import { useIsStandalone } from "@/lib/useStandalone";
 
 const defaultStart = new Date(Date.now() + 24 * 60 * 60 * 1000);
 const defaultEnd = new Date(defaultStart.getTime() + 2 * 60 * 60 * 1000);
@@ -55,6 +57,7 @@ export default function NewEventPage() {
   const [manualCoords, setManualCoords] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [openEnded, setOpenEnded] = useState(false);
+  const isStandalone = useIsStandalone();
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -132,6 +135,183 @@ export default function NewEventPage() {
   }
 
   if (isLoading) return <LoadingBlock />;
+
+  if (isStandalone) {
+    return (
+      <ClickRippleLayer className="relative min-h-screen">
+        <PageGlow />
+        <NavBar />
+        <div className="relative mx-auto max-w-2xl space-y-6 px-4 pb-28 pt-5 sm:px-6 sm:pt-8">
+          <div>
+            <p className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-white/35">{t("eventNew.createKicker")}</p>
+            <h1 className="mt-1.5 font-display text-[26px] font-black leading-tight text-white">{t("eventNew.title")}</h1>
+            <p className="mt-2 text-[14px] text-white/45">{t("eventNew.subtitle")}</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {error && <ErrorBlock message={error} />}
+
+            <section>
+              <SectionHead title={t("eventNew.detailsHeading")} />
+              <div className={`${SURFACE} space-y-4 p-4`}>
+                <div>
+                  <Label htmlFor="s-name">{t("eventNew.eventNameLabel")}</Label>
+                  <Input id="s-name" required value={form.name} onChange={(e) => set("name", e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="s-description">{t("eventNew.descriptionLabel")}</Label>
+                  <Textarea id="s-description" rows={3} value={form.description} onChange={(e) => set("description", e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="s-venue">{t("eventNew.venueLabel")}</Label>
+                  <Input
+                    id="s-venue"
+                    required
+                    value={form.venue}
+                    onChange={(e) => set("venue", e.target.value)}
+                    placeholder={t("eventNew.venuePlaceholder")}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="s-startsAt">{t("eventNew.startsLabel")}</Label>
+                  <Input
+                    id="s-startsAt"
+                    type="datetime-local"
+                    required
+                    value={form.startsAt}
+                    onChange={(e) => set("startsAt", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="s-endsAt">{t("eventNew.endsLabel")}</Label>
+                  <Input
+                    id="s-endsAt"
+                    type="datetime-local"
+                    required={!openEnded}
+                    disabled={openEnded}
+                    value={form.endsAt}
+                    onChange={(e) => set("endsAt", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="flex items-center gap-2 text-sm text-white/70">
+                    <input
+                      type="checkbox"
+                      checked={openEnded}
+                      onChange={(e) => setOpenEnded(e.target.checked)}
+                      className="h-4 w-4 rounded border-white/20 bg-white/5 accent-kehai-500"
+                    />
+                    {t("eventNew.noEndTime")}
+                  </label>
+                  <p className="mt-1.5 text-[11px] text-white/35">{t("eventNew.noEndTimeHint")}</p>
+                </div>
+                <div>
+                  <Label htmlFor="s-capacity">{t("eventNew.capacityLabel")}</Label>
+                  <Input id="s-capacity" type="number" min={1} value={form.capacity} onChange={(e) => set("capacity", e.target.value)} />
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <SectionHead title={t("eventNew.geofenceHeading")} />
+              <div className={`${SURFACE} space-y-4 p-4`}>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button type="button" size="sm" variant={locationSet ? "secondary" : "cyan"} loading={locating} onClick={useMyLocation}>
+                    {locating ? t("eventNew.locating") : t("eventNew.useMyLocation")}
+                  </Button>
+                  {locationSet && (
+                    <span className="font-mono text-[12px] text-kehai-400">
+                      ✓ {form.latitude}, {form.longitude}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-white/35">{locationSet ? t("eventNew.locationSetHint") : t("eventNew.locationNotSetHint")}</p>
+
+                <button
+                  type="button"
+                  onClick={() => setManualCoords((s) => !s)}
+                  className="font-mono text-[11px] font-bold uppercase tracking-wide text-white/45"
+                >
+                  {manualCoords ? t("common.cancel") : t("eventNew.enterManually")}
+                </button>
+
+                {manualCoords && (
+                  <div className="grid grid-cols-1 gap-4 border-t border-white/[0.06] pt-4 sm:grid-cols-2">
+                    <div>
+                      <Label htmlFor="s-lat">{t("eventNew.latitudeLabel")}</Label>
+                      <Input
+                        id="s-lat"
+                        required
+                        value={form.latitude}
+                        onChange={(e) => {
+                          set("latitude", e.target.value);
+                          setLocationSet(!!e.target.value && !!form.longitude);
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="s-lng">{t("eventNew.longitudeLabel")}</Label>
+                      <Input
+                        id="s-lng"
+                        required
+                        value={form.longitude}
+                        onChange={(e) => {
+                          set("longitude", e.target.value);
+                          setLocationSet(!!form.latitude && !!e.target.value);
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            <section>
+              <button
+                type="button"
+                onClick={() => setShowAdvanced((s) => !s)}
+                className="flex w-full items-center justify-between px-1 py-2 text-left font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-white/45"
+              >
+                <span>{t("eventNew.advancedSettings")}</span>
+                <span className="text-white/35">{showAdvanced ? "−" : "+"}</span>
+              </button>
+              {!showAdvanced && <p className="px-1 text-[11px] text-white/35">{t("eventNew.advancedSettingsHint")}</p>}
+
+              {showAdvanced && (
+                <div className={`${SURFACE} mt-3 space-y-4 p-4`}>
+                  <div>
+                    <Label htmlFor="s-radius">{t("eventNew.radiusLabel")}</Label>
+                    <Input
+                      id="s-radius"
+                      type="number"
+                      min={10}
+                      max={5000}
+                      required
+                      value={form.geofenceRadiusM}
+                      onChange={(e) => set("geofenceRadiusM", e.target.value)}
+                    />
+                    <p className="mt-1 text-[11px] text-white/35">{t("eventNew.radiusHelp")}</p>
+                  </div>
+                  <div>
+                    <Label htmlFor="s-qrRotation">{t("eventNew.rotationLabel")}</Label>
+                    <QrRotationInput
+                      value={Number(form.qrRotationSeconds) || 20}
+                      onChange={(seconds) => set("qrRotationSeconds", String(seconds))}
+                    />
+                    <p className="mt-2 text-[11px] text-white/35">{t("eventNew.rotationHelp")}</p>
+                  </div>
+                </div>
+              )}
+            </section>
+
+            <Button type="submit" size="lg" className="w-full" loading={loading} disabled={!locationSet}>
+              {t("eventNew.submit")}
+            </Button>
+          </form>
+        </div>
+      </ClickRippleLayer>
+    );
+  }
 
   return (
     <ClickRippleLayer className="relative min-h-screen">

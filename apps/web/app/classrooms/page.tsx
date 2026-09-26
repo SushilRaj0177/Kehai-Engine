@@ -13,7 +13,7 @@ import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
 import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { JoinClassroomForm } from "@/components/JoinClassroomForm";
-import { SURFACE, FlameIcon } from "@/components/ui/Hud";
+import { SURFACE, FlameIcon, SearchIcon } from "@/components/ui/Hud";
 import { useIsStandalone } from "@/lib/useStandalone";
 import { useAuth } from "@/lib/auth-context";
 import { useMyClassrooms, useEnrolledClassrooms } from "@/lib/hooks";
@@ -85,11 +85,11 @@ export default function ClassroomsHubPage() {
         <NavBar />
         <div className="relative mx-auto max-w-2xl px-4 pb-28 pt-5 sm:px-6 sm:pt-8">
           <div className="flex items-start justify-between gap-3 px-1">
-            <h1 className="font-display text-2xl font-black text-white">{t("classroomHub.title")}</h1>
+            <h1 className="font-display text-[26px] font-black leading-tight text-white">{t("classroomHub.title")}</h1>
             <div className="flex shrink-0 gap-2">
               <Button
+                variant="terminal"
                 size="sm"
-                variant={showJoin ? "secondary" : "primary"}
                 onClick={() => {
                   setShowJoin((s) => !s);
                   setShowCreate(false);
@@ -98,8 +98,8 @@ export default function ClassroomsHubPage() {
                 {showJoin ? t("common.cancel") : t("classroomHub.joinClassroom")}
               </Button>
               <Button
+                variant="terminal"
                 size="sm"
-                variant={showCreate ? "secondary" : "cyan"}
                 onClick={() => {
                   setShowCreate((s) => !s);
                   setShowJoin(false);
@@ -113,6 +113,7 @@ export default function ClassroomsHubPage() {
           {showJoin && (
             <div className={`${SURFACE} mt-4 p-4`}>
               <JoinClassroomForm
+                stacked
                 onJoined={(result) => {
                   void mutateEnrolled();
                   router.push(`/classrooms/${result.classroom.id}`);
@@ -509,8 +510,8 @@ function CreateClassroomForm({ onCreated, compact = false }: { onCreated: () => 
         )}
       </div>
 
-      <div className="flex items-center gap-3">
-        <Button type="submit" loading={loading}>
+      <div className={compact ? "" : "flex items-center gap-3"}>
+        <Button type="submit" loading={loading} size={compact ? "lg" : "md"} className={compact ? "w-full" : undefined}>
           {t("common.create")}
         </Button>
       </div>
@@ -527,14 +528,6 @@ function CreateClassroomForm({ onCreated, compact = false }: { onCreated: () => 
   );
 }
 
-function SearchIcon({ className }: { className?: string }) {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={className}>
-      <circle cx="11" cy="11" r="7" />
-      <path d="M21 21l-4.35-4.35" />
-    </svg>
-  );
-}
 
 function EnrolledRow({ enrollment: e, t }: { enrollment: EnrolledClassroom; t: (key: string, vars?: Record<string, string | number>) => string }) {
   return (

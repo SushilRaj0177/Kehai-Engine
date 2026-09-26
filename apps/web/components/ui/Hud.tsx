@@ -127,6 +127,18 @@ export function Dial({
   );
 }
 
+// The pill-search-bar icon reused wherever a standalone page has a search
+// field (Discover, classrooms list, org console) -- was copy-pasted
+// identically into all three files before this.
+export function SearchIcon({ className }: { className?: string }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={className}>
+      <circle cx="11" cy="11" r="7" />
+      <path d="M21 21l-4.35-4.35" />
+    </svg>
+  );
+}
+
 export function PulseDot({ accent = "bg-kehai-400" }: { accent?: string }) {
   return (
     <span className="relative flex h-2 w-2">

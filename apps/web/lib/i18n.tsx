@@ -331,6 +331,8 @@ const dict = {
     statNoShowRate: { en: "No-show rate", ja: "欠席率" },
     arrivalTimeline: { en: "Arrival timeline", ja: "到着タイムライン" },
     attendees: { en: "Attendees", ja: "参加者一覧" },
+    tabLive: { en: "Live", ja: "ライブ" },
+    statusActions: { en: "Status", ja: "ステータス" },
     transitionPublish: { en: "Publish", ja: "公開する" },
     transitionGoLive: { en: "Go live", ja: "開催を開始" },
     transitionMarkCompleted: { en: "Mark completed", ja: "終了にする" },
@@ -819,6 +821,7 @@ const dict = {
     sessionDeleteError: { en: "Failed to delete the session", ja: "セッションの削除に失敗しました" },
     shareHeading: { en: "Share join access", ja: "参加コードの共有" },
     addToCalendar: { en: "+ Add sessions to calendar", ja: "+ セッションをカレンダーに追加" },
+    dangerZoneHeading: { en: "Danger zone", ja: "危険な操作" },
     deleteClassroomLabel: { en: "Delete classroom", ja: "クラスを削除" },
     deleteClassroomHint: {
       en: "Permanently deletes this classroom and everything under it — its roster, sessions, and attendance history. This can't be undone.",
