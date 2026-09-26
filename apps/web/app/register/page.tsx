@@ -14,6 +14,8 @@ import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api";
 import { useLocale } from "@/lib/i18n";
+import { SURFACE } from "@/components/ui/Hud";
+import { useIsStandalone } from "@/lib/useStandalone";
 
 export default function RegisterPage() {
   const { t } = useLocale();
@@ -24,6 +26,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const isStandalone = useIsStandalone();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -37,6 +40,52 @@ export default function RegisterPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  const formBody = (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {error && <ErrorBlock message={error} />}
+      <div>
+        <Label htmlFor="name">{t("auth.fullNameLabel")}</Label>
+        <Input id="name" required minLength={2} maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
+        <p className="mt-2 text-sm text-white/35">{t("auth.displayNameHint")}</p>
+      </div>
+      <div>
+        <Label htmlFor="email">{t("auth.emailLabel")}</Label>
+        <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+      </div>
+      <div>
+        <Label htmlFor="password">{t("auth.passwordLabel")}</Label>
+        <Input id="password" type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
+        <p className="mt-2 text-sm text-white/35">{t("auth.passwordHint")}</p>
+      </div>
+      <Button type="submit" size="lg" className="w-full" loading={loading}>
+        {t("auth.createAccountButton")}
+      </Button>
+    </form>
+  );
+
+  if (isStandalone) {
+    return (
+      <ClickRippleLayer className="relative min-h-screen">
+        <PageGlow />
+        <NavBar />
+        <div className="relative mx-auto flex min-h-[calc(100vh-220px)] max-w-md flex-col justify-center px-5 py-10">
+          <p className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-white/35">{t("auth.registerKicker")}</p>
+          <h1 className="mt-1.5 font-display text-[26px] font-black leading-tight text-white">{t("auth.registerTitle")}</h1>
+          <p className="mt-2 text-[14px] text-white/45">{t("auth.registerSubtitle")}</p>
+
+          <div className={`${SURFACE} mt-8 p-5`}>{formBody}</div>
+
+          <p className="mt-6 text-center text-[14px] text-white/45">
+            {t("auth.haveAccount")}{" "}
+            <Link href="/login" className="font-semibold text-shu-400">
+              {t("auth.signInButton")}
+            </Link>
+          </p>
+        </div>
+      </ClickRippleLayer>
+    );
   }
 
   return (
@@ -53,35 +102,7 @@ export default function RegisterPage() {
         </p>
 
         <Card className="relative z-20 mt-12">
-          <CardBody>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {error && <ErrorBlock message={error} />}
-              <div>
-                <Label htmlFor="name">{t("auth.fullNameLabel")}</Label>
-                <Input id="name" required minLength={2} maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
-                <p className="mt-2 text-sm text-white/35">{t("auth.displayNameHint")}</p>
-              </div>
-              <div>
-                <Label htmlFor="email">{t("auth.emailLabel")}</Label>
-                <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-              </div>
-              <div>
-                <Label htmlFor="password">{t("auth.passwordLabel")}</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  minLength={8}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-                <p className="mt-2 text-sm text-white/35">{t("auth.passwordHint")}</p>
-              </div>
-              <Button type="submit" size="lg" className="w-full" loading={loading}>
-                {t("auth.createAccountButton")}
-              </Button>
-            </form>
-          </CardBody>
+          <CardBody>{formBody}</CardBody>
         </Card>
 
         <p className="relative z-20 mt-8 text-center text-base text-white/45">
