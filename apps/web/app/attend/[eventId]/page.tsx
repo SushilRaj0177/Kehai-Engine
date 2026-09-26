@@ -10,6 +10,8 @@ import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
 import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { QrScanner } from "@/components/QrScanner";
+import { SURFACE } from "@/components/ui/Hud";
+import { useIsStandalone } from "@/lib/useStandalone";
 import { useAuth } from "@/lib/auth-context";
 import { useEvent } from "@/lib/hooks";
 import { apiFetchWithRetry, ApiError } from "@/lib/api";
@@ -26,6 +28,7 @@ export default function AttendPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { data: event } = useEvent(eventId);
+  const isStandalone = useIsStandalone();
 
   const checkInWindow = event ? getCheckInWindow(event) : null;
 
@@ -126,6 +129,128 @@ export default function AttendPage() {
   }
 
   if (authLoading) return <LoadingBlock />;
+
+  if (isStandalone) {
+    const steps: Step[] = ["scan", "locate", "confirm", "done"];
+    const stepIndex = step === "error" ? steps.indexOf("confirm") : steps.indexOf(step);
+
+    return (
+      <ClickRippleLayer className="relative min-h-screen">
+        <PageGlow />
+        <NavBar />
+        <div className="relative mx-auto max-w-md px-5 pb-16 pt-6">
+          <h1 className="truncate text-center font-display text-xl font-black text-white">
+            {event?.name ?? t("attend.defaultTitle")}
+          </h1>
+
+          {(!checkInWindow || checkInWindow.status === "open") && (
+            <div className="mx-auto mt-5 flex max-w-[220px] items-center justify-between">
+              {steps.map((s, i) => (
+                <div key={s} className="flex flex-1 items-center">
+                  <span
+                    className={`h-1.5 w-1.5 shrink-0 rounded-full transition-colors ${
+                      i <= stepIndex ? "bg-kehai-400" : "bg-white/15"
+                    }`}
+                  />
+                  {i < steps.length - 1 && (
+                    <span className={`mx-1 h-px flex-1 transition-colors ${i < stepIndex ? "bg-kehai-400" : "bg-white/15"}`} />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="mt-8">
+            {checkInWindow && checkInWindow.status !== "open" ? (
+              <div className={`${SURFACE} border-amber-400/25 p-6 text-center`}>
+                <p className="font-display text-base font-bold text-white">
+                  {checkInWindow.status === "not_open" ? t("attend.windowNotOpenTitle") : t("attend.windowClosedTitle")}
+                </p>
+                <p className="mt-2 text-[13px] leading-relaxed text-white/50">
+                  {checkInWindow.status === "not_open"
+                    ? t("attend.windowNotOpenBody", { time: formatDateTime(checkInWindow.opensAt, locale) })
+                    : t("attend.windowClosedBody", { time: formatDateTime(checkInWindow.closesAt, locale) })}
+                </p>
+              </div>
+            ) : (
+              <>
+                {step === "scan" && (
+                  <div className="space-y-4 text-center">
+                    <QrScanner onDecoded={handleDecoded} />
+                    <p className="font-mono text-[11px] uppercase tracking-wider text-white/35">{t("attend.scanHint")}</p>
+                    {error && <ErrorBlock message={error} />}
+                  </div>
+                )}
+
+                {step === "locate" && (
+                  <div className={`${SURFACE} space-y-4 p-6 text-center`}>
+                    <p className="text-[14px] text-white/60">{t("attend.locateHint")}</p>
+                    {error && <ErrorBlock message={error} />}
+                    <Button onClick={requestLocation} variant="cyan" className="w-full">
+                      {t("attend.shareLocation")}
+                    </Button>
+                  </div>
+                )}
+
+                {step === "confirm" && position && (
+                  <div className={`${SURFACE} space-y-4 p-6 text-center`}>
+                    <p className="text-[14px] text-white/60">
+                      {t("attend.confirmHint", { accuracy: Math.round(position.coords.accuracy) })}
+                    </p>
+                    {retryStatus && (
+                      <p className="font-mono text-[11px] uppercase tracking-wide text-amber-300">
+                        {t("attend.reconnecting", { attempt: retryStatus.attempt, max: retryStatus.max })}
+                      </p>
+                    )}
+                    {error && <ErrorBlock message={error} />}
+                    <Button onClick={submitCheckIn} loading={submitting} size="lg" className="w-full">
+                      {error ? t("common.tryAgain") : t("attend.confirmAttendance")}
+                    </Button>
+                  </div>
+                )}
+
+                {step === "done" && result && (
+                  <div className={`${SURFACE} border-kehai-500/25 p-8 text-center`}>
+                    <div
+                      className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border-2 border-kehai-400 text-2xl text-kehai-300"
+                      style={{ filter: "drop-shadow(0 0 10px rgba(95,244,255,0.5))" }}
+                    >
+                      ✓
+                    </div>
+                    <p className="font-display text-lg font-bold text-white">{t("attend.attendanceConfirmed")}</p>
+                    <p className="mt-2 font-mono text-[12px] uppercase tracking-wide text-white/40">
+                      {t("attend.distanceFromVenue", { distance: Math.round(result.distanceMeters), confidence: result.confidence })}
+                    </p>
+                  </div>
+                )}
+
+                {step === "error" && (
+                  <div className={`${SURFACE} space-y-4 p-6 text-center`}>
+                    {error && <ErrorBlock message={error} />}
+                    {result && (
+                      <p className="text-[13px] text-white/50">
+                        {t("attend.distanceTooFar", { distance: Math.round(result.distanceMeters) })}
+                      </p>
+                    )}
+                    <Button
+                      variant="secondary"
+                      className="w-full"
+                      onClick={() => {
+                        setStep("locate");
+                        setError(null);
+                      }}
+                    >
+                      {t("common.tryAgain")}
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </ClickRippleLayer>
+    );
+  }
 
   return (
     <ClickRippleLayer className="relative min-h-screen">
