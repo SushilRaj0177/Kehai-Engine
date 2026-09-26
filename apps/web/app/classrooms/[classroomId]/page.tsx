@@ -24,10 +24,12 @@ import { MyAttendanceHistory } from "@/components/MyAttendanceHistory";
 import { AttendanceHeatmap } from "@/components/AttendanceHeatmap";
 import { SessionTrendChart } from "@/components/charts/SessionTrendChart";
 import { LiveIndicator } from "@/components/ui/LiveIndicator";
+import { SURFACE, SectionHead, MetricStrip, Dial, PulseDot, HudTabs } from "@/components/ui/Hud";
 import { useClassroom, useClassroomHeatmap, useClassroomRoster, useClassroomSessions } from "@/lib/hooks";
+import { useIsStandalone } from "@/lib/useStandalone";
 import { subscribeToClassroom } from "@/lib/realtime";
 import { apiFetch, ApiError } from "@/lib/api";
-import type { ClassroomDetail } from "@/lib/types";
+import type { ClassroomDetail, ClassSessionSummary, HeatmapResponse } from "@/lib/types";
 import { useLocale } from "@/lib/i18n";
 
 export default function ClassroomDetailPage() {
@@ -36,6 +38,7 @@ export default function ClassroomDetailPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const studentParam = searchParams.get("student") ?? undefined;
+  const isStandalone = useIsStandalone();
 
   const { data: classroom, error: classroomError, isLoading, mutate } = useClassroom(classroomId);
   const [confirmingLeave, setConfirmingLeave] = useState(false);
@@ -105,6 +108,34 @@ export default function ClassroomDetailPage() {
   }
 
   const viewingStudent = classroom.isTeacher && !!studentParam;
+
+  if (isStandalone) {
+    return (
+      <ClickRippleLayer className="relative min-h-screen">
+        <PageGlow />
+        <NavBar />
+        {toast && (
+          <div className="fixed left-1/2 top-20 z-50 -translate-x-1/2 rounded-full border border-kehai-500/30 bg-void-900/95 px-5 py-2.5 text-sm text-white shadow-[0_8px_32px_-8px_rgba(0,0,0,0.6)] backdrop-blur-xl">
+            {toast}
+          </div>
+        )}
+        <StandaloneClassroomView
+          classroom={classroom}
+          classroomId={classroomId}
+          liveConnected={liveConnected}
+          onSaved={() => mutate()}
+          onEnrolled={() => mutateRoster()}
+          heatmap={heatmap}
+          sessions={sessions}
+          confirmingLeave={confirmingLeave}
+          leaving={leaving}
+          leaveError={leaveError}
+          onLeave={leaveClassroom}
+          onCancelLeave={() => setConfirmingLeave(false)}
+        />
+      </ClickRippleLayer>
+    );
+  }
 
   return (
     <ClickRippleLayer className="relative min-h-screen">
@@ -534,6 +565,337 @@ function ShareJoinCode({
           {t("classroomHub.regenerateCode")}
         </Button>
       )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Standalone (PWA) view                                              */
+/* ------------------------------------------------------------------ */
+
+function StandaloneClassroomView({
+  classroom,
+  classroomId,
+  liveConnected,
+  onSaved,
+  onEnrolled,
+  heatmap,
+  sessions,
+  confirmingLeave,
+  leaving,
+  leaveError,
+  onLeave,
+  onCancelLeave,
+}: {
+  classroom: ClassroomDetail;
+  classroomId: string;
+  liveConnected: boolean;
+  onSaved: () => void;
+  onEnrolled: () => void;
+  heatmap: HeatmapResponse | undefined;
+  sessions: ClassSessionSummary[] | undefined;
+  confirmingLeave: boolean;
+  leaving: boolean;
+  leaveError: string | null;
+  onLeave: () => void;
+  onCancelLeave: () => void;
+}) {
+  const { t } = useLocale();
+  const isLive = !!classroom.openSession;
+
+  return (
+    <div className="relative mx-auto max-w-2xl space-y-6 px-4 pb-28 pt-5 sm:px-6 sm:pt-8">
+      <Link href="/classrooms" className="inline-block font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-white/35">
+        {t("classroomDetail.backToClassrooms")}
+      </Link>
+
+      <header className="px-1">
+        <div className="flex items-center gap-2">
+          <span className={isLive ? "" : "opacity-0"}>
+            <PulseDot />
+          </span>
+          <span className={`font-mono text-[10px] font-bold uppercase tracking-[0.16em] ${isLive ? "text-kehai-300" : "text-white/35"}`}>
+            {isLive ? t("classroomDetail.sessionOpenBadge") : classroom.isTeacher ? t("home.sessionIdle") : t("classroomDetail.sessionClosedStatus")}
+          </span>
+          {classroom.isTeacher && <LiveIndicator connected={liveConnected} />}
+        </div>
+        <h1 className="mt-1.5 truncate font-display text-[26px] font-black leading-tight text-white">{classroom.name}</h1>
+        <p className="mt-1 truncate text-[13px] text-white/40">
+          {[classroom.courseCode, classroom.semesterLabel].filter(Boolean).join(" · ")}
+        </p>
+      </header>
+
+      {classroom.isTeacher ? (
+        <TeacherStandaloneBody
+          classroom={classroom}
+          classroomId={classroomId}
+          onSaved={onSaved}
+          onEnrolled={onEnrolled}
+          heatmap={heatmap}
+          sessions={sessions}
+        />
+      ) : (
+        <StudentStandaloneBody
+          classroom={classroom}
+          classroomId={classroomId}
+          heatmap={heatmap}
+          confirmingLeave={confirmingLeave}
+          leaving={leaving}
+          leaveError={leaveError}
+          onLeave={onLeave}
+          onCancelLeave={onCancelLeave}
+        />
+      )}
+    </div>
+  );
+}
+
+type TeacherTab = "session" | "insights" | "roster" | "settings";
+
+function TeacherStandaloneBody({
+  classroom,
+  classroomId,
+  onSaved,
+  onEnrolled,
+  heatmap,
+  sessions,
+}: {
+  classroom: ClassroomDetail;
+  classroomId: string;
+  onSaved: () => void;
+  onEnrolled: () => void;
+  heatmap: HeatmapResponse | undefined;
+  sessions: ClassSessionSummary[] | undefined;
+}) {
+  const { t } = useLocale();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const studentParam = searchParams.get("student") ?? undefined;
+  const viewingStudent = !!studentParam;
+  const [tab, setTab] = useState<TeacherTab>("session");
+
+  const closed = (sessions ?? []).filter((s) => s.status === "CLOSED");
+  const avgRate =
+    closed.length > 0 && classroom.studentCount > 0
+      ? closed.reduce((sum, s) => sum + Math.min(s.presentCount / classroom.studentCount, 1), 0) / closed.length
+      : 0;
+
+  return (
+    <div className="space-y-6">
+      <MetricStrip
+        items={[
+          { value: classroom.studentCount, label: t("home.studentsLabel") },
+          { value: sessions?.length ?? 0, label: t("home.sessionsLabel") },
+          { value: `${Math.round(avgRate * 100)}%`, label: t("home.avgRateLabel") },
+        ]}
+      />
+
+      <HudTabs
+        tabs={[
+          { id: "session" as const, label: t("classroomDetail.tabSession") },
+          { id: "insights" as const, label: t("classroomDetail.tabInsights") },
+          { id: "roster" as const, label: t("classroomDetail.tabRoster") },
+          { id: "settings" as const, label: t("classroomDetail.tabSettings") },
+        ]}
+        active={tab}
+        onChange={setTab}
+      />
+
+      {tab === "session" && (
+        <ClassSessionManager classroomId={classroomId} openSession={classroom.openSession} onSessionsChanged={onSaved} />
+      )}
+
+      {tab === "insights" && (
+        <div className="space-y-6">
+          <section>
+            <SectionHead title={t("classroomDetail.heatmapHeading")} />
+            <div className={`${SURFACE} p-4`}>
+              {viewingStudent && (
+                <button
+                  type="button"
+                  onClick={() => router.push(`/classrooms/${classroomId}`)}
+                  className="mb-4 font-mono text-[11px] font-bold uppercase tracking-wider text-kehai-300"
+                >
+                  {t("classroomDetail.backToClassView")}
+                </button>
+              )}
+              {heatmap ? <AttendanceHeatmap data={heatmap} /> : <LoadingBlock />}
+            </div>
+          </section>
+
+          {!viewingStudent && (
+            <section>
+              <SectionHead title={t("classroomDetail.trendHeading")} />
+              <div className={`${SURFACE} p-4`}>
+                {sessions ? <SessionTrendChart sessions={sessions} studentCount={classroom.studentCount} /> : <LoadingBlock />}
+              </div>
+            </section>
+          )}
+
+          <section>
+            <SectionHead title={t("leaderboard.heading")} />
+            <div className={`${SURFACE} p-4`}>
+              <ClassroomLeaderboard classroomId={classroomId} />
+            </div>
+          </section>
+
+          <section>
+            <SectionHead title={t("atRisk.heading")} />
+            <div className={`${SURFACE} p-4`}>
+              <AtRiskStudents classroomId={classroomId} />
+            </div>
+          </section>
+        </div>
+      )}
+
+      {tab === "roster" && (
+        <section>
+          <SectionHead title={t("classroomDetail.rosterHeading")} action={<ClassroomExportButtons classroomId={classroomId} />} />
+          <div className={`${SURFACE} p-4`}>
+            <ClassroomRoster classroomId={classroomId} openSessionId={classroom.openSession?.id} />
+          </div>
+        </section>
+      )}
+
+      {tab === "settings" && (
+        <div className="space-y-6">
+          <section>
+            <SectionHead title={t("classroomDetail.editDetails")} />
+            <div className={`${SURFACE} p-4`}>
+              <EditClassroomDetailsPanel classroom={classroom} onSaved={onSaved} />
+              <div className="mt-3">
+                <ClassroomCalendarButton classroomId={classroomId} />
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <SectionHead title={t("classroomDetail.shareHeading")} />
+            <div className={`${SURFACE} p-4`}>
+              <ShareJoinCode classroomId={classroomId} joinCode={classroom.joinCode} onRegenerated={onSaved} />
+            </div>
+          </section>
+
+          <section>
+            <SectionHead title={t("bulkEnroll.label")} />
+            <div className={`${SURFACE} p-4`}>
+              <BulkEnrollForm classroomId={classroomId} onEnrolled={onEnrolled} />
+            </div>
+          </section>
+
+          <section>
+            <SectionHead title={t("auditLog.heading")} />
+            <div className={`${SURFACE} p-4`}>
+              <AuditLogPanel classroomId={classroomId} />
+            </div>
+          </section>
+
+          <DeleteClassroomSection classroomId={classroomId} classroomName={classroom.name} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StudentStandaloneBody({
+  classroom,
+  classroomId,
+  heatmap,
+  confirmingLeave,
+  leaving,
+  leaveError,
+  onLeave,
+  onCancelLeave,
+}: {
+  classroom: ClassroomDetail;
+  classroomId: string;
+  heatmap: HeatmapResponse | undefined;
+  confirmingLeave: boolean;
+  leaving: boolean;
+  leaveError: string | null;
+  onLeave: () => void;
+  onCancelLeave: () => void;
+}) {
+  const { t } = useLocale();
+  const isLive = !!classroom.openSession;
+
+  return (
+    <div className="space-y-6">
+      <div className={`relative overflow-hidden rounded-[26px] border p-5 ${isLive ? "border-kehai-500/25" : "border-white/[0.07]"}`}>
+        <div
+          aria-hidden
+          className="absolute inset-0 -z-10"
+          style={{
+            background: isLive
+              ? "radial-gradient(130% 110% at 100% 0%, #5ff4ff22, transparent 58%), linear-gradient(180deg, #0c1219, #080b11)"
+              : "linear-gradient(180deg, #0c0e14, #08090d)",
+          }}
+        />
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <span className="flex items-center gap-2">
+              {isLive && <PulseDot />}
+              <span className={`font-mono text-[10px] font-bold uppercase tracking-[0.16em] ${isLive ? "text-kehai-300" : "text-white/35"}`}>
+                {isLive ? t("classroomDetail.sessionOpenBadge") : t("classroomDetail.sessionClosedStatus")}
+              </span>
+            </span>
+            <p className="mt-2 text-[13px] leading-relaxed text-white/40">
+              {isLive
+                ? classroom.openSession?.label || t("classroomDetail.untitledSession")
+                : t("classroomDetail.noOpenSessionHint")}
+            </p>
+          </div>
+          <Dial value={isLive ? 1 : 0} accent="#5ff4ff" active={isLive} size={56}>
+            <span className="font-mono text-[13px] font-black text-white">{classroom.studentCount}</span>
+          </Dial>
+        </div>
+        {isLive && (
+          <Link href={`/classrooms/${classroomId}/checkin`} className="mt-5 block">
+            <Button size="md" variant="cyan" className="w-full">
+              {t("classroomDetail.checkInNow")}
+            </Button>
+          </Link>
+        )}
+      </div>
+
+      <section>
+        <SectionHead title={t("classroomDetail.heatmapHeading")} />
+        <div className={`${SURFACE} p-4`}>{heatmap ? <AttendanceHeatmap data={heatmap} /> : <LoadingBlock />}</div>
+      </section>
+
+      <section>
+        <SectionHead title={t("classroomDetail.myAttendanceHeading")} />
+        <div className={`${SURFACE} p-4`}>
+          <MyAttendanceHistory classroomId={classroomId} />
+        </div>
+      </section>
+
+      <section>
+        <SectionHead title={t("leaderboard.heading")} />
+        <div className={`${SURFACE} p-4`}>
+          <ClassroomLeaderboard classroomId={classroomId} />
+        </div>
+      </section>
+
+      <div className="rounded-2xl border border-shu-500/20 bg-shu-500/[0.04] p-4">
+        <p className="text-[13px] font-medium text-white/85">{t("classroomDetail.leaveClassroomLabel")}</p>
+        <p className="mt-1 text-[12px] text-white/40">{t("classroomDetail.leaveClassroomHint")}</p>
+        {leaveError && <p className="mt-2 text-[12px] text-shu-400">{leaveError}</p>}
+        {confirmingLeave ? (
+          <div className="mt-3 flex items-center gap-3">
+            <Button variant="danger" size="sm" loading={leaving} onClick={onLeave}>
+              {t("classroomDetail.confirmLeave")}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={onCancelLeave}>
+              {t("common.cancel")}
+            </Button>
+          </div>
+        ) : (
+          <Button variant="danger" size="sm" className="mt-3" onClick={onLeave}>
+            {t("classroomDetail.leaveClassroomLabel")}
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

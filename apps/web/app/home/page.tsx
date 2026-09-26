@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/Button";
 import { LoadingBlock } from "@/components/ui/States";
 import { PageGlow } from "@/components/ui/PageGlow";
 import { ClickRippleLayer } from "@/components/ui/ClickRipple";
+import { SHU, KEHAI, SURFACE, SectionHead, MetricStrip, Meter, Avatar, Dial, PulseDot, FlameIcon, useElapsed } from "@/components/ui/Hud";
 import { useAuth } from "@/lib/auth-context";
 import {
   useMyRegistrations,
@@ -29,14 +30,6 @@ type T = (key: string, vars?: Record<string, string | number>) => string;
 type Locale = "en" | "ja";
 
 const ATTENTION_THRESHOLD = 0.75;
-const SHU = "#ff2d55";
-const KEHAI = "#5ff4ff";
-
-// One surface for the whole page: a solid dark panel on a dark ground,
-// not a translucent white "glass" overlay. Cards read as physical pieces
-// of an instrument panel instead of frosted sheets floating on a
-// gradient.
-const SURFACE = "rounded-2xl border border-white/[0.07] bg-void-900/60";
 
 export default function HomePage() {
   const { t, locale } = useLocale();
@@ -646,29 +639,6 @@ function GetStarted({ t }: { t: T }) {
 /* Shared widgets                                                      */
 /* ------------------------------------------------------------------ */
 
-function SectionHead({ title, action, trailing }: { title: string; action?: React.ReactNode; trailing?: string }) {
-  return (
-    <div className="mb-3 flex items-center justify-between gap-3 px-1">
-      <h2 className="truncate font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-white/35">{title}</h2>
-      {trailing && <span className="shrink-0 font-mono text-[11px] font-bold text-white/50">{trailing}</span>}
-      {action}
-    </div>
-  );
-}
-
-function MetricStrip({ items }: { items: { value: React.ReactNode; label: string }[] }) {
-  return (
-    <div className={`${SURFACE} grid grid-cols-3 divide-x divide-white/[0.06] overflow-hidden`}>
-      {items.map((item) => (
-        <div key={item.label} className="px-2 py-3.5 text-center">
-          <div className="font-mono text-[19px] font-black tabular-nums leading-none text-white">{item.value}</div>
-          <div className="mt-1.5 truncate font-mono text-[9px] uppercase tracking-[0.12em] text-white/35">{item.label}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 // A contribution grid, drawn from the same heatmap endpoint the classroom
 // page uses. It renders its full frame even with zero sessions on record,
 // which is the point: an empty grid still reads as a designed instrument,
@@ -783,113 +753,3 @@ function TrendCard({
   );
 }
 
-function Meter({ value, accent }: { value: number; accent: string }) {
-  return (
-    <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.07]">
-      <div
-        className="h-full rounded-full transition-[width] duration-500"
-        style={{ width: `${Math.max(Math.min(value, 1), 0) * 100}%`, background: accent }}
-      />
-    </div>
-  );
-}
-
-function Avatar({ name, url }: { name: string; url?: string | null }) {
-  if (url) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={url} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />;
-  }
-  const initials = name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
-  // Alternate the two brand accents by name so a wall of avatars has some
-  // life without pulling in colors from outside the palette.
-  const warm = (name.charCodeAt(0) || 0) % 2 === 0;
-  return (
-    <span
-      aria-hidden
-      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-mono text-[11px] font-bold ${
-        warm ? "bg-shu-500/15 text-shu-300" : "bg-kehai-500/15 text-kehai-300"
-      }`}
-    >
-      {initials || "?"}
-    </span>
-  );
-}
-
-function Dial({ value, accent, active, children }: { value: number; accent: string; active: boolean; children: React.ReactNode }) {
-  const size = 78;
-  const strokeWidth = 5;
-  const r = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * r;
-  const clamped = Math.max(0, Math.min(1, value));
-  return (
-    <div className="relative shrink-0" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth={strokeWidth} />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke={accent}
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={circumference * (1 - (active ? clamped : 1))}
-          style={active ? { filter: `drop-shadow(0 0 4px ${accent}99)` } : { opacity: 0.22 }}
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">{children}</div>
-    </div>
-  );
-}
-
-function PulseDot() {
-  return (
-    <span className="relative flex h-2 w-2">
-      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-kehai-400 opacity-70" />
-      <span className="relative inline-flex h-2 w-2 rounded-full bg-kehai-400" />
-    </span>
-  );
-}
-
-function FlameIcon({ lit, size = 20 }: { lit: boolean; size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill={lit ? "#ff9142" : "none"}
-      stroke={lit ? "none" : "rgba(255,255,255,0.35)"}
-      strokeWidth="1.75"
-    >
-      <path d="M12 2c1 3-3 4-3 7.5a3 3 0 006 0c1.5 1 2.5 2.8 2.5 4.9A5.5 5.5 0 0112 20a5.5 5.5 0 01-5.5-5.6c0-4.2 3.4-5.9 5.5-12.4z" />
-    </svg>
-  );
-}
-
-// Starts null so the server and first client render agree — a live
-// "running for 12m" readout can't be server-rendered without a hydration
-// mismatch.
-function useElapsed(since: string | undefined): string | null {
-  const [now, setNow] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (!since) {
-      setNow(null);
-      return;
-    }
-    setNow(Date.now());
-    const id = setInterval(() => setNow(Date.now()), 30000);
-    return () => clearInterval(id);
-  }, [since]);
-
-  if (!since || now === null) return null;
-  const minutes = Math.max(0, Math.floor((now - new Date(since).getTime()) / 60000));
-  if (minutes < 60) return `${minutes}m`;
-  return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
-}

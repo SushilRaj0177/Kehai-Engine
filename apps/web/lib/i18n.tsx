@@ -848,6 +848,12 @@ const dict = {
     backToClassView: { en: "← Back to class view", ja: "← クラス全体表示に戻る" },
     backToClassrooms: { en: "← All classrooms", ja: "← クラス一覧に戻る" },
     viewingStudent: { en: "Viewing {name}'s attendance", ja: "{name} さんの出席状況を表示中" },
+    tabSession: { en: "Session", ja: "セッション" },
+    tabInsights: { en: "Insights", ja: "インサイト" },
+    tabRoster: { en: "Roster", ja: "名簿" },
+    tabSettings: { en: "Settings", ja: "設定" },
+    sessionOpenStatus: { en: "Session open", ja: "セッション開催中" },
+    sessionClosedStatus: { en: "No session open", ja: "セッション未開催" },
   },
   classroomCheckin: {
     subheading: { en: "Verify your presence with QR + location.", ja: "QRコードと位置情報であなたの存在を証明します。" },
