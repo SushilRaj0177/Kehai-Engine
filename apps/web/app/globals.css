@@ -27,6 +27,19 @@ body {
   font-feature-settings: "ss01" on, "ss02" on;
 }
 
+/* Clears MobileBottomNav's floating pill on small screens -- its own h-16
+   (64px) plus the gap it floats above the edge by, plus safe-area padding,
+   with room to spare, so the fixed bar never overlaps a page's own bottom
+   content. Only when it's actually rendered: MobileBottomNav renders
+   nothing outside the installed PWA ([data-standalone="true"], set by
+   StandaloneModeFlag), so a plain mobile-browser tab gets no reserved
+   space for a nav bar that was never there. */
+@media (max-width: 639px) {
+  [data-standalone="true"] body {
+    padding-bottom: 6rem;
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /* PWA-only redesign (approved from a mockup, see Home.dc.html /        */
 /* LiveSession.dc.html / Discover.dc.html previewed for this session):  */
