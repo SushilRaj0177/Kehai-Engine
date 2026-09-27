@@ -5,6 +5,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import { LocaleProvider } from "@/lib/i18n";
 import { ApiBaseSetter } from "@/components/ApiBaseSetter";
 import { CustomCursor } from "@/components/ui/CustomCursor";
+import { PageTransition } from "@/components/PageTransition";
 
 // Space Grotesk carries the brand's actual display voice now — Noto Sans
 // JP's Latin glyphs are what made every heading read as generic/templated
@@ -80,7 +81,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ApiBaseSetter apiBase={apiBase} />
         <CustomCursor />
         <LocaleProvider>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <PageTransition>{children}</PageTransition>
+          </AuthProvider>
         </LocaleProvider>
       </body>
     </html>

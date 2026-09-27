@@ -95,7 +95,15 @@ function TabLink({ href, active, label, icon }: { href: string; active: boolean;
     <Link
       href={href}
       aria-label={label}
-      className={`flex flex-1 items-center justify-center transition-colors ${active ? "text-shu-300" : "text-white/45 active:text-white/70"}`}
+      // active: here is Tailwind's :active pseudo-class (the CSS state
+      // while pressed), unrelated to the `active` prop (whether this is
+      // the current route) despite the name collision -- it's what gives
+      // every tap its own instant press-down feedback, independent of
+      // navigation ever completing.
+      className={`flex flex-1 items-center justify-center transition-colors duration-150 active:scale-90 ${
+        active ? "text-shu-300" : "text-white/45 active:text-white/70"
+      }`}
+      style={{ transitionProperty: "color, transform", transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)" }}
     >
       {/* Icon-only: the label moved to aria-label. The active tab still
           gets a filled pill behind its icon rather than a bare color

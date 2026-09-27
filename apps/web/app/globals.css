@@ -475,3 +475,29 @@ body {
     opacity: 1;
   }
 }
+
+/* Route-change entrance -- PageTransition remounts this wrapper (keyed by
+   pathname) on every navigation so the new page's content settles in
+   instead of snapping in instantly the way a plain Next.js route swap
+   does. Opacity only, deliberately no transform/filter here: this
+   wrapper sits above every page's own DOM, including MobileBottomNav's
+   `fixed` pill -- animating transform or filter on an ancestor creates a
+   new containing block for `position: fixed` descendants for the
+   animation's duration, which would drag the nav along with the page's
+   entrance motion instead of leaving it anchored to the viewport. */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.page-transition {
+  animation: page-enter 0.32s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-transition {
+    animation: none !important;
+  }
+}
