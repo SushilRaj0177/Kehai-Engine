@@ -12,24 +12,16 @@ import { useEffect, useState } from "react";
 export const SHU = "#ff2d55";
 export const KEHAI = "#5ff4ff";
 
-// The "genuinely transparent" card treatment (border + corner sheen, no
-// fill, no blur, letting PageGlow show straight through) was a PWA-only
-// request, but SURFACE is used from ~19 page files that render exactly
-// the same whether opened installed or in a plain mobile-browser tab —
-// there's no separate route per mode, only different nav chrome. A plain
-// exported utility string can't itself branch on that, so SURFACE/
-// HERO_SHADOW are just class names now; globals.css defines their actual
-// look twice — a browser-tab default (the original flat panel from
-// before this redesign) and a [data-standalone="true"] override (this
-// transparent treatment) — scoped via the data-attribute StandaloneModeFlag
-// sets on <html>. Every one of those ~19 files keeps working unchanged.
+// Plain class names (defined in globals.css) rather than inline Tailwind
+// utility strings, so every one of the ~19 pages using SURFACE picks up a
+// change here without editing each file individually.
 export const SURFACE = "hud-surface";
 
 // For the one hero card per page (LiveCard, NextEventCard, …): these carry
 // their own gradient background instead of SURFACE's flat fill, so the
 // contrast that makes SURFACE read as elevated has to come from that
 // gradient's own stops, not from here — this only adds the matching soft
-// shadow, again defined per-mode in globals.css (see SURFACE above).
+// shadow.
 export const HERO_SHADOW = "hud-hero-shadow";
 
 export function SectionHead({
