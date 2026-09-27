@@ -15,18 +15,25 @@ export const KEHAI = "#5ff4ff";
 // One surface for the whole page: a solid dark panel on a dark ground,
 // not a translucent white "glass" overlay. Cards read as physical pieces
 // of an instrument panel instead of frosted sheets floating on a
-// gradient. The soft ambient shadow plus a hairline top highlight is what
-// separates a panel that visibly sits above the page from a flat bordered
-// box — without it every card reads as a wireframe rectangle regardless
-// of what's inside it.
+// gradient.
+//
+// The page body is bg-void-950 (#05070a). A *black* drop-shadow — which
+// the first pass here used — is invisible against a ground that dark, so
+// it read as no change at all. What actually separates a panel from a
+// wireframe rectangle here is fill contrast: void-800 at high opacity is
+// visibly lighter than the void-950 ground, so the card itself reads as a
+// raised surface without depending on a shadow no one can see. The
+// shadow is kept, but now doing secondary work (edge softness against
+// PageGlow's gradients) rather than the whole job.
 export const SURFACE =
-  "rounded-[22px] border border-white/[0.06] bg-void-900/60 shadow-[0_24px_48px_-28px_rgba(0,0,0,0.7),inset_0_1px_0_0_rgba(255,255,255,0.05)]";
+  "rounded-[22px] border border-white/[0.10] bg-void-800/80 shadow-[0_20px_44px_-24px_rgba(0,0,0,0.55),inset_0_1px_0_0_rgba(255,255,255,0.07)]";
 
 // For the one hero card per page (LiveCard, NextEventCard, …): these carry
-// their own gradient background instead of SURFACE's flat fill, so they
-// need the same elevation spelled out separately rather than composed
-// from SURFACE.
-export const HERO_SHADOW = "shadow-[0_28px_56px_-26px_rgba(0,0,0,0.75),inset_0_1px_0_0_rgba(255,255,255,0.06)]";
+// their own gradient background instead of SURFACE's flat fill, so the
+// contrast that makes SURFACE read as elevated has to come from that
+// gradient's own stops (lightened alongside this), not from here — this
+// only adds the matching soft shadow and top highlight.
+export const HERO_SHADOW = "shadow-[0_24px_52px_-24px_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.08)]";
 
 export function SectionHead({
   title,

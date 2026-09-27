@@ -871,8 +871,8 @@ function StudentStandaloneBody({
           className="absolute inset-0 -z-10"
           style={{
             background: isLive
-              ? "radial-gradient(130% 110% at 100% 0%, #5ff4ff22, transparent 58%), linear-gradient(180deg, #0c1219, #080b11)"
-              : "linear-gradient(180deg, #0c0e14, #08090d)",
+              ? "radial-gradient(130% 110% at 100% 0%, #5ff4ff22, transparent 58%), linear-gradient(180deg, #181f2c, #0e131b)"
+              : "linear-gradient(180deg, #171b26, #0d1017)",
           }}
         />
         <div className="flex items-center justify-between gap-3">

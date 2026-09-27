@@ -24,10 +24,16 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.08] bg-void-900/90 backdrop-blur-2xl sm:hidden"
-      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-3 sm:hidden"
+      style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)" }}
     >
-      <div className="mx-auto flex h-16 max-w-6xl items-stretch">
+      {/* A floating pill, not an edge-to-edge bar: inset from the screen
+          edges on all sides so it reads as one instrument resting on top
+          of the page rather than a strip of chrome bolted to its border. */}
+      <div
+        className="flex h-16 w-full max-w-md items-stretch gap-0.5 rounded-full border border-white/[0.10] bg-void-800/85 px-1.5 backdrop-blur-2xl"
+        style={{ boxShadow: "0 20px 44px -18px rgba(0,0,0,0.6), inset 0 1px 0 0 rgba(255,255,255,0.07)" }}
+      >
         {/* Was missing entirely -- once you navigated anywhere else there
             was no way back to /home short of relaunching the app fresh
             (the standalone-only redirect on "/" only fires on a true
@@ -88,11 +94,21 @@ function TabLink({ href, active, label, icon }: { href: string; active: boolean;
   return (
     <Link
       href={href}
-      className={`flex flex-1 flex-col items-center justify-center gap-1 text-[10px] font-semibold tracking-wide transition-colors ${
-        active ? "text-shu-400" : "text-white/45 active:text-white/70"
+      className={`flex flex-1 flex-col items-center justify-center gap-1 py-1.5 text-[10px] font-semibold tracking-wide transition-colors ${
+        active ? "text-shu-300" : "text-white/45 active:text-white/70"
       }`}
     >
-      <span className={active ? "drop-shadow-[0_0_8px_rgba(255,45,85,0.55)]" : ""}>{icon}</span>
+      {/* The active tab gets a filled pill behind its icon, not just a
+          color swap -- a lone tinted glyph among four identical ones is
+          easy to miss at a glance; a shape you can pick out peripherally
+          isn't. */}
+      <span
+        className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
+          active ? "bg-shu-500/15 drop-shadow-[0_0_8px_rgba(255,45,85,0.45)]" : ""
+        }`}
+      >
+        {icon}
+      </span>
       <span className="uppercase">{label}</span>
     </Link>
   );
@@ -101,15 +117,15 @@ function TabLink({ href, active, label, icon }: { href: string; active: boolean;
 function TabSkeleton() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-1.5" aria-hidden>
-      <span className="h-5 w-5 animate-pulse rounded-full bg-white/[0.08]" />
+      <span className="h-8 w-8 animate-pulse rounded-full bg-white/[0.08]" />
       <span className="h-2 w-8 animate-pulse rounded-full bg-white/[0.08]" />
     </div>
   );
 }
 
 const iconProps = {
-  width: 22,
-  height: 22,
+  width: 19,
+  height: 19,
   viewBox: "0 0 24 24",
   fill: "none",
   stroke: "currentColor",

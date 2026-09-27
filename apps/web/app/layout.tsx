@@ -71,11 +71,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <html lang="en" className={`${notoJp.variable} ${displayFont.variable} ${inter.variable} ${mono.variable}`}>
-      {/* pb-20 clears MobileBottomNav's own h-16 (64px) plus its safe-area
-          padding with room to spare, so the fixed bar never overlaps a
-          page's own bottom content (including Footer). Desktop has no
-          bottom nav at all, hence sm:pb-0. */}
-      <body className="min-h-screen bg-void-950 pb-20 font-sans antialiased sm:pb-0">
+      {/* pb-24 clears MobileBottomNav's floating pill -- its own h-16
+          (64px) plus the gap it now floats above the edge by, plus its
+          safe-area padding -- with room to spare, so the fixed bar never
+          overlaps a page's own bottom content (including Footer). Desktop
+          has no bottom nav at all, hence sm:pb-0. */}
+      <body className="min-h-screen bg-void-950 pb-24 font-sans antialiased sm:pb-0">
         <ApiBaseSetter apiBase={apiBase} />
         <CustomCursor />
         <LocaleProvider>

@@ -244,8 +244,8 @@ function LiveCard({
         className="absolute inset-0 -z-10"
         style={{
           background: isLive
-            ? `radial-gradient(130% 110% at 100% 0%, ${KEHAI}22, transparent 58%), linear-gradient(180deg, #0c1219, #080b11)`
-            : `radial-gradient(130% 110% at 100% 0%, ${SHU}18, transparent 58%), linear-gradient(180deg, #0c0e14, #08090d)`,
+            ? `radial-gradient(130% 110% at 100% 0%, ${KEHAI}22, transparent 58%), linear-gradient(180deg, #181f2c, #0e131b)`
+            : `radial-gradient(130% 110% at 100% 0%, ${SHU}18, transparent 58%), linear-gradient(180deg, #171b26, #0d1017)`,
         }}
       />
 
@@ -519,7 +519,7 @@ function NextEventCard({
         aria-hidden
         className="absolute inset-0 -z-10"
         style={{
-          background: `radial-gradient(130% 110% at 100% 0%, ${accent}1f, transparent 58%), linear-gradient(180deg, #0c0e14, #08090d)`,
+          background: `radial-gradient(130% 110% at 100% 0%, ${accent}1f, transparent 58%), linear-gradient(180deg, #171b26, #0d1017)`,
         }}
       />
       <span className="flex items-center gap-2">
