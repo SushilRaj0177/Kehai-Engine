@@ -12,21 +12,25 @@ import { useEffect, useState } from "react";
 export const SHU = "#ff2d55";
 export const KEHAI = "#5ff4ff";
 
-// One surface for the whole page: a solid dark panel on a dark ground,
-// not a translucent white "glass" overlay. Cards read as physical pieces
-// of an instrument panel instead of frosted sheets floating on a
-// gradient.
+// A solid opaque fill here (an earlier pass here, `bg-void-800/80`) reads
+// as a flat black plastic slab dropped on top of PageGlow's colorful
+// ambient gradient -- the two-tone shu/kehai atmosphere the rest of the
+// page is built around just stops dead at every card's edge, which is
+// exactly the "cheap" tell. Real glass -- backdrop-blur letting that glow
+// bleed through softly, plus a diagonal sheen layer so the panel still
+// has its own highlight instead of being a uniform tint -- is what
+// `Card.tsx` already does for desktop; this brings PWA pages' SURFACE up
+// to the same standard instead of the two drifting apart.
 //
-// The page body is bg-void-950 (#05070a). A *black* drop-shadow — which
-// the first pass here used — is invisible against a ground that dark, so
-// it read as no change at all. What actually separates a panel from a
-// wireframe rectangle here is fill contrast: void-800 at high opacity is
-// visibly lighter than the void-950 ground, so the card itself reads as a
-// raised surface without depending on a shadow no one can see. The
-// shadow is kept, but now doing secondary work (edge softness against
-// PageGlow's gradients) rather than the whole job.
+// The gradient is two stacked layers (Tailwind arbitrary background-image
+// supports comma-separated layers same as plain CSS): a faint white sheen
+// on top for the highlight, and a dark base underneath that's translucent
+// enough for backdrop-blur to actually pick up color behind it, but still
+// opaque enough to keep text readable over a bright patch of glow. This
+// is the fill-contrast lesson from the flat-black pass, applied to a
+// glass fill instead of abandoning glass altogether.
 export const SURFACE =
-  "rounded-[22px] border border-white/[0.10] bg-void-800/80 shadow-[0_20px_44px_-24px_rgba(0,0,0,0.55),inset_0_1px_0_0_rgba(255,255,255,0.07)]";
+  "rounded-[22px] border border-white/[0.12] bg-[linear-gradient(150deg,rgba(255,255,255,0.07),rgba(255,255,255,0.015)),linear-gradient(165deg,rgba(22,30,44,0.82),rgba(8,11,17,0.86))] backdrop-blur-2xl shadow-[0_20px_44px_-24px_rgba(0,0,0,0.55),inset_0_1px_0_0_rgba(255,255,255,0.09)]";
 
 // For the one hero card per page (LiveCard, NextEventCard, …): these carry
 // their own gradient background instead of SURFACE's flat fill, so the
