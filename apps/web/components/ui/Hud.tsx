@@ -12,36 +12,25 @@ import { useEffect, useState } from "react";
 export const SHU = "#ff2d55";
 export const KEHAI = "#5ff4ff";
 
-// Genuinely transparent, not glass: no backdrop-blur, no translucent
-// fill sitting on top of the page — the card is just a boundary (a
-// border, a corner-anchored sheen, a shadow for lift) with nothing
-// behind it but the page's own ambient glow (PageGlow) showing through
-// completely unblurred. A `backdrop-blur` treatment always reads as a
-// pane of frosted material laid over the page — that's what "glass" and
-// "translucent" both meant here, and both got called cheap. Dropping the
-// blur AND the fill entirely, rather than just lowering the fill's
-// opacity, is what makes this actually transparent rather than "glass
-// but fainter": the red/cyan glow bleeds straight through, crisp, with
-// nothing softening or tinting it in transit. The corner sheen keeps
-// the card from reading as pure empty space — a hint of surface, not a
-// hole — without needing any fill to carry it.
-// Deliberately no `inset 0 1px 0 0 ...` top highlight here (an earlier
-// version had one, meant as a glass-like bevel): that inset line stacks
-// directly on top of the uniform border along the top edge only, so the
-// top reads visibly thicker/brighter than the bottom, left, and right —
-// exactly the asymmetry that was reported. A single uniform border with
-// no per-edge highlight is what keeps every edge the same weight.
-export const SURFACE =
-  "rounded-[22px] border border-white/[0.14] bg-[radial-gradient(120%_110%_at_25%_-10%,rgba(255,255,255,0.06),rgba(255,255,255,0)_60%)] shadow-[0_20px_44px_-24px_rgba(0,0,0,0.7)]";
+// The "genuinely transparent" card treatment (border + corner sheen, no
+// fill, no blur, letting PageGlow show straight through) was a PWA-only
+// request, but SURFACE is used from ~19 page files that render exactly
+// the same whether opened installed or in a plain mobile-browser tab —
+// there's no separate route per mode, only different nav chrome. A plain
+// exported utility string can't itself branch on that, so SURFACE/
+// HERO_SHADOW are just class names now; globals.css defines their actual
+// look twice — a browser-tab default (the original flat panel from
+// before this redesign) and a [data-standalone="true"] override (this
+// transparent treatment) — scoped via the data-attribute StandaloneModeFlag
+// sets on <html>. Every one of those ~19 files keeps working unchanged.
+export const SURFACE = "hud-surface";
 
 // For the one hero card per page (LiveCard, NextEventCard, …): these carry
 // their own gradient background instead of SURFACE's flat fill, so the
 // contrast that makes SURFACE read as elevated has to come from that
-// gradient's own stops (lightened alongside this), not from here — this
-// only adds the matching soft shadow. No inset top highlight, same reason
-// as SURFACE above: it would make the top border read thicker than the
-// other three edges.
-export const HERO_SHADOW = "shadow-[0_24px_52px_-24px_rgba(0,0,0,0.6)]";
+// gradient's own stops, not from here — this only adds the matching soft
+// shadow, again defined per-mode in globals.css (see SURFACE above).
+export const HERO_SHADOW = "hud-hero-shadow";
 
 export function SectionHead({
   title,

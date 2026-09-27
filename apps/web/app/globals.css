@@ -27,6 +27,65 @@ body {
   font-feature-settings: "ss01" on, "ss02" on;
 }
 
+/* ------------------------------------------------------------------ */
+/* PWA-only visual treatments, split from their plain mobile-browser-tab */
+/* defaults. PageGlow and SURFACE/HERO_SHADOW (Hud.tsx) render from the   */
+/* same page files regardless of how the page was opened -- there is no  */
+/* separate "PWA route", only different nav chrome layered on top -- so  */
+/* a premium look requested for the installed app was leaking straight   */
+/* into every ordinary browser-tab visit with no way to tell them apart  */
+/* at the JSX level. [data-standalone] is set on <html> by               */
+/* StandaloneModeFlag (mirrors useIsStandalone()); these rules key off   */
+/* it so the same components/classNames render differently per mode      */
+/* without threading isStandalone through every consuming page.          */
+/* ------------------------------------------------------------------ */
+
+/* PageGlow -- browser-tab default: the original, dimmer ambient glow. */
+.page-glow-shu {
+  background-color: rgba(255, 45, 85, 0.1);
+  filter: blur(150px);
+}
+.page-glow-kehai {
+  background-color: rgba(34, 226, 245, 0.08);
+  filter: blur(150px);
+}
+/* PWA: brighter, tighter glow (what was asked for in this session). */
+[data-standalone="true"] .page-glow-shu {
+  background-color: rgba(255, 45, 85, 0.26);
+  filter: blur(130px);
+}
+[data-standalone="true"] .page-glow-kehai {
+  background-color: rgba(34, 226, 245, 0.26);
+  filter: blur(130px);
+}
+
+/* SURFACE (Hud.tsx) -- browser-tab default: the original flat panel from
+   before this session's card redesign (a solid dark panel on a dark
+   ground, no shadow). */
+.hud-surface {
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background-color: rgba(10, 14, 20, 0.6);
+}
+/* PWA: the genuinely-transparent treatment -- no fill, no blur, just a
+   border/sheen/shadow so PageGlow shows straight through. */
+[data-standalone="true"] .hud-surface {
+  border-color: rgba(255, 255, 255, 0.14);
+  background-color: transparent;
+  background-image: radial-gradient(120% 110% at 25% -10%, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0) 60%);
+  box-shadow: 0 20px 44px -24px rgba(0, 0, 0, 0.7);
+}
+
+/* HERO_SHADOW (Hud.tsx) -- browser-tab default: no separate shadow (the
+   original hero cards relied on their own gradient fill alone). */
+.hud-hero-shadow {
+  box-shadow: none;
+}
+/* PWA: matching soft elevation shadow. */
+[data-standalone="true"] .hud-hero-shadow {
+  box-shadow: 0 24px 52px -24px rgba(0, 0, 0, 0.6);
+}
+
 ::selection {
   background: rgba(255, 45, 85, 0.35);
   color: #fff;
