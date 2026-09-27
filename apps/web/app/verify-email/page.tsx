@@ -43,7 +43,7 @@ export default function VerifyEmailPage() {
     <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
-      <div className="relative mx-auto max-w-lg px-6 py-24">
+      <div className="page-stagger relative mx-auto max-w-lg px-6 py-24">
         {status === "pending" && <LoadingBlock label={t("verifyEmail.verifying")} />}
         {status === "success" && (
           <EmptyState

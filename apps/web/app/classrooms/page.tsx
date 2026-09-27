@@ -83,7 +83,7 @@ export default function ClassroomsHubPage() {
       <ClickRippleLayer className="relative min-h-screen">
         <PageGlow />
         <NavBar />
-        <div className="relative mx-auto max-w-2xl px-4 pb-28 pt-5 sm:px-6 sm:pt-8">
+        <div className="page-stagger relative mx-auto max-w-2xl px-4 pb-28 pt-5 sm:px-6 sm:pt-8">
           <div className="flex items-start justify-between gap-3 px-1">
             <h1 className="font-display text-[26px] font-black leading-tight text-white">{t("classroomHub.title")}</h1>
             <div className="flex shrink-0 gap-2">
@@ -210,7 +210,7 @@ export default function ClassroomsHubPage() {
     <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
-      <div className="relative mx-auto max-w-6xl px-6 py-20">
+      <div className="page-stagger relative mx-auto max-w-6xl px-6 py-20">
         <KanjiMark glyph="級" className="absolute -right-4 top-0 text-[6rem] sm:text-[10rem]" />
         <div className="relative z-20 flex flex-wrap items-end justify-between gap-4">
           <div>

@@ -427,10 +427,14 @@ body {
   }
 }
 
-/* Staggered mount entrance -- each direct child of .home-stagger rises and
+/* Staggered mount entrance -- each direct child of .page-stagger rises and
    fades in with an increasing delay, a spring-like settle rather than a
-   linear ease. Used on the PWA home dashboard so its sections arrive as a
-   sequence instead of all snapping in at once on mount. */
+   linear ease. Applied to every page's own root content wrapper (not
+   just /home, where this started) so a page's sections always arrive as
+   a sequence instead of all snapping in at once on mount -- consistent
+   with the nav pill's and root page transition's shared spring easing
+   elsewhere in this file, rather than every page needing its own version
+   of "things should appear smoothly." */
 @keyframes stagger-rise {
   from {
     opacity: 0;
@@ -441,36 +445,36 @@ body {
     transform: translateY(0) scale(1);
   }
 }
-.home-stagger > * {
+.page-stagger > * {
   opacity: 0;
   animation: stagger-rise 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
-.home-stagger > *:nth-child(1) {
+.page-stagger > *:nth-child(1) {
   animation-delay: 0.02s;
 }
-.home-stagger > *:nth-child(2) {
+.page-stagger > *:nth-child(2) {
   animation-delay: 0.08s;
 }
-.home-stagger > *:nth-child(3) {
+.page-stagger > *:nth-child(3) {
   animation-delay: 0.15s;
 }
-.home-stagger > *:nth-child(4) {
+.page-stagger > *:nth-child(4) {
   animation-delay: 0.22s;
 }
-.home-stagger > *:nth-child(5) {
+.page-stagger > *:nth-child(5) {
   animation-delay: 0.29s;
 }
-.home-stagger > *:nth-child(6) {
+.page-stagger > *:nth-child(6) {
   animation-delay: 0.36s;
 }
-.home-stagger > *:nth-child(7) {
+.page-stagger > *:nth-child(7) {
   animation-delay: 0.43s;
 }
-.home-stagger > *:nth-child(8) {
+.page-stagger > *:nth-child(8) {
   animation-delay: 0.5s;
 }
 @media (prefers-reduced-motion: reduce) {
-  .home-stagger > * {
+  .page-stagger > * {
     animation: none !important;
     opacity: 1;
   }

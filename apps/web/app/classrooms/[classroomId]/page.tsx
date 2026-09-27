@@ -142,7 +142,7 @@ export default function ClassroomDetailPage() {
     <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
-      <div className="relative mx-auto max-w-6xl px-6 py-16">
+      <div className="page-stagger relative mx-auto max-w-6xl px-6 py-16">
         <KanjiMark glyph="級" className="absolute -right-6 top-0 text-[5rem] sm:text-[9rem]" />
 
         {toast && (
@@ -637,7 +637,7 @@ function StandaloneClassroomView({
   const isLive = !!classroom.openSession;
 
   return (
-    <div className="relative mx-auto max-w-2xl space-y-6 px-4 pb-28 pt-5 sm:px-6 sm:pt-8">
+    <div className="page-stagger relative mx-auto max-w-2xl space-y-6 px-4 pb-28 pt-5 sm:px-6 sm:pt-8">
       <Link href="/classrooms" className="inline-block font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-white/35">
         {t("classroomDetail.backToClassrooms")}
       </Link>

@@ -74,7 +74,7 @@ export default function HomePage() {
     <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
-      <div className="home-stagger relative mx-auto max-w-2xl space-y-8 px-4 pb-28 pt-5 sm:px-6 sm:pt-8">
+      <div className="page-stagger relative mx-auto max-w-2xl space-y-8 px-4 pb-28 pt-5 sm:px-6 sm:pt-8">
         <header className="px-1">
           <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-white/30">
             {formatDate(new Date().toISOString(), locale)}

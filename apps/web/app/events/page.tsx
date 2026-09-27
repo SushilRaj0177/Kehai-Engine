@@ -47,7 +47,7 @@ export default function DiscoverEventsPage() {
       <ClickRippleLayer className="relative min-h-screen">
         <PageGlow />
         <NavBar />
-        <div className="relative mx-auto max-w-2xl px-4 pb-28 pt-5 sm:px-6 sm:pt-8">
+        <div className="page-stagger relative mx-auto max-w-2xl px-4 pb-28 pt-5 sm:px-6 sm:pt-8">
           <h1 className="font-display text-[26px] font-black leading-tight text-white">{t("eventDiscover.title")}</h1>
 
           {events && events.length > 0 && (
@@ -104,7 +104,7 @@ export default function DiscoverEventsPage() {
     <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
-      <div className="relative mx-auto max-w-6xl px-6 py-20">
+      <div className="page-stagger relative mx-auto max-w-6xl px-6 py-20">
         <KanjiMark glyph="催事" className="absolute -right-6 top-0 text-[6rem] sm:text-[10rem]" />
         <span className="relative text-xs font-semibold uppercase tracking-widest text-shu-400">{t("eventDiscover.kicker")}</span>
         <h1 className="relative mt-3 font-display text-4xl font-black text-white md:text-5xl">{t("eventDiscover.title")}</h1>

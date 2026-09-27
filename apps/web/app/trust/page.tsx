@@ -66,7 +66,7 @@ export default function TrustPage() {
     <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
-      <div className="relative mx-auto max-w-3xl px-6 py-20">
+      <div className="page-stagger relative mx-auto max-w-3xl px-6 py-20">
         <KanjiMark glyph="信" className="absolute -right-6 top-0 text-[6rem] sm:text-[10rem]" />
 
         <span className="relative z-20 text-xs font-semibold uppercase tracking-widest text-shu-400">{t("trust.kicker")}</span>

@@ -70,7 +70,7 @@ export default function RegisterPage() {
       <ClickRippleLayer className="relative min-h-screen">
         <PageGlow />
         <NavBar />
-        <div className="relative mx-auto flex min-h-[calc(100vh-220px)] max-w-md flex-col justify-center px-5 py-10">
+        <div className="page-stagger relative mx-auto flex min-h-[calc(100vh-220px)] max-w-md flex-col justify-center px-5 py-10">
           <p className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-white/35">{t("auth.registerKicker")}</p>
           <h1 className="mt-1.5 font-display text-[26px] font-black leading-tight text-white">{t("auth.registerTitle")}</h1>
           <p className="mt-2 text-[14px] text-white/45">{t("auth.registerSubtitle")}</p>
@@ -92,7 +92,7 @@ export default function RegisterPage() {
     <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
-      <div className="relative mx-auto flex min-h-[calc(100vh-160px)] max-w-xl flex-col justify-center px-6 py-16">
+      <div className="page-stagger relative mx-auto flex min-h-[calc(100vh-160px)] max-w-xl flex-col justify-center px-6 py-16">
         <KanjiMark glyph="始" className="absolute -right-6 top-0 text-[7rem] sm:-right-10 sm:text-[12rem]" />
 
         <span className="relative z-20 text-xs font-semibold uppercase tracking-widest text-shu-400">{t("auth.registerKicker")}</span>

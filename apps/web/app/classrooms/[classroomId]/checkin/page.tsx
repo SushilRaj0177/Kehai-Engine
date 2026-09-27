@@ -141,7 +141,7 @@ export default function ClassroomCheckinPage() {
       <ClickRippleLayer className="relative min-h-screen">
         <PageGlow />
         <NavBar />
-        <div className="relative mx-auto max-w-md px-5 pb-28 pt-6 sm:px-6 sm:pt-8">
+        <div className="page-stagger relative mx-auto max-w-md px-5 pb-28 pt-6 sm:px-6 sm:pt-8">
           <h1 className="truncate text-center font-display text-[26px] font-black leading-tight text-white">
             {classroom?.name ?? t("attend.defaultTitle")}
           </h1>

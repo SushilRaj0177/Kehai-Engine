@@ -66,7 +66,7 @@ export default function OrgPage() {
       <ClickRippleLayer className="relative min-h-screen">
         <PageGlow />
         <NavBar />
-        <div className="relative mx-auto max-w-2xl space-y-6 px-4 pb-28 pt-5 sm:px-6 sm:pt-8">
+        <div className="page-stagger relative mx-auto max-w-2xl space-y-6 px-4 pb-28 pt-5 sm:px-6 sm:pt-8">
           <div className="flex items-start justify-between gap-3 px-1">
             <div className="min-w-0">
               <h1 className="truncate font-display text-[26px] font-black leading-tight text-white">{org.name}</h1>
@@ -185,7 +185,7 @@ export default function OrgPage() {
     <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
-      <div className="relative mx-auto max-w-6xl px-6 py-20">
+      <div className="page-stagger relative mx-auto max-w-6xl px-6 py-20">
         <KanjiMark glyph="催" className="absolute -right-6 top-0 text-[6rem] sm:text-[10rem]" />
         <div className="relative flex flex-wrap items-center justify-between gap-4">
           <div>

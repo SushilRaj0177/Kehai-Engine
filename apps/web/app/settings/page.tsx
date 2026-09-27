@@ -44,7 +44,7 @@ export default function SettingsPage() {
       <ClickRippleLayer className="relative min-h-screen">
         <PageGlow />
         <NavBar />
-        <div className="relative mx-auto max-w-2xl space-y-6 px-4 pb-28 pt-5 sm:px-6 sm:pt-8">
+        <div className="page-stagger relative mx-auto max-w-2xl space-y-6 px-4 pb-28 pt-5 sm:px-6 sm:pt-8">
           <h1 className="px-1 font-display text-[26px] font-black leading-tight text-white">{t("settings.title")}</h1>
           <AccountSection standalone />
           <ProfileSection standalone />
@@ -60,7 +60,7 @@ export default function SettingsPage() {
     <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
-      <div className="relative mx-auto max-w-2xl px-6 py-20">
+      <div className="page-stagger relative mx-auto max-w-2xl px-6 py-20">
         <KanjiMark glyph="設定" className="absolute -right-6 top-0 text-[6rem] sm:text-[10rem]" />
 
         <span className="relative z-20 text-xs font-semibold uppercase tracking-widest text-shu-400">

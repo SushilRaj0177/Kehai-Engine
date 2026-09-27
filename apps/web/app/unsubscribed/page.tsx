@@ -19,7 +19,7 @@ export default function UnsubscribedPage() {
     <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
-      <div className="relative mx-auto flex min-h-[calc(100vh-160px)] max-w-lg flex-col justify-center px-6 py-16 text-center">
+      <div className="page-stagger relative mx-auto flex min-h-[calc(100vh-160px)] max-w-lg flex-col justify-center px-6 py-16 text-center">
         <KanjiMark glyph="配" className="absolute -right-6 top-0 text-[6rem] sm:text-[10rem]" />
         <Card className="relative z-20">
           <CardBody className="py-10">
