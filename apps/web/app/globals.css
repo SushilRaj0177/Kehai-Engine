@@ -27,12 +27,26 @@ body {
   font-feature-settings: "ss01" on, "ss02" on;
 }
 
-/* PageGlow -- the dim ambient glow. This used to render brighter inside
-   the installed PWA ([data-standalone="true"], via StandaloneModeFlag),
-   split from a dimmer browser-tab default -- but the PWA look itself was
-   rejected in favor of this plain one, so both modes render identically
-   now and the split (and StandaloneModeFlag, no longer used by
-   anything) were removed rather than left as dead branching. */
+/* ------------------------------------------------------------------ */
+/* PWA-only redesign (approved from a mockup, see Home.dc.html /        */
+/* LiveSession.dc.html / Discover.dc.html previewed for this session):  */
+/* a dual diffuse corner-glow "instrument panel" language -- no flat     */
+/* fill, no glass blur, just a hairline border whose two diagonal        */
+/* corners each carry a hint of the ambient colour nearest them (warm    */
+/* upper-right, cool lower-left) via box-shadow, so panels read as cut    */
+/* into the page's own glow rather than boxes sitting on top of it.      */
+/*                                                                       */
+/* This has to be a CSS-level split, not a JSX one: SURFACE/HERO_SHADOW  */
+/* (Hud.tsx) and PageGlow render from the same ~19 page files regardless */
+/* of whether the app is installed or opened in a plain mobile-browser   */
+/* tab -- there's no separate route per mode, only different nav chrome  */
+/* (NavBar vs MobileBottomNav). [data-standalone="true"] on <html>       */
+/* (set by StandaloneModeFlag, mirroring useIsStandalone()) scopes the   */
+/* new look to the installed app; a browser tab keeps the plain,         */
+/* pre-redesign look below untouched.                                    */
+/* ------------------------------------------------------------------ */
+
+/* PageGlow -- browser-tab default: the plain, dim ambient glow. */
 .page-glow-shu {
   background-color: rgba(255, 45, 85, 0.1);
   filter: blur(150px);
@@ -41,21 +55,51 @@ body {
   background-color: rgba(34, 226, 245, 0.08);
   filter: blur(150px);
 }
+/* PWA: tighter, punchier corner glows -- felt more than seen as a wash,
+   closer to two colored lights in the room than a soft haze. Only
+   intensity/blur change here; position and size stay PageGlow's own
+   Tailwind utilities so this never fights their cascade order. */
+[data-standalone="true"] .page-glow-shu {
+  background-color: rgba(255, 45, 85, 0.3);
+  filter: blur(90px);
+}
+[data-standalone="true"] .page-glow-kehai {
+  background-color: rgba(34, 226, 245, 0.2);
+  filter: blur(90px);
+}
 
-/* SURFACE (Hud.tsx) -- a solid dark panel on a dark ground, no shadow.
-   Same story as PageGlow above: the installed-PWA-only transparent/
-   OLED-black treatment this used to switch to was rejected, so this is
-   the only version now. */
+/* SURFACE (Hud.tsx) -- browser-tab default: a solid dark panel on a dark
+   ground, no shadow. */
 .hud-surface {
   border-radius: 22px;
   border: 1px solid rgba(255, 255, 255, 0.07);
   background-color: rgba(10, 14, 20, 0.6);
 }
+/* PWA: no fill at all -- a hairline border plus the two diagonal glows
+   described above, so PageGlow shows straight through the card. */
+[data-standalone="true"] .hud-surface {
+  border-radius: 24px;
+  border-color: rgba(255, 255, 255, 0.09);
+  background-color: rgba(255, 255, 255, 0.015);
+  box-shadow:
+    0 24px 48px -28px rgba(0, 0, 0, 0.85),
+    6px -6px 30px -22px rgba(255, 45, 85, 0.35),
+    -6px 6px 30px -22px rgba(34, 226, 245, 0.22);
+}
 
-/* HERO_SHADOW (Hud.tsx) -- no separate shadow; the hero cards rely on
-   their own gradient fill alone. */
+/* HERO_SHADOW (Hud.tsx) -- browser-tab default: no separate shadow; the
+   hero cards rely on their own gradient fill alone. */
 .hud-hero-shadow {
   box-shadow: none;
+}
+/* PWA: the same dual corner-glow treatment as .hud-surface, since the
+   hero cards (LiveCard, NextEventCard, ...) carry their own gradient
+   fill instead of SURFACE's and need it added rather than swapped in. */
+[data-standalone="true"] .hud-hero-shadow {
+  box-shadow:
+    0 24px 48px -28px rgba(0, 0, 0, 0.85),
+    6px -6px 30px -22px rgba(255, 45, 85, 0.3),
+    -6px 6px 30px -22px rgba(34, 226, 245, 0.18);
 }
 
 ::selection {

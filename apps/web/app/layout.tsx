@@ -8,6 +8,7 @@ import { ApiBaseSetter } from "@/components/ApiBaseSetter";
 import { CustomCursor } from "@/components/ui/CustomCursor";
 import { PageTransition } from "@/components/PageTransition";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { StandaloneModeFlag } from "@/components/StandaloneModeFlag";
 
 // Space Grotesk carries the brand's actual display voice now — Noto Sans
 // JP's Latin glyphs are what made every heading read as generic/templated
@@ -86,6 +87,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             has no bottom nav at all, hence sm:pb-0. */}
         <body className="min-h-screen bg-void-950 pb-24 font-sans antialiased sm:pb-0">
           <ApiBaseSetter apiBase={apiBase} />
+          <StandaloneModeFlag />
           <CustomCursor />
           <LocaleProvider>
             <AuthProvider>

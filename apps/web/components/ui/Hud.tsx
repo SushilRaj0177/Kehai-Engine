@@ -14,14 +14,17 @@ export const KEHAI = "#5ff4ff";
 
 // Plain class names (defined in globals.css) rather than inline Tailwind
 // utility strings, so every one of the ~19 pages using SURFACE picks up a
-// change here without editing each file individually.
+// change here without editing each file individually -- including the
+// PWA-only redesign, which globals.css keys off [data-standalone="true"]
+// (set by StandaloneModeFlag) so it only ever applies to the installed
+// app, never a plain mobile-browser tab.
 export const SURFACE = "hud-surface";
 
 // For the one hero card per page (LiveCard, NextEventCard, …): these carry
 // their own gradient background instead of SURFACE's flat fill, so the
 // contrast that makes SURFACE read as elevated has to come from that
 // gradient's own stops, not from here — this only adds the matching soft
-// shadow.
+// shadow (also split per mode in globals.css, see SURFACE above).
 export const HERO_SHADOW = "hud-hero-shadow";
 
 export function SectionHead({

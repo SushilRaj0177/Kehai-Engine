@@ -101,6 +101,7 @@ function TabRow({ tabs }: { tabs: { key: string; href: string; label: string; ic
   const trackRef = useRef<HTMLDivElement>(null);
   const indicatorRef = useRef<HTMLSpanElement>(null);
   const bounceRef = useRef<HTMLSpanElement>(null);
+  const barRef = useRef<HTMLSpanElement>(null);
   const tabRefs = useRef(new Map<string, HTMLDivElement>());
   const activeKey = tabs.find((tab) => tab.active)?.key ?? null;
 
@@ -113,11 +114,13 @@ function TabRow({ tabs }: { tabs: { key: string; href: string; label: string; ic
     const track = trackRef.current;
     const indicator = indicatorRef.current;
     const bounce = bounceRef.current;
+    const bar = barRef.current;
     const activeEl = activeKey ? tabRefs.current.get(activeKey) : null;
     if (!track || !indicator) return;
 
     if (!activeEl) {
       indicator.style.opacity = "0";
+      if (bar) bar.style.opacity = "0";
       return;
     }
 
@@ -143,6 +146,18 @@ function TabRow({ tabs }: { tabs: { key: string; href: string; label: string; ic
     // away this translate() every time it played, snapping the pill to
     // the track's top-left corner mid-bounce.
     indicator.style.transform = `translate(${centerX - SIZE / 2}px, ${centerY - SIZE / 2}px)`;
+
+    // A second, independent indicator: a slim glowing bar riding along the
+    // top of the dock above the active tab -- the PWA-only redesign's
+    // "elevated chip" identity (see the mockup previewed this session),
+    // layered on top of the existing circular glow rather than replacing
+    // it. Only translateX moves (the bar's own top offset is fixed via
+    // CSS), so it never needs its own width/height animation.
+    if (bar) {
+      const BAR_WIDTH = 32;
+      bar.style.opacity = "1";
+      bar.style.transform = `translateX(${centerX - BAR_WIDTH / 2}px)`;
+    }
 
     // Restart the landing-bounce keyframe on every tab change -- a CSS
     // animation on an element that never unmounts only plays once ever
@@ -170,6 +185,12 @@ function TabRow({ tabs }: { tabs: { key: string; href: string; label: string; ic
           className="block h-full w-full rounded-full bg-shu-500/15 drop-shadow-[0_0_8px_rgba(255,45,85,0.45)]"
         />
       </span>
+      <span
+        ref={barRef}
+        aria-hidden
+        className="pointer-events-none absolute -top-[9px] left-0 h-[3px] w-8 rounded-full bg-shu-500 opacity-0 shadow-[0_0_10px_rgba(255,45,85,0.7)] transition-[transform,opacity] duration-500"
+        style={{ transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)" }}
+      />
       {tabs.map((tab) => (
         <TabLink
           key={tab.key}
