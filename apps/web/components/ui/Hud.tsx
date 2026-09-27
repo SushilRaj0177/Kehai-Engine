@@ -12,25 +12,21 @@ import { useEffect, useState } from "react";
 export const SHU = "#ff2d55";
 export const KEHAI = "#5ff4ff";
 
-// True OLED black rather than a navy-charcoal gradient: the page's own
-// ambient glow (PageGlow) is never actually black anywhere on it, so a
-// genuine #000 card reads as a real void cut into that atmosphere
-// instead of one more dark-gray box competing with it. A flat #000 fill
-// alone would read as a hole, not a raised surface, so this adds two
-// restrained cues instead of any visible color: a radial sheen so faint
-// it's felt more than seen (a convex highlight near the top-left, as if
-// lit from one direction, fading to true black by the card's edges —
-// nowhere on it is actually a visible gray), and a crisp 1px top-edge
-// highlight for a glass-like bevel. Both stop well short of a glossy
-// "3D plastic" look; the card should still read as matte and dark, just
-// not flat.
-// The base layer is linear-gradient(#000,#000), not a plain hex color --
-// `background-image` (what a second comma-separated layer resolves to)
-// only accepts gradients/url()/none, never a literal color, so a solid
-// black has to be spelled as a degenerate two-stop gradient to stack
-// under the sheen this way.
+// Genuinely transparent, not glass: no backdrop-blur, no translucent
+// fill sitting on top of the page — the card is just a boundary (a
+// border, a corner-anchored sheen, a shadow for lift) with nothing
+// behind it but the page's own ambient glow (PageGlow) showing through
+// completely unblurred. A `backdrop-blur` treatment always reads as a
+// pane of frosted material laid over the page — that's what "glass" and
+// "translucent" both meant here, and both got called cheap. Dropping the
+// blur AND the fill entirely, rather than just lowering the fill's
+// opacity, is what makes this actually transparent rather than "glass
+// but fainter": the red/cyan glow bleeds straight through, crisp, with
+// nothing softening or tinting it in transit. The corner sheen keeps
+// the card from reading as pure empty space — a hint of surface, not a
+// hole — without needing any fill to carry it.
 export const SURFACE =
-  "rounded-[22px] border border-white/[0.09] bg-[radial-gradient(130%_120%_at_28%_-10%,rgba(255,255,255,0.05),rgba(255,255,255,0)_55%),linear-gradient(#000,#000)] shadow-[0_24px_52px_-22px_rgba(0,0,0,0.85),inset_0_1px_0_0_rgba(255,255,255,0.08)]";
+  "rounded-[22px] border border-white/[0.14] bg-[radial-gradient(120%_110%_at_25%_-10%,rgba(255,255,255,0.06),rgba(255,255,255,0)_60%)] shadow-[0_20px_44px_-24px_rgba(0,0,0,0.7),inset_0_1px_0_0_rgba(255,255,255,0.08)]";
 
 // For the one hero card per page (LiveCard, NextEventCard, …): these carry
 // their own gradient background instead of SURFACE's flat fill, so the
