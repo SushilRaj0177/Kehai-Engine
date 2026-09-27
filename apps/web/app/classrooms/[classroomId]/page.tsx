@@ -24,7 +24,7 @@ import { MyAttendanceHistory } from "@/components/MyAttendanceHistory";
 import { AttendanceHeatmap } from "@/components/AttendanceHeatmap";
 import { SessionTrendChart } from "@/components/charts/SessionTrendChart";
 import { LiveIndicator } from "@/components/ui/LiveIndicator";
-import { SURFACE, SectionHead, MetricStrip, Dial, PulseDot, HudTabs } from "@/components/ui/Hud";
+import { SURFACE, HERO_SHADOW, SectionHead, MetricStrip, Dial, PulseDot, HudTabs } from "@/components/ui/Hud";
 import { useClassroom, useClassroomHeatmap, useClassroomRoster, useClassroomSessions } from "@/lib/hooks";
 import { useIsStandalone } from "@/lib/useStandalone";
 import { subscribeToClassroom } from "@/lib/realtime";
@@ -865,7 +865,7 @@ function StudentStandaloneBody({
 
   return (
     <div className="space-y-6">
-      <div className={`relative overflow-hidden rounded-[26px] border p-5 ${isLive ? "border-kehai-500/25" : "border-white/[0.07]"}`}>
+      <div className={`relative overflow-hidden rounded-[26px] border p-5 ${HERO_SHADOW} ${isLive ? "border-kehai-500/25" : "border-white/[0.07]"}`}>
         <div
           aria-hidden
           className="absolute inset-0 -z-10"

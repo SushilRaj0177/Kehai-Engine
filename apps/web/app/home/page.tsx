@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { LoadingBlock } from "@/components/ui/States";
 import { PageGlow } from "@/components/ui/PageGlow";
 import { ClickRippleLayer } from "@/components/ui/ClickRipple";
-import { SHU, KEHAI, SURFACE, SectionHead, MetricStrip, Meter, Avatar, Dial, PulseDot, FlameIcon, useElapsed } from "@/components/ui/Hud";
+import { SHU, KEHAI, SURFACE, HERO_SHADOW, SectionHead, MetricStrip, Meter, Avatar, Dial, PulseDot, FlameIcon, useElapsed } from "@/components/ui/Hud";
 import { useAuth } from "@/lib/auth-context";
 import {
   useMyRegistrations,
@@ -238,7 +238,7 @@ function LiveCard({
   const accent = isLive ? KEHAI : SHU;
 
   return (
-    <div className={`relative overflow-hidden rounded-[26px] border p-5 ${isLive ? "border-kehai-500/25" : "border-white/[0.07]"}`}>
+    <div className={`relative overflow-hidden rounded-[26px] border p-5 ${HERO_SHADOW} ${isLive ? "border-kehai-500/25" : "border-white/[0.07]"}`}>
       <div
         aria-hidden
         className="absolute inset-0 -z-10"
@@ -514,7 +514,7 @@ function NextEventCard({
 }) {
   const accent = canCheckInNow ? KEHAI : SHU;
   return (
-    <div className={`relative overflow-hidden rounded-[26px] border p-5 ${canCheckInNow ? "border-kehai-500/25" : "border-white/[0.07]"}`}>
+    <div className={`relative overflow-hidden rounded-[26px] border p-5 ${HERO_SHADOW} ${canCheckInNow ? "border-kehai-500/25" : "border-white/[0.07]"}`}>
       <div
         aria-hidden
         className="absolute inset-0 -z-10"

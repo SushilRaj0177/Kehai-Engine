@@ -15,8 +15,18 @@ export const KEHAI = "#5ff4ff";
 // One surface for the whole page: a solid dark panel on a dark ground,
 // not a translucent white "glass" overlay. Cards read as physical pieces
 // of an instrument panel instead of frosted sheets floating on a
-// gradient.
-export const SURFACE = "rounded-2xl border border-white/[0.07] bg-void-900/60";
+// gradient. The soft ambient shadow plus a hairline top highlight is what
+// separates a panel that visibly sits above the page from a flat bordered
+// box — without it every card reads as a wireframe rectangle regardless
+// of what's inside it.
+export const SURFACE =
+  "rounded-[22px] border border-white/[0.06] bg-void-900/60 shadow-[0_24px_48px_-28px_rgba(0,0,0,0.7),inset_0_1px_0_0_rgba(255,255,255,0.05)]";
+
+// For the one hero card per page (LiveCard, NextEventCard, …): these carry
+// their own gradient background instead of SURFACE's flat fill, so they
+// need the same elevation spelled out separately rather than composed
+// from SURFACE.
+export const HERO_SHADOW = "shadow-[0_28px_56px_-26px_rgba(0,0,0,0.75),inset_0_1px_0_0_rgba(255,255,255,0.06)]";
 
 export function SectionHead({
   title,

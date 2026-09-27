@@ -15,7 +15,7 @@ import { usePublicEvents } from "@/lib/hooks";
 import { formatDateRange, formatDate } from "@/lib/format";
 import { useLocale } from "@/lib/i18n";
 import { useIsStandalone } from "@/lib/useStandalone";
-import { SearchIcon } from "@/components/ui/Hud";
+import { SearchIcon, SURFACE } from "@/components/ui/Hud";
 import type { EventSummary } from "@/lib/types";
 
 type StatusFilter = "all" | "ACTIVE" | "PUBLISHED";
@@ -88,7 +88,7 @@ export default function DiscoverEventsPage() {
             ) : !filtered?.length ? (
               <EmptyState glyph="無" title={t("eventDiscover.noMatchTitle")} description={t("eventDiscover.noMatchDescription")} />
             ) : (
-              <div className="divide-y divide-white/[0.06] rounded-2xl border border-white/[0.08] bg-white/[0.02]">
+              <div className={`${SURFACE} divide-y divide-white/[0.05] overflow-hidden`}>
                 {filtered.map((event) => (
                   <EventRow key={event.id} event={event} locale={locale} t={t} />
                 ))}
