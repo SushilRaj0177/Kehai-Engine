@@ -176,7 +176,7 @@ function StandaloneRegistrationGroup({
       <SectionHead title={label} />
       <div className={`${SURFACE} divide-y divide-white/[0.05] overflow-hidden`}>
         {registrations.map((r) => (
-          <Link key={r.event.id} href={`/events/${r.event.id}`} className="flex items-center gap-3 px-4 py-3.5">
+          <Link key={r.event.id} href={`/events/${r.event.id}`} className="tap-row flex items-center gap-3 px-4 py-3.5">
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-1.5">
                 <p className="truncate text-[14px] font-semibold text-white/85">{r.event.name}</p>

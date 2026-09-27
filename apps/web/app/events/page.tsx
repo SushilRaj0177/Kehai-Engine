@@ -194,7 +194,7 @@ function EventRow({
 }) {
   const dotColor = event.status === "ACTIVE" ? "bg-kehai-400" : "bg-shu-400";
   return (
-    <Link href={`/events/${event.id}`} className="flex items-center gap-3 px-4 py-3.5 active:bg-white/[0.03]">
+    <Link href={`/events/${event.id}`} className="tap-row flex items-center gap-3 px-4 py-3.5">
       <span className={`mt-1.5 h-2 w-2 shrink-0 self-start rounded-full ${dotColor}`} aria-hidden />
       <div className="min-w-0 flex-1">
         <p className="truncate text-[15px] font-semibold text-white">{event.name}</p>

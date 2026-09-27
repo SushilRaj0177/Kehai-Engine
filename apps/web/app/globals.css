@@ -583,3 +583,26 @@ body {
     animation: none !important;
   }
 }
+
+/* Shared press feedback for tappable list rows (a classroom row, an
+   upcoming-event row, …) -- the same bouncy-settle easing the bottom
+   nav's tap feedback uses, so every "this is a real button, not just
+   text" cue in the app comes from one consistent spring instead of each
+   list independently reinventing (or forgetting) its own :active state. */
+.tap-row {
+  transition-property: transform, background-color;
+  transition-duration: 0.15s;
+  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.tap-row:active {
+  transform: scale(0.985);
+  background-color: rgba(255, 255, 255, 0.03);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tap-row {
+    transition: background-color 0.15s ease-out;
+  }
+  .tap-row:active {
+    transform: none;
+  }
+}

@@ -487,7 +487,7 @@ function EventCard({
   // list here is denser (stacked rows, not a spaced-out grid) than the
   // tilt effect was designed to sit in.
   return (
-    <Link href={`/orgs/${org.slug}/events/${event.id}`}>
+    <Link href={`/orgs/${org.slug}/events/${event.id}`} className={compact ? "tap-row block rounded-2xl" : undefined}>
       {compact ? body : <TiltCard className="h-full rounded-2xl">{body}</TiltCard>}
     </Link>
   );
@@ -626,7 +626,7 @@ function StandaloneEventRow({
   t: (key: string, vars?: Record<string, string | number>) => string;
 }) {
   return (
-    <Link href={`/orgs/${org.slug}/events/${event.id}`} className="flex items-center gap-3 px-4 py-3.5">
+    <Link href={`/orgs/${org.slug}/events/${event.id}`} className="tap-row flex items-center gap-3 px-4 py-3.5">
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <p className="truncate text-[14px] font-semibold text-white/85">{event.name}</p>

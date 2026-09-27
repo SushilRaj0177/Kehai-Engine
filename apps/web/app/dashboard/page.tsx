@@ -81,7 +81,7 @@ export default function DashboardPage() {
             ) : (
               <div className={`${SURFACE} divide-y divide-white/[0.05] overflow-hidden`}>
                 {orgs.map((org) => (
-                  <Link key={org.id} href={`/orgs/${org.slug}`} className="flex items-center gap-3 px-4 py-3.5">
+                  <Link key={org.id} href={`/orgs/${org.slug}`} className="tap-row flex items-center gap-3 px-4 py-3.5">
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.09] bg-white/[0.04] font-display text-base font-black text-white/90">
                       {org.name.trim().charAt(0).toUpperCase()}
                     </span>

@@ -531,7 +531,7 @@ function CreateClassroomForm({ onCreated, compact = false }: { onCreated: () => 
 
 function EnrolledRow({ enrollment: e, t }: { enrollment: EnrolledClassroom; t: (key: string, vars?: Record<string, string | number>) => string }) {
   return (
-    <Link href={`/classrooms/${e.classroom.id}`} className="flex items-center gap-3 px-4 py-3.5">
+    <Link href={`/classrooms/${e.classroom.id}`} className="tap-row flex items-center gap-3 px-4 py-3.5">
       <div className="min-w-0 flex-1">
         <p className="truncate text-[14px] font-semibold text-white/85">{e.classroom.name}</p>
         <p className="mt-0.5 truncate text-[12px] text-white/35">
@@ -564,7 +564,7 @@ function TeachingRow({
 }) {
   return (
     <div className="px-4 py-3.5">
-      <Link href={`/classrooms/${c.id}`} className="block">
+      <Link href={`/classrooms/${c.id}`} className="tap-row block rounded-lg">
         <p className="truncate text-[14px] font-semibold text-white/85">{c.name}</p>
         <p className="mt-0.5 truncate text-[12px] text-white/35">
           {[c.courseCode, c.semesterLabel].filter(Boolean).join(" · ") || " "}

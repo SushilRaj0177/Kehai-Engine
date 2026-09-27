@@ -129,8 +129,8 @@ export const Button = forwardRef<HTMLButtonElement, Props>(function Button(
         style={style}
         className={cn(
           "inline-flex items-center justify-center rounded-lg font-medium text-white/70",
-          "transition-colors duration-150 hover:bg-white/[0.06] hover:text-white",
-          "disabled:opacity-40 disabled:cursor-not-allowed",
+          "transition-[background-color,color,transform] duration-150 hover:bg-white/[0.06] hover:text-white active:scale-[0.96]",
+          "disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-shu-400/60",
           ghostSizes[size],
           className
@@ -151,7 +151,12 @@ export const Button = forwardRef<HTMLButtonElement, Props>(function Button(
         style={style}
         className={cn(
           "group inline-flex items-center justify-center border-l-2 border-shu-500 bg-shu-500/[0.07] font-mono font-semibold uppercase tracking-[0.08em] text-shu-200",
-          "transition-colors duration-150 hover:bg-shu-500/[0.16] hover:text-white",
+          // No active:scale here (unlike the other variants) -- this reads
+          // as an inline terminal prompt, not a card, so a shrink-on-press
+          // would look like a rendering glitch rather than a button
+          // press. A quick brighter flash on press is the honest
+          // equivalent of that same feedback for this shape.
+          "transition-colors duration-150 hover:bg-shu-500/[0.16] hover:text-white active:bg-shu-500/[0.24]",
           "disabled:opacity-40 disabled:cursor-not-allowed",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-shu-400/60",
           terminalSizes[size],

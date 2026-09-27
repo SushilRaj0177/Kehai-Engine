@@ -440,7 +440,7 @@ function AttendeeSection({
           <SectionHead title={t("home.classroomsHeading")} />
           <div className={`${SURFACE} divide-y divide-white/[0.05] overflow-hidden`}>
             {enrolled.map((e) => (
-              <Link key={e.classroom.id} href={`/classrooms/${e.classroom.id}`} className="flex items-center gap-3 px-4 py-3.5">
+              <Link key={e.classroom.id} href={`/classrooms/${e.classroom.id}`} className="tap-row flex items-center gap-3 px-4 py-3.5">
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[14px] font-semibold text-white/85">{e.classroom.name}</p>
                   <p className="mt-0.5 truncate text-[12px] text-white/35">{e.classroom.teacherName}</p>
@@ -486,7 +486,7 @@ function AttendeeSection({
           <SectionHead title={t("home.upcomingHeading")} />
           <div className={`${SURFACE} divide-y divide-white/[0.05] overflow-hidden`}>
             {later.map((r) => (
-              <Link key={r.event.id} href={`/events/${r.event.id}`} className="flex items-center justify-between gap-3 px-4 py-3">
+              <Link key={r.event.id} href={`/events/${r.event.id}`} className="tap-row flex items-center justify-between gap-3 px-4 py-3">
                 <div className="min-w-0">
                   <p className="truncate text-[14px] font-medium text-white/80">{r.event.name}</p>
                   <p className="mt-0.5 truncate text-[12px] text-white/35">{r.event.venue}</p>
@@ -595,7 +595,7 @@ function OrgSection({
           <p className="px-4 py-6 text-center text-[13px] text-white/35">{t("home.nextEventNone")}</p>
         ) : (
           events.map((e) => (
-            <Link key={e.id} href={`/orgs/${slug}/events/${e.id}`} className="block px-4 py-3">
+            <Link key={e.id} href={`/orgs/${slug}/events/${e.id}`} className="tap-row block px-4 py-3">
               <div className="flex items-center justify-between gap-3">
                 <p className="truncate text-[14px] font-semibold text-white/85">{e.name}</p>
                 <span className="shrink-0 font-mono text-[13px] font-bold text-white">{Math.round(e.attendanceRate * 100)}%</span>
