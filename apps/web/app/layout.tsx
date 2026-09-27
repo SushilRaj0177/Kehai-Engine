@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Noto_Sans_JP, Space_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
+import { ViewTransitions } from "next-view-transitions";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { LocaleProvider } from "@/lib/i18n";
@@ -71,21 +72,28 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const apiBase = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
   return (
-    <html lang="en" className={`${notoJp.variable} ${displayFont.variable} ${inter.variable} ${mono.variable}`}>
-      {/* pb-24 clears MobileBottomNav's floating pill -- its own h-16
-          (64px) plus the gap it now floats above the edge by, plus its
-          safe-area padding -- with room to spare, so the fixed bar never
-          overlaps a page's own bottom content (including Footer). Desktop
-          has no bottom nav at all, hence sm:pb-0. */}
-      <body className="min-h-screen bg-void-950 pb-24 font-sans antialiased sm:pb-0">
-        <ApiBaseSetter apiBase={apiBase} />
-        <CustomCursor />
-        <LocaleProvider>
-          <AuthProvider>
-            <PageTransition>{children}</PageTransition>
-          </AuthProvider>
-        </LocaleProvider>
-      </body>
-    </html>
+    // ViewTransitions must wrap <html> itself (next-view-transitions'
+    // contract) -- it's what lets useTransitionRouter/its <Link> wrap
+    // Next's navigation in a real document.startViewTransition(), which is
+    // also the only reason the bottom nav's active-pill morph (its
+    // view-transition-name in globals.css) has anything to animate between.
+    <ViewTransitions>
+      <html lang="en" className={`${notoJp.variable} ${displayFont.variable} ${inter.variable} ${mono.variable}`}>
+        {/* pb-24 clears MobileBottomNav's floating pill -- its own h-16
+            (64px) plus the gap it now floats above the edge by, plus its
+            safe-area padding -- with room to spare, so the fixed bar never
+            overlaps a page's own bottom content (including Footer). Desktop
+            has no bottom nav at all, hence sm:pb-0. */}
+        <body className="min-h-screen bg-void-950 pb-24 font-sans antialiased sm:pb-0">
+          <ApiBaseSetter apiBase={apiBase} />
+          <CustomCursor />
+          <LocaleProvider>
+            <AuthProvider>
+              <PageTransition>{children}</PageTransition>
+            </AuthProvider>
+          </LocaleProvider>
+        </body>
+      </html>
+    </ViewTransitions>
   );
 }

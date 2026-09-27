@@ -501,3 +501,85 @@ body {
     animation: none !important;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Native View Transitions (Chromium-based browsers via next-view-      */
+/* transitions) -- this is the real page-switch motion; .page-transition */
+/* above is only the fallback for browsers that don't support this API. */
+/* ------------------------------------------------------------------ */
+
+/* The default UA styling cross-fades ::view-transition-old(root) and
+   ::view-transition-new(root) linearly over 0.25s. That reads as a flat
+   dissolve. This replaces it with a "shared axis" move (Material Design's
+   term for it) -- the outgoing page recedes (shrinks + fades), the
+   incoming page arrives from slightly enlarged back to its natural size
+   -- which reads as real depth/motion between two places instead of one
+   image dissolving into another. Both pseudo-elements are rendered into
+   an isolated top-layer snapshot tree (not the live document), so
+   animating transform here never touches the actual page's layout or any
+   `position: fixed` element's containing block -- unlike the fallback
+   fade above, which has to stay opacity-only for exactly that reason. */
+::view-transition-group(root) {
+  animation-duration: 0.42s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+::view-transition-old(root) {
+  animation: page-vt-exit 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+::view-transition-new(root) {
+  animation: page-vt-enter 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes page-vt-exit {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+@keyframes page-vt-enter {
+  from {
+    opacity: 0;
+    transform: scale(1.02);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* The bottom nav's active-tab pill (MobileBottomNav.tsx) carries this
+   name on whichever tab is currently active -- exactly one element per
+   page, which is what view-transition-name requires. Because the name
+   survives the DOM swap (old page had it on "Home", new page has it on
+   "Discover"), the browser interpolates its position/size on its own: the
+   pill visibly glides from the old active icon to the new one instead of
+   just appearing there, which a plain remount could never do -- this is
+   the whole reason the nav uses the View Transitions Link/router at all,
+   not just the nicer root cross-fade. */
+.nav-pill-active {
+  view-transition-name: nav-pill;
+}
+/* Overrides only duration/easing on the browser's own auto-generated
+   position/size morph -- a bouncier settle than the root transition's,
+   since a small pill covering real distance reads better with a bit of
+   overshoot than a linear glide. The icon glyph itself genuinely differs
+   between tabs (home vs. compass, say), so the UA's default old/new
+   cross-fade is left alone deliberately: it dissolves the old icon into
+   the new one at the same time the pill is sliding, which is the point --
+   a silent glyph swap partway through the glide would look like a glitch,
+   not a design choice. */
+::view-transition-group(nav-pill) {
+  animation-duration: 0.38s;
+  animation-timing-function: cubic-bezier(0.34, 1.15, 0.64, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}

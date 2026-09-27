@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
+import { Link } from "next-view-transitions";
 import { NavBar } from "@/components/NavBar";
 import { Card, CardBody } from "@/components/ui/Card";
 import { TiltCard } from "@/components/ui/TiltCard";

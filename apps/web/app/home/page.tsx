@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { Link } from "next-view-transitions";
 import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/Button";
 import { LoadingBlock } from "@/components/ui/States";

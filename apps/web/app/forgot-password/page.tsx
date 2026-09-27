@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "next-view-transitions";
 import { useState } from "react";
 import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/Button";

@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { Link } from "next-view-transitions";
+import { usePathname } from "next/navigation";
+import { useTransitionRouter as useRouter } from "next-view-transitions";
 import { useLayoutEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useLocale } from "@/lib/i18n";

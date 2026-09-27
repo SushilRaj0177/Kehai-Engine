@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { Link } from "next-view-transitions";
 import { useClassroomRoster } from "@/lib/hooks";
 import { apiFetch, ApiError } from "@/lib/api";
 import { Button } from "./ui/Button";

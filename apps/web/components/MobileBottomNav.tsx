@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "next-view-transitions";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { useLocale } from "@/lib/i18n";
@@ -108,10 +108,14 @@ function TabLink({ href, active, label, icon }: { href: string; active: boolean;
       {/* Icon-only: the label moved to aria-label. The active tab still
           gets a filled pill behind its icon rather than a bare color
           swap -- a lone tinted glyph among four identical ones is easy to
-          miss at a glance; a shape you can pick out peripherally isn't. */}
+          miss at a glance; a shape you can pick out peripherally isn't.
+          `nav-pill-active` (globals.css) gives whichever tab is currently
+          active a shared view-transition-name, so on a real browser
+          navigation the pill glides from the old active tab to this one
+          instead of just popping into existence here. */}
       <span
         className={`flex h-11 w-11 items-center justify-center rounded-full transition-colors ${
-          active ? "bg-shu-500/15 drop-shadow-[0_0_8px_rgba(255,45,85,0.45)]" : ""
+          active ? "nav-pill-active bg-shu-500/15 drop-shadow-[0_0_8px_rgba(255,45,85,0.45)]" : ""
         }`}
       >
         {icon}

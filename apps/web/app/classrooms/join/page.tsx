@@ -1,6 +1,7 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useTransitionRouter as useRouter } from "next-view-transitions";
 import { NavBar } from "@/components/NavBar";
 import { Card, CardBody } from "@/components/ui/Card";
 import { KanjiMark } from "@/components/ui/KanjiMark";
