@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef, useState } from "react";
 import { Link } from "next-view-transitions";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
@@ -91,30 +92,58 @@ function LoggedOutTabs() {
 }
 
 function TabLink({ href, active, label, icon }: { href: string; active: boolean; label: string; icon: React.ReactNode }) {
+  // A tiny local burst list, not the app-wide ClickRippleLayer -- that
+  // one renders inside each page's own scrollable root at a lower
+  // z-index than this `fixed` nav's opaque background, so it's never
+  // actually visible on a nav tap no matter how it's positioned. This
+  // stays self-contained to the ~44px pill and above everything else in
+  // the nav's own stacking context.
+  const [blooms, setBlooms] = useState<number[]>([]);
+  const nextBloomId = useRef(0);
+
+  function spawnBloom() {
+    const id = nextBloomId.current++;
+    setBlooms((prev) => [...prev, id]);
+    window.setTimeout(() => {
+      setBlooms((prev) => prev.filter((b) => b !== id));
+    }, 500);
+  }
+
   return (
     <Link
       href={href}
       aria-label={label}
+      onPointerDown={spawnBloom}
       // active: here is Tailwind's :active pseudo-class (the CSS state
       // while pressed), unrelated to the `active` prop (whether this is
-      // the current route) despite the name collision -- it's what gives
-      // every tap its own instant press-down feedback, independent of
-      // navigation ever completing.
-      className={`flex flex-1 items-center justify-center transition-colors duration-150 active:scale-90 ${
+      // the current route) despite the name collision. The press itself
+      // is an asymmetric squash (flatter on Y than X) rather than a
+      // uniform shrink -- reads as a soft, compressible pill instead of
+      // the whole tap target just shrinking in place -- and springs back
+      // past 1.0 on release via the overshoot easing below.
+      className={`relative flex flex-1 items-center justify-center transition-colors duration-150 active:scale-x-[0.88] active:scale-y-[0.8] ${
         active ? "text-shu-300" : "text-white/45 active:text-white/70"
       }`}
       style={{ transitionProperty: "color, transform", transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)" }}
     >
+      {blooms.map((id) => (
+        <span
+          key={id}
+          aria-hidden
+          className="nav-tap-bloom pointer-events-none absolute left-1/2 top-1/2 h-11 w-11 rounded-full bg-white/25"
+        />
+      ))}
       {/* Icon-only: the label moved to aria-label. The active tab still
           gets a filled pill behind its icon rather than a bare color
           swap -- a lone tinted glyph among four identical ones is easy to
           miss at a glance; a shape you can pick out peripherally isn't.
           `nav-pill-active` (globals.css) gives whichever tab is currently
-          active a shared view-transition-name, so on a real browser
-          navigation the pill glides from the old active tab to this one
-          instead of just popping into existence here. */}
+          active a shared view-transition-name plus a landing-bounce
+          keyframe, so on a real browser navigation the pill glides from
+          the old active tab to this one and settles with a pop instead
+          of just appearing here. */}
       <span
-        className={`flex h-11 w-11 items-center justify-center rounded-full transition-colors ${
+        className={`relative flex h-11 w-11 items-center justify-center rounded-full transition-colors ${
           active ? "nav-pill-active bg-shu-500/15 drop-shadow-[0_0_8px_rgba(255,45,85,0.45)]" : ""
         }`}
       >

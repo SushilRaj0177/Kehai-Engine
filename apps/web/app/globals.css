@@ -610,3 +610,73 @@ body {
     transform: none;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Bottom nav: elastic landing bounce + a tap flash that's actually     */
+/* visible (see MobileBottomNav.tsx for why the app-wide ripple isn't). */
+/* ------------------------------------------------------------------ */
+
+/* Plays once whenever a tab's pill becomes the active one -- i.e. on
+   every navigation, since MobileBottomNav remounts fresh per page. This
+   is the baseline "something alive just landed here" cue every browser
+   gets, independent of View Transitions support. On Chromium, it runs
+   alongside the native position/size glide (::view-transition-group(nav-
+   pill) in this file) rather than waiting for it to finish -- the group's
+   own easing already overshoots past 1.0 before settling, so what you
+   see there is a glide that's already bouncy; this adds the same
+   character on top and is what actually plays start-to-finish on
+   Firefox/Safari, which don't run that glide at all. */
+@keyframes nav-pill-pop {
+  0% {
+    transform: scale(0.55);
+    opacity: 0.35;
+  }
+  55% {
+    transform: scale(1.22);
+    opacity: 1;
+  }
+  75% {
+    transform: scale(0.92);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.nav-pill-active {
+  animation: nav-pill-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* A soft radial bloom confined to the ~44px pill, spawned on pointerdown
+   (MobileBottomNav.tsx) and left to fade on its own -- unlike the global
+   ClickRippleLayer glyph-burst, which renders at a lower z-index than
+   this nav's own opaque background and is invisible here no matter how
+   hard you tap. Kept separate from .nav-pill-active (which only exists
+   on the currently active tab) since this needs to fire on every tap,
+   including ones that don't change the active tab. */
+@keyframes nav-tap-bloom {
+  from {
+    opacity: 0.6;
+    transform: translate(-50%, -50%) scale(0.35);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.7);
+  }
+}
+.nav-tap-bloom {
+  /* left/top: 50% + the keyframe's own translate(-50%,-50%) is the
+     centering -- a CSS animation's `transform` fully replaces the
+     property for its duration, so any centering done via a separate
+     Tailwind transform utility on this element would just get
+     overwritten the instant the animation starts. */
+  animation: nav-tap-bloom 0.5s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-pill-active {
+    animation: none !important;
+  }
+  .nav-tap-bloom {
+    display: none !important;
+  }
+}
