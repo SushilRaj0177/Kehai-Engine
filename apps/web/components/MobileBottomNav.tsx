@@ -159,7 +159,8 @@ function TabRow({ tabs }: { tabs: { key: string; href: string; label: string; ic
       <span
         ref={indicatorRef}
         aria-hidden
-        className="pointer-events-none absolute left-0 top-0 opacity-0 transition-[transform,width,height] duration-300 ease-out"
+        className="pointer-events-none absolute left-0 top-0 opacity-0 transition-[transform,width,height] duration-500"
+        style={{ transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)" }}
       >
         <span
           ref={bounceRef}
@@ -210,7 +211,7 @@ function TabLink({
     setBlooms((prev) => [...prev, id]);
     window.setTimeout(() => {
       setBlooms((prev) => prev.filter((b) => b !== id));
-    }, 500);
+    }, 650);
   }
 
   return (
@@ -229,14 +230,17 @@ function TabLink({
         // active: here is Tailwind's :active pseudo-class (the CSS state
         // while pressed), unrelated to the `active` prop (whether this is
         // the current route) despite the name collision. The press itself
-        // is an asymmetric squash (flatter on Y than X) rather than a
+        // is a light, asymmetric squash (flatter on Y than X) rather than a
         // uniform shrink -- reads as a soft, compressible pill instead of
-        // the whole tap target just shrinking in place -- and springs back
-        // past 1.0 on release via the overshoot easing below.
-        className={`flex flex-1 items-center justify-center transition-colors duration-150 active:scale-x-[0.88] active:scale-y-[0.8] ${
+        // the whole tap target just shrinking in place. It used to spring
+        // back past 1.0 on release (an overshoot easing) -- that's the
+        // "thump": settling to a pure deceleration curve with no bounce
+        // past rest, and a shallower squash, reads as a gentle press
+        // instead of a jab.
+        className={`flex flex-1 items-center justify-center transition-colors duration-200 active:scale-x-[0.94] active:scale-y-[0.9] ${
           active ? "text-shu-300" : "text-white/45 active:text-white/70"
         }`}
-        style={{ transitionProperty: "color, transform", transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)" }}
+        style={{ transitionProperty: "color, transform", transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)" }}
       >
         {blooms.map((id) => (
           <span key={id} aria-hidden className="nav-tap-bloom pointer-events-none absolute left-1/2 top-1/2 h-11 w-11 rounded-full bg-white/25" />
