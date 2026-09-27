@@ -31,7 +31,7 @@ export function MobileBottomNav() {
           edges on all sides so it reads as one instrument resting on top
           of the page rather than a strip of chrome bolted to its border. */}
       <div
-        className="flex h-16 w-full max-w-md items-stretch gap-0.5 rounded-full border border-white/[0.10] bg-void-800/85 px-1.5 backdrop-blur-2xl"
+        className="flex h-[60px] w-full max-w-[300px] items-stretch gap-0.5 rounded-full border border-white/[0.10] bg-void-800/85 px-1.5 backdrop-blur-2xl"
         style={{ boxShadow: "0 20px 44px -18px rgba(0,0,0,0.6), inset 0 1px 0 0 rgba(255,255,255,0.07)" }}
       >
         {/* Was missing entirely -- once you navigated anywhere else there
@@ -94,38 +94,35 @@ function TabLink({ href, active, label, icon }: { href: string; active: boolean;
   return (
     <Link
       href={href}
-      className={`flex flex-1 flex-col items-center justify-center gap-1 py-1.5 text-[10px] font-semibold tracking-wide transition-colors ${
-        active ? "text-shu-300" : "text-white/45 active:text-white/70"
-      }`}
+      aria-label={label}
+      className={`flex flex-1 items-center justify-center transition-colors ${active ? "text-shu-300" : "text-white/45 active:text-white/70"}`}
     >
-      {/* The active tab gets a filled pill behind its icon, not just a
-          color swap -- a lone tinted glyph among four identical ones is
-          easy to miss at a glance; a shape you can pick out peripherally
-          isn't. */}
+      {/* Icon-only: the label moved to aria-label. The active tab still
+          gets a filled pill behind its icon rather than a bare color
+          swap -- a lone tinted glyph among four identical ones is easy to
+          miss at a glance; a shape you can pick out peripherally isn't. */}
       <span
-        className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
+        className={`flex h-11 w-11 items-center justify-center rounded-full transition-colors ${
           active ? "bg-shu-500/15 drop-shadow-[0_0_8px_rgba(255,45,85,0.45)]" : ""
         }`}
       >
         {icon}
       </span>
-      <span className="uppercase">{label}</span>
     </Link>
   );
 }
 
 function TabSkeleton() {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-1.5" aria-hidden>
-      <span className="h-8 w-8 animate-pulse rounded-full bg-white/[0.08]" />
-      <span className="h-2 w-8 animate-pulse rounded-full bg-white/[0.08]" />
+    <div className="flex flex-1 items-center justify-center" aria-hidden>
+      <span className="h-11 w-11 animate-pulse rounded-full bg-white/[0.08]" />
     </div>
   );
 }
 
 const iconProps = {
-  width: 19,
-  height: 19,
+  width: 21,
+  height: 21,
   viewBox: "0 0 24 24",
   fill: "none",
   stroke: "currentColor",
