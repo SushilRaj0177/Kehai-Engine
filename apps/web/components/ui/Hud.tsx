@@ -12,22 +12,25 @@ import { useEffect, useState } from "react";
 export const SHU = "#ff2d55";
 export const KEHAI = "#5ff4ff";
 
-// Two prior passes here both got called out as cheap, for opposite
-// reasons: a flat single-hue opaque fill (bg-void-800/80) read as a black
-// plastic slab, and the glass rewrite that replaced it (blurred,
-// translucent, letting PageGlow bleed through) read as thin instead.
-// What was never the problem: the app's own hero cards (LiveCard,
-// NextEventCard in home/page.tsx) -- solid, opaque, a rich navy-charcoal
-// gradient, no blur, no translucency -- and those never drew a single
-// complaint through any of this. SURFACE now uses that same family of
-// gradient instead of a third invented palette: a plain, quieter version
-// of it (no badge, no CTA, just the fill) so every card in the app reads
-// as one material, not a hero tier and a lesser tier built from different
-// stuff. Opaque solid color, not glass, is what actually reads as
-// premium in a dark UI -- translucency reads as thin regardless of how
-// much blur backs it.
+// True OLED black rather than a navy-charcoal gradient: the page's own
+// ambient glow (PageGlow) is never actually black anywhere on it, so a
+// genuine #000 card reads as a real void cut into that atmosphere
+// instead of one more dark-gray box competing with it. A flat #000 fill
+// alone would read as a hole, not a raised surface, so this adds two
+// restrained cues instead of any visible color: a radial sheen so faint
+// it's felt more than seen (a convex highlight near the top-left, as if
+// lit from one direction, fading to true black by the card's edges —
+// nowhere on it is actually a visible gray), and a crisp 1px top-edge
+// highlight for a glass-like bevel. Both stop well short of a glossy
+// "3D plastic" look; the card should still read as matte and dark, just
+// not flat.
+// The base layer is linear-gradient(#000,#000), not a plain hex color --
+// `background-image` (what a second comma-separated layer resolves to)
+// only accepts gradients/url()/none, never a literal color, so a solid
+// black has to be spelled as a degenerate two-stop gradient to stack
+// under the sheen this way.
 export const SURFACE =
-  "rounded-[22px] border border-white/[0.08] bg-[linear-gradient(155deg,#1A2030_0%,#10141F_100%)] shadow-[0_20px_44px_-24px_rgba(0,0,0,0.55),inset_0_1px_0_0_rgba(255,255,255,0.06)]";
+  "rounded-[22px] border border-white/[0.09] bg-[radial-gradient(130%_120%_at_28%_-10%,rgba(255,255,255,0.05),rgba(255,255,255,0)_55%),linear-gradient(#000,#000)] shadow-[0_24px_52px_-22px_rgba(0,0,0,0.85),inset_0_1px_0_0_rgba(255,255,255,0.08)]";
 
 // For the one hero card per page (LiveCard, NextEventCard, …): these carry
 // their own gradient background instead of SURFACE's flat fill, so the
