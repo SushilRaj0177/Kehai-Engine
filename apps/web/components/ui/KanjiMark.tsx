@@ -46,7 +46,16 @@ export function KanjiMark({
           // opacity, which read as "not there" against any busy background.
           "--kanji-min": prominent ? 0.19 : 0.07,
           "--kanji-max": prominent ? 0.29 : 0.14,
-          opacity: animate ? undefined : prominent ? 0.18 : 0.07,
+          // Always a real resting opacity, even when animate is true --
+          // the kanji-breathe keyframes override this the instant the
+          // animation is running, but @media (prefers-reduced-motion)
+          // strips that animation entirely (globals.css) without
+          // supplying any opacity of its own. Leaving this `undefined`
+          // whenever animate was true meant a reduced-motion visitor got
+          // no opacity source at all and saw the glyph at the browser
+          // default of fully opaque -- a solid, glaring block instead of
+          // a faint watermark.
+          opacity: prominent ? 0.19 : 0.07,
         } as React.CSSProperties
       }
     >

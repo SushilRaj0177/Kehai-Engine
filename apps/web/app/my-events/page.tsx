@@ -80,13 +80,15 @@ export default function MyEventsPage() {
       <div className="page-stagger relative mx-auto max-w-5xl px-6 py-20">
         <KanjiMark glyph="出席" className="absolute -right-6 top-0 text-[5rem] sm:text-[9rem]" />
 
-        <span className="text-xs font-semibold uppercase tracking-widest text-shu-400">{t("myEvents.kicker")}</span>
-        <h1 className="mt-3 font-display text-4xl font-black leading-tight text-white md:text-5xl">{t("myEvents.title")}</h1>
-        <p className="mt-4 max-w-xl text-lg text-white/55">
+        {/* z-20 on every following block here -- above KanjiMark's own
+            hardcoded z-10; see orgs/[slug]/page.tsx. */}
+        <span className="relative z-20 text-xs font-semibold uppercase tracking-widest text-shu-400">{t("myEvents.kicker")}</span>
+        <h1 className="relative z-20 mt-3 font-display text-4xl font-black leading-tight text-white md:text-5xl">{t("myEvents.title")}</h1>
+        <p className="relative z-20 mt-4 max-w-xl text-lg text-white/55">
           {t("myEvents.subtitle")}
         </p>
 
-        <div className="mt-6 flex gap-3">
+        <div className="relative z-20 mt-6 flex gap-3">
           <Link href="/events">
             <Button variant="secondary">{t("myEvents.browseMore")}</Button>
           </Link>

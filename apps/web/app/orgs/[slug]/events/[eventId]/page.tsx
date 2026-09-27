@@ -170,7 +170,8 @@ export default function EventControlRoomPage() {
       <div className="page-stagger relative mx-auto max-w-6xl px-6 py-16">
         <KanjiMark glyph="現場" className="absolute -right-6 top-0 text-[5rem] sm:text-[9rem]" />
 
-        <div className="relative flex flex-wrap items-start justify-between gap-4">
+        {/* z-20 -- above KanjiMark's own hardcoded z-10; see orgs/[slug]/page.tsx. */}
+        <div className="relative z-20 flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="mb-3 flex items-center gap-2.5">
               <Badge status={event.status}>{t(`badge.status.${event.status}`)}</Badge>

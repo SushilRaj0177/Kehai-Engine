@@ -106,7 +106,8 @@ export default function DashboardPage() {
       <NavBar />
       <div className="page-stagger relative mx-auto max-w-6xl px-6 py-20">
         <KanjiMark glyph="組織" className="absolute -right-4 top-0 text-[6rem] sm:text-[10rem]" />
-        <div className="relative flex flex-wrap items-end justify-between gap-4">
+        {/* z-20 -- above KanjiMark's own hardcoded z-10; see orgs/[slug]/page.tsx. */}
+        <div className="relative z-20 flex flex-wrap items-end justify-between gap-4">
           <div>
             <span className="text-xs font-semibold uppercase tracking-widest text-shu-400">{t("dashboard.kicker")}</span>
             <h1 className="mt-3 font-display text-4xl font-black text-white md:text-5xl">{t("dashboard.title")}</h1>

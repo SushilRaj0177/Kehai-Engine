@@ -106,14 +106,16 @@ export default function DiscoverEventsPage() {
       <NavBar />
       <div className="page-stagger relative mx-auto max-w-6xl px-6 py-20">
         <KanjiMark glyph="催事" className="absolute -right-6 top-0 text-[6rem] sm:text-[10rem]" />
-        <span className="relative text-xs font-semibold uppercase tracking-widest text-shu-400">{t("eventDiscover.kicker")}</span>
-        <h1 className="relative mt-3 font-display text-4xl font-black text-white md:text-5xl">{t("eventDiscover.title")}</h1>
-        <p className="relative mt-3 text-lg text-white/50">
+        {/* z-20 on every following block here -- above KanjiMark's own
+            hardcoded z-10; see orgs/[slug]/page.tsx. */}
+        <span className="relative z-20 text-xs font-semibold uppercase tracking-widest text-shu-400">{t("eventDiscover.kicker")}</span>
+        <h1 className="relative z-20 mt-3 font-display text-4xl font-black text-white md:text-5xl">{t("eventDiscover.title")}</h1>
+        <p className="relative z-20 mt-3 text-lg text-white/50">
           {t("eventDiscover.subtitle")}
         </p>
 
         {events && events.length > 0 && (
-          <div className="relative mt-10 flex flex-wrap items-center gap-3">
+          <div className="relative z-20 mt-10 flex flex-wrap items-center gap-3">
             <Input
               value={q}
               onChange={(e) => setQ(e.target.value)}

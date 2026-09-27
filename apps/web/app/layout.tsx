@@ -9,6 +9,7 @@ import { CustomCursor } from "@/components/ui/CustomCursor";
 import { PageTransition } from "@/components/PageTransition";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { StandaloneModeFlag } from "@/components/StandaloneModeFlag";
+import { KatakanaRain } from "@/components/ui/KatakanaRain";
 
 // Space Grotesk carries the brand's actual display voice now — Noto Sans
 // JP's Latin glyphs are what made every heading read as generic/templated
@@ -89,6 +90,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ApiBaseSetter apiBase={apiBase} />
           <StandaloneModeFlag />
           <CustomCursor />
+          {/* Temporary, sitewide preview: the landing page's own katakana/
+              kanji "digital rain" (previously only in its hero) rendered
+              once here so it shows behind every route -- desktop browser,
+              mobile browser tab, and installed PWA alike, deliberately
+              unconditional this time since that's what was asked for.
+              Fixed + z-0 so it sits behind each page's own PageGlow/content
+              (those render later in the DOM at the same z-index) and never
+              scrolls or intercepts clicks (KatakanaRain is pointer-events-none). */}
+          <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+            <KatakanaRain columns={18} className="opacity-40" />
+          </div>
           <LocaleProvider>
             <AuthProvider>
               <PageTransition>{children}</PageTransition>
