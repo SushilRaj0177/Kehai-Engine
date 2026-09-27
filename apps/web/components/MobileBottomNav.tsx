@@ -1,10 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { Link } from "next-view-transitions";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { useLocale } from "@/lib/i18n";
+import { useIsStandalone } from "@/lib/useStandalone";
 
 // Primary mobile navigation now lives here instead of a top hamburger +
 // dropdown -- the same shift essentially every well-known app with real
@@ -12,16 +13,60 @@ import { useLocale } from "@/lib/i18n";
 // Robinhood, Notion's mobile web app, Coinbase): a fixed bottom tab bar
 // instead of a top menu, because it's reachable with a thumb without
 // stretching and doesn't cost vertical space out of the page content
-// itself the way a tall top bar does. NavBar's mobile header is now just
-// the logo -- everything that used to live in its hamburger dropdown
-// (Discover, Classrooms, Console, Settings, sign in, language) is either
-// a tab here or, for language/sign-out, one tap into Account -> Settings.
-// Desktop (sm and up) never renders this at all; NavBar's full top nav is
-// untouched there.
+// itself the way a tall top bar does.
+//
+// Rendered once from the root layout (not per-page from NavBar, where it
+// used to live) so it's a single persistent instance across every
+// client-side navigation instead of remounting fresh on each one --
+// NavBar's own LocaleSwitch has a comment documenting exactly this same
+// remount problem for a different component. A View Transitions-based
+// indicator (the previous approach here) was fighting that remount the
+// whole time: the browser's cross-page snapshot machinery and this
+// component's own lifecycle were never fully in sync, which is what read
+// as janky. Continuity fixes that at the root -- the active-tab indicator
+// below is a single DOM node whose position is measured and animated with
+// a real CSS transition, the same technique already proven in this file's
+// sibling NavBar.tsx for its language-switch thumb, rather than reasoning
+// about the browser's separate view-transition timeline.
 export function MobileBottomNav() {
   const { t } = useLocale();
-  const { user, loading } = useAuth();
+  const { user, memberships, loading } = useAuth();
   const pathname = usePathname();
+  const isStandalone = useIsStandalone();
+
+  const primaryOrg = memberships[0]?.organization;
+  const consoleHref = primaryOrg ? `/orgs/${primaryOrg.slug}` : "/dashboard";
+
+  // Rendering neither variant until standalone-ness is known avoids a
+  // flash-then-swap once the real answer arrives (same reasoning as
+  // NavBar's own isStandalone check) -- and this used to only mount at
+  // all when NavBar had already confirmed `true`, so a plain `false`/`null`
+  // bail-out here reproduces that exactly now that it's hoisted above NavBar.
+  if (isStandalone !== true) return null;
+
+  const tabs: { key: string; href: string; label: string; icon: React.ReactNode; active: boolean }[] = loading
+    ? []
+    : user
+      ? [
+          { key: "home", href: "/home", label: t("nav.home"), icon: <HomeIcon />, active: pathname === "/home" },
+          { key: "discover", href: "/events", label: t("nav.discover"), icon: <CompassIcon />, active: !!pathname?.startsWith("/events") },
+          { key: "classrooms", href: "/classrooms", label: t("nav.classrooms"), icon: <CapIcon />, active: !!pathname?.startsWith("/classrooms") },
+          {
+            key: "console",
+            href: consoleHref,
+            label: t("nav.consoleShort"),
+            icon: <GridIcon />,
+            active: !!pathname?.startsWith("/orgs") || pathname === "/dashboard",
+          },
+          { key: "account", href: "/settings", label: t("nav.account"), icon: <UserIcon />, active: pathname === "/settings" },
+        ]
+      : [
+          { key: "home", href: "/home", label: t("nav.home"), icon: <HomeIcon />, active: pathname === "/home" },
+          { key: "discover", href: "/events", label: t("nav.discover"), icon: <CompassIcon />, active: !!pathname?.startsWith("/events") },
+          { key: "classrooms", href: "/classrooms", label: t("nav.classrooms"), icon: <CapIcon />, active: !!pathname?.startsWith("/classrooms") },
+          { key: "signin", href: "/login", label: t("nav.signIn"), icon: <SignInIcon />, active: false },
+          { key: "register", href: "/register", label: t("nav.getStarted"), icon: <SparkIcon />, active: false },
+        ];
 
   return (
     <nav
@@ -35,69 +80,128 @@ export function MobileBottomNav() {
         className="flex h-[60px] w-full max-w-[300px] items-stretch gap-0.5 rounded-full border border-white/[0.10] bg-void-800/85 px-1.5 backdrop-blur-2xl"
         style={{ boxShadow: "0 20px 44px -18px rgba(0,0,0,0.6), inset 0 1px 0 0 rgba(255,255,255,0.07)" }}
       >
-        {/* Was missing entirely -- once you navigated anywhere else there
-            was no way back to /home short of relaunching the app fresh
-            (the standalone-only redirect on "/" only fires on a true
-            cold start, not on ordinary in-app navigation). */}
-        <TabLink href="/home" active={pathname === "/home"} label={t("nav.home")} icon={<HomeIcon />} />
-        <TabLink href="/events" active={!!pathname?.startsWith("/events")} label={t("nav.discover")} icon={<CompassIcon />} />
-        <TabLink
-          href="/classrooms"
-          active={!!pathname?.startsWith("/classrooms")}
-          label={t("nav.classrooms")}
-          icon={<CapIcon />}
-        />
         {loading ? (
           <>
             <TabSkeleton />
             <TabSkeleton />
+            <TabSkeleton />
           </>
-        ) : user ? (
-          <LoggedInTabs pathname={pathname} />
         ) : (
-          <LoggedOutTabs />
+          <TabRow tabs={tabs} />
         )}
       </div>
     </nav>
   );
 }
 
-function LoggedInTabs({ pathname }: { pathname: string | null }) {
-  const { t } = useLocale();
-  const { memberships } = useAuth();
-  const primaryOrg = memberships[0]?.organization;
-  const consoleHref = primaryOrg ? `/orgs/${primaryOrg.slug}` : "/dashboard";
+function TabRow({ tabs }: { tabs: { key: string; href: string; label: string; icon: React.ReactNode; active: boolean }[] }) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const indicatorRef = useRef<HTMLSpanElement>(null);
+  const bounceRef = useRef<HTMLSpanElement>(null);
+  const tabRefs = useRef(new Map<string, HTMLDivElement>());
+  const activeKey = tabs.find((tab) => tab.active)?.key ?? null;
+
+  // useLayoutEffect (not useEffect), same reasoning as LocaleSwitch's
+  // thumb: this measures and positions synchronously before the browser
+  // paints, so a route change never shows one wrong frame of the
+  // indicator sitting at its previous tab before snapping to the right
+  // one -- it's just never painted in the wrong place at all.
+  useLayoutEffect(() => {
+    const track = trackRef.current;
+    const indicator = indicatorRef.current;
+    const bounce = bounceRef.current;
+    const activeEl = activeKey ? tabRefs.current.get(activeKey) : null;
+    if (!track || !indicator) return;
+
+    if (!activeEl) {
+      indicator.style.opacity = "0";
+      return;
+    }
+
+    // activeEl is the flex-1 wrapper div (full tab-column width, not the
+    // 44px icon circle inside it) -- registerRef has to target that
+    // wrapper rather than the circle because next-view-transitions' Link
+    // doesn't forward refs (see TabLink), so the indicator is sized to a
+    // fixed 44px circle and centered on the wrapper's midpoint instead of
+    // matched to its measured width.
+    const SIZE = 44;
+    const trackRect = track.getBoundingClientRect();
+    const activeRect = activeEl.getBoundingClientRect();
+    const centerX = activeRect.left - trackRect.left + activeRect.width / 2;
+    const centerY = activeRect.top - trackRect.top + activeRect.height / 2;
+    indicator.style.opacity = "1";
+    indicator.style.width = `${SIZE}px`;
+    indicator.style.height = `${SIZE}px`;
+    // This is the ONLY thing that sets `transform` on this element --
+    // the landing bounce lives on a separate inner child (bounceRef)
+    // instead of also animating `transform` here, because a CSS
+    // animation's keyframe values fully replace the animated property
+    // for its duration: a scale() keyframe on this same node would blow
+    // away this translate() every time it played, snapping the pill to
+    // the track's top-left corner mid-bounce.
+    indicator.style.transform = `translate(${centerX - SIZE / 2}px, ${centerY - SIZE / 2}px)`;
+
+    // Restart the landing-bounce keyframe on every tab change -- a CSS
+    // animation on an element that never unmounts only plays once ever
+    // unless explicitly restarted. The classic, reliable way to do that:
+    // remove the class, force a synchronous style recalculation by
+    // reading a layout property (offsetWidth -- the read itself is what
+    // forces it; the value isn't otherwise used), then re-add the class.
+    if (bounce) {
+      bounce.classList.remove("nav-pill-pop-play");
+      void bounce.offsetWidth;
+      bounce.classList.add("nav-pill-pop-play");
+    }
+  }, [activeKey]);
 
   return (
-    <>
-      <TabLink
-        href={consoleHref}
-        active={!!pathname?.startsWith("/orgs") || pathname === "/dashboard"}
-        label={t("nav.consoleShort")}
-        icon={<GridIcon />}
-      />
-      <TabLink href="/settings" active={pathname === "/settings"} label={t("nav.account")} icon={<UserIcon />} />
-    </>
+    <div ref={trackRef} className="relative flex flex-1 items-stretch gap-0.5">
+      <span
+        ref={indicatorRef}
+        aria-hidden
+        className="pointer-events-none absolute left-0 top-0 opacity-0 transition-[transform,width,height] duration-300 ease-out"
+      >
+        <span
+          ref={bounceRef}
+          className="block h-full w-full rounded-full bg-shu-500/15 drop-shadow-[0_0_8px_rgba(255,45,85,0.45)]"
+        />
+      </span>
+      {tabs.map((tab) => (
+        <TabLink
+          key={tab.key}
+          href={tab.href}
+          active={tab.active}
+          label={tab.label}
+          icon={tab.icon}
+          registerRef={(el) => {
+            if (el) tabRefs.current.set(tab.key, el);
+            else tabRefs.current.delete(tab.key);
+          }}
+        />
+      ))}
+    </div>
   );
 }
 
-function LoggedOutTabs() {
-  const { t } = useLocale();
-  return (
-    <>
-      <TabLink href="/login" active={false} label={t("nav.signIn")} icon={<SignInIcon />} />
-      <TabLink href="/register" active={false} label={t("nav.getStarted")} icon={<SparkIcon />} />
-    </>
-  );
-}
-
-function TabLink({ href, active, label, icon }: { href: string; active: boolean; label: string; icon: React.ReactNode }) {
-  // A tiny local burst list, not the app-wide ClickRippleLayer -- that
-  // one renders inside each page's own scrollable root at a lower
-  // z-index than this `fixed` nav's opaque background, so it's never
-  // actually visible on a nav tap no matter how it's positioned. This
-  // stays self-contained to the ~44px pill and above everything else in
-  // the nav's own stacking context.
+function TabLink({
+  href,
+  active,
+  label,
+  icon,
+  registerRef,
+}: {
+  href: string;
+  active: boolean;
+  label: string;
+  icon: React.ReactNode;
+  registerRef: (el: HTMLDivElement | null) => void;
+}) {
+  // A tiny local burst list, not the app-wide ClickRippleLayer -- that one
+  // renders inside each page's own scrollable root at a lower z-index than
+  // this `fixed` nav's opaque background, so it's never actually visible
+  // on a nav tap no matter how it's positioned. This stays self-contained
+  // to the ~44px tap target and above everything else in the nav's own
+  // stacking context.
   const [blooms, setBlooms] = useState<number[]>([]);
   const nextBloomId = useRef(0);
 
@@ -110,46 +214,36 @@ function TabLink({ href, active, label, icon }: { href: string; active: boolean;
   }
 
   return (
-    <Link
-      href={href}
-      aria-label={label}
-      onPointerDown={spawnBloom}
-      // active: here is Tailwind's :active pseudo-class (the CSS state
-      // while pressed), unrelated to the `active` prop (whether this is
-      // the current route) despite the name collision. The press itself
-      // is an asymmetric squash (flatter on Y than X) rather than a
-      // uniform shrink -- reads as a soft, compressible pill instead of
-      // the whole tap target just shrinking in place -- and springs back
-      // past 1.0 on release via the overshoot easing below.
-      className={`relative flex flex-1 items-center justify-center transition-colors duration-150 active:scale-x-[0.88] active:scale-y-[0.8] ${
-        active ? "text-shu-300" : "text-white/45 active:text-white/70"
-      }`}
-      style={{ transitionProperty: "color, transform", transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)" }}
-    >
-      {blooms.map((id) => (
-        <span
-          key={id}
-          aria-hidden
-          className="nav-tap-bloom pointer-events-none absolute left-1/2 top-1/2 h-11 w-11 rounded-full bg-white/25"
-        />
-      ))}
-      {/* Icon-only: the label moved to aria-label. The active tab still
-          gets a filled pill behind its icon rather than a bare color
-          swap -- a lone tinted glyph among four identical ones is easy to
-          miss at a glance; a shape you can pick out peripherally isn't.
-          `nav-pill-active` (globals.css) gives whichever tab is currently
-          active a shared view-transition-name plus a landing-bounce
-          keyframe, so on a real browser navigation the pill glides from
-          the old active tab to this one and settles with a pop instead
-          of just appearing here. */}
-      <span
-        className={`relative flex h-11 w-11 items-center justify-center rounded-full transition-colors ${
-          active ? "nav-pill-active bg-shu-500/15 drop-shadow-[0_0_8px_rgba(255,45,85,0.45)]" : ""
+    // The measurement target for the sliding indicator (see TabRow) is
+    // this wrapping div, not the <Link> itself -- next-view-transitions'
+    // Link is a plain function component, not wrapped in forwardRef, so a
+    // ref passed straight to it silently never reaches the underlying
+    // anchor. A div wrapper sized identically to its Link child sidesteps
+    // that rather than fighting it.
+    <div ref={registerRef} className="relative z-10 flex flex-1">
+      <Link
+        href={href}
+        aria-label={label}
+        aria-current={active ? "page" : undefined}
+        onPointerDown={spawnBloom}
+        // active: here is Tailwind's :active pseudo-class (the CSS state
+        // while pressed), unrelated to the `active` prop (whether this is
+        // the current route) despite the name collision. The press itself
+        // is an asymmetric squash (flatter on Y than X) rather than a
+        // uniform shrink -- reads as a soft, compressible pill instead of
+        // the whole tap target just shrinking in place -- and springs back
+        // past 1.0 on release via the overshoot easing below.
+        className={`flex flex-1 items-center justify-center transition-colors duration-150 active:scale-x-[0.88] active:scale-y-[0.8] ${
+          active ? "text-shu-300" : "text-white/45 active:text-white/70"
         }`}
+        style={{ transitionProperty: "color, transform", transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)" }}
       >
-        {icon}
-      </span>
-    </Link>
+        {blooms.map((id) => (
+          <span key={id} aria-hidden className="nav-tap-bloom pointer-events-none absolute left-1/2 top-1/2 h-11 w-11 rounded-full bg-white/25" />
+        ))}
+        <span className="relative flex h-11 w-11 items-center justify-center rounded-full">{icon}</span>
+      </Link>
+    </div>
   );
 }
 

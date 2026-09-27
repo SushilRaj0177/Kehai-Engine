@@ -8,7 +8,6 @@ import { useAuth } from "@/lib/auth-context";
 import { useLocale } from "@/lib/i18n";
 import { apiFetch, ApiError } from "@/lib/api";
 import { Button } from "./ui/Button";
-import { MobileBottomNav } from "./MobileBottomNav";
 import { MobileBrowserNav } from "./MobileBrowserNav";
 import { useIsStandalone } from "@/lib/useStandalone";
 
@@ -36,18 +35,18 @@ export function NavBar() {
   const primaryOrg = memberships[0]?.organization;
 
   return (
-    <>
-      {/* Floating capsule, not a flat edge-to-edge bar: margin on every
-          side, a fully rounded shell, and a soft ambient glow standing in
-          for what was a single hard 1px border — the bar reads as an
-          object sitting on the page instead of a wall cutting across it.
-          In the installed-PWA case this is hidden outright below sm, not
-          just trimmed down: MobileBottomNav already carries every
-          destination this bar would, so keeping a logo-only strip around
-          just for branding is real vertical space spent on nothing
-          actionable. Browser-tab mode keeps it (logo + MobileBrowserNav's
-          hamburger). Desktop is unaffected either way. */}
-      <header className={`sticky top-4 z-40 px-4 ${isStandalone === true ? "hidden sm:block" : ""}`}>
+    /* Floating capsule, not a flat edge-to-edge bar: margin on every
+       side, a fully rounded shell, and a soft ambient glow standing in
+       for what was a single hard 1px border — the bar reads as an
+       object sitting on the page instead of a wall cutting across it.
+       In the installed-PWA case this is hidden outright below sm, not
+       just trimmed down: MobileBottomNav (rendered once from the root
+       layout, not from here) already carries every destination this bar
+       would, so keeping a logo-only strip around just for branding is
+       real vertical space spent on nothing actionable. Browser-tab mode
+       keeps it (logo + MobileBrowserNav's hamburger). Desktop is
+       unaffected either way. */
+    <header className={`sticky top-4 z-40 px-4 ${isStandalone === true ? "hidden sm:block" : ""}`}>
         <div
           className="mx-auto flex h-14 max-w-6xl items-center justify-between rounded-full border border-white/[0.08] bg-white/[0.05] pl-4 pr-4 backdrop-blur-2xl sm:h-16 sm:pl-6 sm:pr-6"
           style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.03), 0 12px 40px -12px rgba(0,0,0,0.6), 0 0 60px -20px rgba(255,45,85,0.18)" }}
@@ -142,10 +141,8 @@ export function NavBar() {
 
           {isStandalone === false && <MobileBrowserNav />}
         </div>
-        {EMAIL_VERIFICATION_UI_ENABLED && user && !user.emailVerifiedAt && <VerifyEmailBanner />}
-      </header>
-      {isStandalone === true && <MobileBottomNav />}
-    </>
+      {EMAIL_VERIFICATION_UI_ENABLED && user && !user.emailVerifiedAt && <VerifyEmailBanner />}
+    </header>
   );
 }
 

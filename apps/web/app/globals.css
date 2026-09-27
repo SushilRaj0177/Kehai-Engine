@@ -554,32 +554,6 @@ body {
   }
 }
 
-/* The bottom nav's active-tab pill (MobileBottomNav.tsx) carries this
-   name on whichever tab is currently active -- exactly one element per
-   page, which is what view-transition-name requires. Because the name
-   survives the DOM swap (old page had it on "Home", new page has it on
-   "Discover"), the browser interpolates its position/size on its own: the
-   pill visibly glides from the old active icon to the new one instead of
-   just appearing there, which a plain remount could never do -- this is
-   the whole reason the nav uses the View Transitions Link/router at all,
-   not just the nicer root cross-fade. */
-.nav-pill-active {
-  view-transition-name: nav-pill;
-}
-/* Overrides only duration/easing on the browser's own auto-generated
-   position/size morph -- a bouncier settle than the root transition's,
-   since a small pill covering real distance reads better with a bit of
-   overshoot than a linear glide. The icon glyph itself genuinely differs
-   between tabs (home vs. compass, say), so the UA's default old/new
-   cross-fade is left alone deliberately: it dissolves the old icon into
-   the new one at the same time the pill is sliding, which is the point --
-   a silent glyph swap partway through the glide would look like a glitch,
-   not a design choice. */
-::view-transition-group(nav-pill) {
-  animation-duration: 0.38s;
-  animation-timing-function: cubic-bezier(0.34, 1.15, 0.64, 1);
-}
-
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),
   ::view-transition-old(*),
@@ -612,47 +586,53 @@ body {
 }
 
 /* ------------------------------------------------------------------ */
-/* Bottom nav: elastic landing bounce + a tap flash that's actually     */
-/* visible (see MobileBottomNav.tsx for why the app-wide ripple isn't). */
+/* Bottom nav: sliding active-tab indicator + a tap flash that's       */
+/* actually visible (see MobileBottomNav.tsx for why the app-wide      */
+/* ripple isn't, and why this replaced an earlier View Transitions-    */
+/* based version of the same idea).                                   */
 /* ------------------------------------------------------------------ */
 
-/* Plays once whenever a tab's pill becomes the active one -- i.e. on
-   every navigation, since MobileBottomNav remounts fresh per page. This
-   is the baseline "something alive just landed here" cue every browser
-   gets, independent of View Transitions support. On Chromium, it runs
-   alongside the native position/size glide (::view-transition-group(nav-
-   pill) in this file) rather than waiting for it to finish -- the group's
-   own easing already overshoots past 1.0 before settling, so what you
-   see there is a glide that's already bouncy; this adds the same
-   character on top and is what actually plays start-to-finish on
-   Firefox/Safari, which don't run that glide at all. */
+/* The indicator itself (MobileBottomNav.tsx's TabRow) is one persistent
+   absolutely-positioned circle whose width/height/transform are set
+   imperatively via a ref -- this file only supplies the transition (so
+   those imperative changes animate instead of snapping) and the landing
+   bounce below. There is no CSS selector for "the active tab" here
+   because there's no per-tab element to select: it's a single shared
+   node the component slides around, the same architecture as NavBar's
+   LocaleSwitch thumb. */
 @keyframes nav-pill-pop {
   0% {
     transform: scale(0.55);
-    opacity: 0.35;
   }
   55% {
-    transform: scale(1.22);
-    opacity: 1;
+    transform: scale(1.15);
   }
   75% {
-    transform: scale(0.92);
+    transform: scale(0.95);
   }
   100% {
     transform: scale(1);
   }
 }
-.nav-pill-active {
-  animation: nav-pill-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+/* Toggled on/off imperatively (remove class, force reflow, re-add) every
+   time the active tab changes, since a CSS animation on an element that
+   never unmounts only plays once ever unless explicitly restarted this
+   way. Lives on an inner child span (MobileBottomNav.tsx's bounceRef),
+   never on the outer positioned element itself -- that outer span's
+   `transform` is set imperatively for position/size, and a keyframe
+   animating `transform` on that same element would fully replace the
+   translate for the animation's duration, snapping the pill to the
+   track's top-left corner mid-bounce every time it played. */
+.nav-pill-pop-play {
+  animation: nav-pill-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* A soft radial bloom confined to the ~44px pill, spawned on pointerdown
-   (MobileBottomNav.tsx) and left to fade on its own -- unlike the global
-   ClickRippleLayer glyph-burst, which renders at a lower z-index than
-   this nav's own opaque background and is invisible here no matter how
-   hard you tap. Kept separate from .nav-pill-active (which only exists
-   on the currently active tab) since this needs to fire on every tap,
-   including ones that don't change the active tab. */
+/* A soft radial bloom confined to the ~44px tap target, spawned on
+   pointerdown (MobileBottomNav.tsx) and left to fade on its own --
+   unlike the global ClickRippleLayer glyph-burst, which renders at a
+   lower z-index than this nav's own opaque background and is invisible
+   here no matter how hard you tap. Fires on every tap, including ones
+   that don't change the active tab. */
 @keyframes nav-tap-bloom {
   from {
     opacity: 0.6;
@@ -673,7 +653,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .nav-pill-active {
+  .nav-pill-pop-play {
     animation: none !important;
   }
   .nav-tap-bloom {

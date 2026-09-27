@@ -7,6 +7,7 @@ import { LocaleProvider } from "@/lib/i18n";
 import { ApiBaseSetter } from "@/components/ApiBaseSetter";
 import { CustomCursor } from "@/components/ui/CustomCursor";
 import { PageTransition } from "@/components/PageTransition";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 // Space Grotesk carries the brand's actual display voice now — Noto Sans
 // JP's Latin glyphs are what made every heading read as generic/templated
@@ -74,9 +75,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     // ViewTransitions must wrap <html> itself (next-view-transitions'
     // contract) -- it's what lets useTransitionRouter/its <Link> wrap
-    // Next's navigation in a real document.startViewTransition(), which is
-    // also the only reason the bottom nav's active-pill morph (its
-    // view-transition-name in globals.css) has anything to animate between.
+    // Next's navigation in a real document.startViewTransition(), which
+    // drives the root page cross-fade (globals.css's page-vt-exit/enter).
     <ViewTransitions>
       <html lang="en" className={`${notoJp.variable} ${displayFont.variable} ${inter.variable} ${mono.variable}`}>
         {/* pb-24 clears MobileBottomNav's floating pill -- its own h-16
@@ -90,6 +90,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <LocaleProvider>
             <AuthProvider>
               <PageTransition>{children}</PageTransition>
+              {/* Rendered here, once, rather than per-page from NavBar --
+                  it needs to be a single instance that survives every
+                  client-side navigation (not remounted inside
+                  PageTransition's own per-route wrapper) for its active-tab
+                  indicator to animate as a continuous slide between tabs
+                  instead of snapping fresh into place on every route. */}
+              <MobileBottomNav />
             </AuthProvider>
           </LocaleProvider>
         </body>
