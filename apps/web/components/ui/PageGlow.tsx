@@ -8,7 +8,7 @@
 export function PageGlow() {
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-      <div className="absolute -top-32 right-[-12%] h-[520px] w-[720px] rounded-full bg-shu-500/[0.10] blur-[150px]" />
+      <div className="absolute -top-32 right-[-12%] h-[520px] w-[720px] rounded-full bg-shu-500/[0.26] blur-[130px]" />
       <div className="absolute bottom-[-18%] left-[-12%] h-[480px] w-[680px] rounded-full bg-kehai-500/[0.08] blur-[150px]" />
     </div>
   );
