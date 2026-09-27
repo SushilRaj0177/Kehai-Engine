@@ -25,15 +25,23 @@ export const KEHAI = "#5ff4ff";
 // nothing softening or tinting it in transit. The corner sheen keeps
 // the card from reading as pure empty space — a hint of surface, not a
 // hole — without needing any fill to carry it.
+// Deliberately no `inset 0 1px 0 0 ...` top highlight here (an earlier
+// version had one, meant as a glass-like bevel): that inset line stacks
+// directly on top of the uniform border along the top edge only, so the
+// top reads visibly thicker/brighter than the bottom, left, and right —
+// exactly the asymmetry that was reported. A single uniform border with
+// no per-edge highlight is what keeps every edge the same weight.
 export const SURFACE =
-  "rounded-[22px] border border-white/[0.14] bg-[radial-gradient(120%_110%_at_25%_-10%,rgba(255,255,255,0.06),rgba(255,255,255,0)_60%)] shadow-[0_20px_44px_-24px_rgba(0,0,0,0.7),inset_0_1px_0_0_rgba(255,255,255,0.08)]";
+  "rounded-[22px] border border-white/[0.14] bg-[radial-gradient(120%_110%_at_25%_-10%,rgba(255,255,255,0.06),rgba(255,255,255,0)_60%)] shadow-[0_20px_44px_-24px_rgba(0,0,0,0.7)]";
 
 // For the one hero card per page (LiveCard, NextEventCard, …): these carry
 // their own gradient background instead of SURFACE's flat fill, so the
 // contrast that makes SURFACE read as elevated has to come from that
 // gradient's own stops (lightened alongside this), not from here — this
-// only adds the matching soft shadow and top highlight.
-export const HERO_SHADOW = "shadow-[0_24px_52px_-24px_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.08)]";
+// only adds the matching soft shadow. No inset top highlight, same reason
+// as SURFACE above: it would make the top border read thicker than the
+// other three edges.
+export const HERO_SHADOW = "shadow-[0_24px_52px_-24px_rgba(0,0,0,0.6)]";
 
 export function SectionHead({
   title,

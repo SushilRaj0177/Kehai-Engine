@@ -78,7 +78,10 @@ export function MobileBottomNav() {
           of the page rather than a strip of chrome bolted to its border. */}
       <div
         className="flex h-[60px] w-full max-w-[300px] items-stretch gap-0.5 rounded-full border border-white/[0.10] bg-void-800/85 px-1.5 backdrop-blur-2xl"
-        style={{ boxShadow: "0 20px 44px -18px rgba(0,0,0,0.6), inset 0 1px 0 0 rgba(255,255,255,0.07)" }}
+        // No inset top highlight -- it stacked on top of the border along
+        // the top edge only, making the pill's top edge read visibly
+        // thicker than its bottom, same issue as SURFACE in Hud.tsx.
+        style={{ boxShadow: "0 20px 44px -18px rgba(0,0,0,0.6)" }}
       >
         {loading ? (
           <>

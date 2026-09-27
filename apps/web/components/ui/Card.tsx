@@ -8,9 +8,12 @@ export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
         // Real glassmorphism — genuinely translucent (not just a dark flat
         // fill with a hairline) with visible blur, a soft ambient shadow
         // standing in for depth, and a border that actually brightens on
-        // hover instead of staying a near-invisible 7% line always.
+        // hover instead of staying a near-invisible 7% line always. No
+        // inset top highlight: that stacks on top of the border along the
+        // top edge only, reading as visibly thicker/brighter there than
+        // the other three edges (same bug fixed in Hud.tsx's SURFACE).
         "rounded-2xl border border-white/[0.09] bg-white/[0.04] backdrop-blur-xl transition-colors",
-        "shadow-[0_8px_32px_-8px_rgba(0,0,0,0.5),inset_0_1px_0_0_rgba(255,255,255,0.06)]",
+        "shadow-[0_8px_32px_-8px_rgba(0,0,0,0.5)]",
         "hover:border-white/[0.16]",
         className
       )}
