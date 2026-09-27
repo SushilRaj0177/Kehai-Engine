@@ -12,25 +12,22 @@ import { useEffect, useState } from "react";
 export const SHU = "#ff2d55";
 export const KEHAI = "#5ff4ff";
 
-// A solid opaque fill here (an earlier pass here, `bg-void-800/80`) reads
-// as a flat black plastic slab dropped on top of PageGlow's colorful
-// ambient gradient -- the two-tone shu/kehai atmosphere the rest of the
-// page is built around just stops dead at every card's edge, which is
-// exactly the "cheap" tell. Real glass -- backdrop-blur letting that glow
-// bleed through softly, plus a diagonal sheen layer so the panel still
-// has its own highlight instead of being a uniform tint -- is what
-// `Card.tsx` already does for desktop; this brings PWA pages' SURFACE up
-// to the same standard instead of the two drifting apart.
-//
-// The gradient is two stacked layers (Tailwind arbitrary background-image
-// supports comma-separated layers same as plain CSS): a faint white sheen
-// on top for the highlight, and a dark base underneath that's translucent
-// enough for backdrop-blur to actually pick up color behind it, but still
-// opaque enough to keep text readable over a bright patch of glow. This
-// is the fill-contrast lesson from the flat-black pass, applied to a
-// glass fill instead of abandoning glass altogether.
+// Two prior passes here both got called out as cheap, for opposite
+// reasons: a flat single-hue opaque fill (bg-void-800/80) read as a black
+// plastic slab, and the glass rewrite that replaced it (blurred,
+// translucent, letting PageGlow bleed through) read as thin instead.
+// What was never the problem: the app's own hero cards (LiveCard,
+// NextEventCard in home/page.tsx) -- solid, opaque, a rich navy-charcoal
+// gradient, no blur, no translucency -- and those never drew a single
+// complaint through any of this. SURFACE now uses that same family of
+// gradient instead of a third invented palette: a plain, quieter version
+// of it (no badge, no CTA, just the fill) so every card in the app reads
+// as one material, not a hero tier and a lesser tier built from different
+// stuff. Opaque solid color, not glass, is what actually reads as
+// premium in a dark UI -- translucency reads as thin regardless of how
+// much blur backs it.
 export const SURFACE =
-  "rounded-[22px] border border-white/[0.12] bg-[linear-gradient(150deg,rgba(255,255,255,0.07),rgba(255,255,255,0.015)),linear-gradient(165deg,rgba(22,30,44,0.82),rgba(8,11,17,0.86))] backdrop-blur-2xl shadow-[0_20px_44px_-24px_rgba(0,0,0,0.55),inset_0_1px_0_0_rgba(255,255,255,0.09)]";
+  "rounded-[22px] border border-white/[0.08] bg-[linear-gradient(155deg,#1A2030_0%,#10141F_100%)] shadow-[0_20px_44px_-24px_rgba(0,0,0,0.55),inset_0_1px_0_0_rgba(255,255,255,0.06)]";
 
 // For the one hero card per page (LiveCard, NextEventCard, …): these carry
 // their own gradient background instead of SURFACE's flat fill, so the
