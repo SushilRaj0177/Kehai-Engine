@@ -443,6 +443,8 @@ const dict = {
       en: "Try a different search term or filter.",
       ja: "別のキーワードやフィルターをお試しください。",
     },
+    going: { en: "Going", ja: "参加予定" },
+    rsvp: { en: "RSVP", ja: "参加登録" },
   },
   eventDetail: {
     backToDiscover: { en: "← All events", ja: "← イベント一覧に戻る" },

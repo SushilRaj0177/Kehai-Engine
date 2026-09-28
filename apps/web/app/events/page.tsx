@@ -12,7 +12,7 @@ import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
 import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { usePublicEvents } from "@/lib/hooks";
-import { formatDateRange, formatDate } from "@/lib/format";
+import { formatDateRange } from "@/lib/format";
 import { useLocale } from "@/lib/i18n";
 import { useIsStandalone } from "@/lib/useStandalone";
 import { SearchIcon, SURFACE } from "@/components/ui/Hud";
@@ -80,7 +80,7 @@ export default function DiscoverEventsPage() {
             </div>
           )}
 
-          <div className="mt-5">
+          <div className="mt-5 space-y-3">
             {isLoading ? (
               <LoadingBlock />
             ) : !events?.length ? (
@@ -88,11 +88,7 @@ export default function DiscoverEventsPage() {
             ) : !filtered?.length ? (
               <EmptyState glyph="無" title={t("eventDiscover.noMatchTitle")} description={t("eventDiscover.noMatchDescription")} />
             ) : (
-              <div className={`${SURFACE} divide-y divide-white/[0.05] overflow-hidden`}>
-                {filtered.map((event) => (
-                  <EventRow key={event.id} event={event} locale={locale} t={t} />
-                ))}
-              </div>
+              filtered.map((event) => <EventDiscoverCard key={event.id} event={event} locale={locale} t={t} />)
             )}
           </div>
         </div>
@@ -181,11 +177,11 @@ export default function DiscoverEventsPage() {
   );
 }
 
-// Compact list row for the standalone-PWA view -- a real list item (one
-// tap target, two lines, a status dot instead of a full Badge pill) rather
-// than a spaced-out card, and no TiltCard: that's a pointer-hover effect
-// with nothing to do on a touch device, just extra weight on the list.
-function EventRow({
+// The mockup's Discover card, ported with real data only -- no fabricated
+// attendee avatars (EventSummary carries just a registrations count, not
+// per-registrant identities), so the "who's going" cue is the real
+// isRegistered-driven pill (Going vs RSVP) rather than invented faces.
+function EventDiscoverCard({
   event,
   locale,
   t,
@@ -194,24 +190,41 @@ function EventRow({
   locale: "en" | "ja";
   t: (key: string, vars?: Record<string, string | number>) => string;
 }) {
-  const dotColor = event.status === "ACTIVE" ? "bg-kehai-400" : "bg-shu-400";
+  const start = new Date(event.startsAt);
+  const day = new Intl.DateTimeFormat(locale === "ja" ? "ja-JP" : "en-US", { day: "2-digit" }).format(start);
+  const month = new Intl.DateTimeFormat(locale === "ja" ? "ja-JP" : "en-US", { month: "short" }).format(start).toUpperCase();
+  const time = new Intl.DateTimeFormat(locale === "ja" ? "ja-JP" : "en-US", { hour: "numeric", minute: "2-digit" }).format(start);
+
   return (
-    <Link href={`/events/${event.id}`} className="tap-row flex items-center gap-3 px-4 py-3.5">
-      <span className={`mt-1.5 h-2 w-2 shrink-0 self-start rounded-full ${dotColor}`} aria-hidden />
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[15px] font-semibold text-white">{event.name}</p>
-        <p className="mt-0.5 truncate text-[13px] text-white/40">
-          {event.organization?.name ? `${event.organization.name} · ` : ""}
-          {event.venue}
-        </p>
+    <Link href={`/events/${event.id}`} className={`tap-row ${SURFACE} flex gap-3 p-3.5`}>
+      <div className="flex h-[54px] w-[50px] shrink-0 flex-col items-center justify-center rounded-[14px] border border-shu-500/30 bg-shu-500/10">
+        <span className="font-mono text-[18px] font-black leading-none text-shu-300">{day}</span>
+        <span className="mt-0.5 font-mono text-[8.5px] uppercase tracking-[0.1em] text-shu-300/60">{month}</span>
       </div>
-      <div className="shrink-0 text-right">
-        <p className="text-[13px] font-medium text-white/55">{formatDate(event.startsAt, locale)}</p>
-        {event.capacity && (
-          <p className="mt-0.5 text-[11px] text-white/30">
-            {t("eventDiscover.registeredOf", { count: event._count.registrations, capacity: event.capacity })}
-          </p>
+      <div className="min-w-0 flex-1">
+        {event.organization?.name && (
+          <p className="font-mono text-[9.5px] font-bold uppercase tracking-[0.12em] text-kehai-300/70">{event.organization.name}</p>
         )}
+        <p className="mt-0.5 truncate text-[14.5px] font-bold text-white">{event.name}</p>
+        <p className="mt-1 font-mono text-[10.5px] text-white/40">
+          {time} · {event.venue}
+        </p>
+        <div className="mt-2.5 flex items-center gap-2">
+          {event.capacity && (
+            <span className="font-mono text-[10px] text-white/30">
+              {t("eventDiscover.registeredOf", { count: event._count.registrations, capacity: event.capacity })}
+            </span>
+          )}
+          <span
+            className={`ml-auto rounded-full border px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-wide ${
+              event.isRegistered
+                ? "border-kehai-500/40 bg-kehai-500/10 text-kehai-300"
+                : "border-white/[0.14] text-white/60"
+            }`}
+          >
+            {event.isRegistered ? t("eventDiscover.going") : t("eventDiscover.rsvp")}
+          </span>
+        </div>
       </div>
     </Link>
   );
