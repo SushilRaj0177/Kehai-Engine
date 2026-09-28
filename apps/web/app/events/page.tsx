@@ -15,8 +15,7 @@ import { usePublicEvents } from "@/lib/hooks";
 import { formatDateRange } from "@/lib/format";
 import { useLocale } from "@/lib/i18n";
 import { useIsStandalone } from "@/lib/useStandalone";
-import { SearchIcon, SURFACE } from "@/components/ui/Hud";
-import type { EventSummary } from "@/lib/types";
+import { PwaDiscover } from "@/components/pwa/PwaDiscover";
 
 type StatusFilter = "all" | "ACTIVE" | "PUBLISHED";
 const FILTERS = ["all", "ACTIVE", "PUBLISHED"] as const;
@@ -42,58 +41,10 @@ export default function DiscoverEventsPage() {
     });
   }, [events, q, statusFilter]);
 
+  // Installed PWA: the approved mockup's Discover screen, built 1:1
+  // (components/pwa/PwaDiscover). The browser layout below is untouched.
   if (isStandalone) {
-    return (
-      <ClickRippleLayer className="relative min-h-screen">
-        <PageGlow />
-        <NavBar />
-        <div className="page-stagger relative mx-auto max-w-2xl px-4 pb-28 pt-5 sm:px-6 sm:pt-8">
-          <h1 className="font-display text-[26px] font-black leading-tight text-white">{t("eventDiscover.title")}</h1>
-
-          {events && events.length > 0 && (
-            <div className="mt-4 space-y-3">
-              <div className="relative">
-                <SearchIcon className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
-                <input
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  placeholder={t("eventDiscover.searchPlaceholder")}
-                  className="h-11 w-full rounded-full border border-white/[0.08] bg-white/[0.04] pl-10 pr-4 text-sm text-white placeholder:text-white/30 focus:border-shu-500/40 focus:outline-none"
-                />
-              </div>
-              <div className="scroll-thin -mx-5 flex gap-2 overflow-x-auto px-5">
-                {FILTERS.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => setStatusFilter(s)}
-                    className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide transition-colors ${
-                      statusFilter === s
-                        ? "border-kehai-500/40 bg-kehai-500/10 text-kehai-300"
-                        : "border-white/10 bg-white/[0.03] text-white/45"
-                    }`}
-                  >
-                    {s === "all" ? t("eventDiscover.filterAll") : t(`badge.status.${s}`)}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="mt-5 space-y-3">
-            {isLoading ? (
-              <LoadingBlock />
-            ) : !events?.length ? (
-              <EmptyState glyph="無" title={t("eventDiscover.emptyTitle")} description={t("eventDiscover.emptyDescription")} />
-            ) : !filtered?.length ? (
-              <EmptyState glyph="無" title={t("eventDiscover.noMatchTitle")} description={t("eventDiscover.noMatchDescription")} />
-            ) : (
-              filtered.map((event) => <EventDiscoverCard key={event.id} event={event} locale={locale} t={t} />)
-            )}
-          </div>
-        </div>
-      </ClickRippleLayer>
-    );
+    return <PwaDiscover t={t} locale={locale} events={events} isLoading={isLoading} />;
   }
 
   return (
@@ -176,57 +127,3 @@ export default function DiscoverEventsPage() {
     </ClickRippleLayer>
   );
 }
-
-// The mockup's Discover card, ported with real data only -- no fabricated
-// attendee avatars (EventSummary carries just a registrations count, not
-// per-registrant identities), so the "who's going" cue is the real
-// isRegistered-driven pill (Going vs RSVP) rather than invented faces.
-function EventDiscoverCard({
-  event,
-  locale,
-  t,
-}: {
-  event: EventSummary;
-  locale: "en" | "ja";
-  t: (key: string, vars?: Record<string, string | number>) => string;
-}) {
-  const start = new Date(event.startsAt);
-  const day = new Intl.DateTimeFormat(locale === "ja" ? "ja-JP" : "en-US", { day: "2-digit" }).format(start);
-  const month = new Intl.DateTimeFormat(locale === "ja" ? "ja-JP" : "en-US", { month: "short" }).format(start).toUpperCase();
-  const time = new Intl.DateTimeFormat(locale === "ja" ? "ja-JP" : "en-US", { hour: "numeric", minute: "2-digit" }).format(start);
-
-  return (
-    <Link href={`/events/${event.id}`} className={`tap-row ${SURFACE} flex gap-3 p-3.5`}>
-      <div className="flex h-[54px] w-[50px] shrink-0 flex-col items-center justify-center rounded-[14px] border border-shu-500/30 bg-shu-500/10">
-        <span className="font-mono text-[18px] font-black leading-none text-shu-300">{day}</span>
-        <span className="mt-0.5 font-mono text-[8.5px] uppercase tracking-[0.1em] text-shu-300/60">{month}</span>
-      </div>
-      <div className="min-w-0 flex-1">
-        {event.organization?.name && (
-          <p className="font-mono text-[9.5px] font-bold uppercase tracking-[0.12em] text-kehai-300/70">{event.organization.name}</p>
-        )}
-        <p className="mt-0.5 truncate text-[14.5px] font-bold text-white">{event.name}</p>
-        <p className="mt-1 font-mono text-[10.5px] text-white/40">
-          {time} · {event.venue}
-        </p>
-        <div className="mt-2.5 flex items-center gap-2">
-          {event.capacity && (
-            <span className="font-mono text-[10px] text-white/30">
-              {t("eventDiscover.registeredOf", { count: event._count.registrations, capacity: event.capacity })}
-            </span>
-          )}
-          <span
-            className={`ml-auto rounded-full border px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-wide ${
-              event.isRegistered
-                ? "border-kehai-500/40 bg-kehai-500/10 text-kehai-300"
-                : "border-white/[0.14] text-white/60"
-            }`}
-          >
-            {event.isRegistered ? t("eventDiscover.going") : t("eventDiscover.rsvp")}
-          </span>
-        </div>
-      </div>
-    </Link>
-  );
-}
-

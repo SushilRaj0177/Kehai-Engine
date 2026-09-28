@@ -97,13 +97,13 @@ body {
    card. Border and glow strength both bumped hard so the card visibly
    separates from the page instead of blending into it. */
 [data-standalone="true"] .hud-surface {
-  border-radius: 24px;
-  border-color: rgba(255, 255, 255, 0.16);
-  background-color: rgba(255, 255, 255, 0.02);
+  border-radius: 26px;
+  border-color: rgba(255, 255, 255, 0.09);
+  background-color: rgba(255, 255, 255, 0.015);
   box-shadow:
     0 24px 48px -28px rgba(0, 0, 0, 0.85),
-    10px -10px 38px -18px rgba(255, 45, 85, 0.55),
-    -10px 10px 38px -18px rgba(34, 226, 245, 0.4);
+    6px -6px 30px -22px rgba(255, 45, 85, 0.35),
+    -6px 6px 30px -22px rgba(34, 226, 245, 0.22);
 }
 
 /* HERO_SHADOW (Hud.tsx) -- browser-tab default: no separate shadow; the

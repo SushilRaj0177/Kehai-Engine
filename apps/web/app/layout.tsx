@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Noto_Sans_JP, Space_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
 import { ViewTransitions } from "next-view-transitions";
 import "./globals.css";
+import "./pwa.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { LocaleProvider } from "@/lib/i18n";
 import { ApiBaseSetter } from "@/components/ApiBaseSetter";

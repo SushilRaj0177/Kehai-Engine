@@ -1,407 +1,67 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
 import { Link } from "next-view-transitions";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { useLocale } from "@/lib/i18n";
 import { useIsStandalone } from "@/lib/useStandalone";
+import { Icon } from "@/components/pwa/shared";
 
-// Primary mobile navigation now lives here instead of a top hamburger +
-// dropdown -- the same shift essentially every well-known app with real
-// navigational depth has made on small screens (Instagram, Spotify,
-// Robinhood, Notion's mobile web app, Coinbase): a fixed bottom tab bar
-// instead of a top menu, because it's reachable with a thumb without
-// stretching and doesn't cost vertical space out of the page content
-// itself the way a tall top bar does.
-//
-// Rendered once from the root layout (not per-page from NavBar, where it
-// used to live) so it's a single persistent instance across every
-// client-side navigation instead of remounting fresh on each one --
-// NavBar's own LocaleSwitch has a comment documenting exactly this same
-// remount problem for a different component. A View Transitions-based
-// indicator (the previous approach here) was fighting that remount the
-// whole time: the browser's cross-page snapshot machinery and this
-// component's own lifecycle were never fully in sync, which is what read
-// as janky. Continuity fixes that at the root -- the active-tab indicator
-// below is a single DOM node whose position is measured and animated with
-// a real CSS transition, the same technique already proven in this file's
-// sibling NavBar.tsx for its language-switch thumb, rather than reasoning
-// about the browser's separate view-transition timeline.
+// The installed PWA's dock, exactly as the approved mockup draws it: a slim
+// glass strip with Home / Discover / Classrooms / Account, a glowing chip
+// over whichever is active, and a raised centre button for the app's most
+// frequent action -- scanning a check-in QR. Renders nothing outside the
+// installed app (the browser keeps its own NavBar), and nothing on the
+// full-screen flows that the mockup draws without a dock.
 export function MobileBottomNav() {
   const { t } = useLocale();
-  const { user, memberships, loading } = useAuth();
-  const pathname = usePathname();
+  const { user, loading } = useAuth();
+  const pathname = usePathname() ?? "";
   const isStandalone = useIsStandalone();
 
-  const primaryOrg = memberships[0]?.organization;
-  const consoleHref = primaryOrg ? `/orgs/${primaryOrg.slug}` : "/dashboard";
-
-  // Rendering neither variant until standalone-ness is known avoids a
-  // flash-then-swap once the real answer arrives (same reasoning as
-  // NavBar's own isStandalone check) -- and this used to only mount at
-  // all when NavBar had already confirmed `true`, so a plain `false`/`null`
-  // bail-out here reproduces that exactly now that it's hoisted above NavBar.
   if (isStandalone !== true) return null;
+  if (/^\/classrooms\/[^/]+\/live/.test(pathname) || pathname.startsWith("/scan")) return null;
 
-  const tabs: { key: string; href: string; label: string; icon: React.ReactNode; active: boolean }[] = loading
-    ? []
-    : user
-      ? [
-          { key: "home", href: "/home", label: t("nav.home"), icon: <HomeIcon />, active: pathname === "/home" },
-          { key: "discover", href: "/events", label: t("nav.discover"), icon: <CompassIcon />, active: !!pathname?.startsWith("/events") },
-          { key: "classrooms", href: "/classrooms", label: t("nav.classrooms"), icon: <CapIcon />, active: !!pathname?.startsWith("/classrooms") },
-          {
-            key: "console",
-            href: consoleHref,
-            label: t("nav.consoleShort"),
-            icon: <GridIcon />,
-            active: !!pathname?.startsWith("/orgs") || pathname === "/dashboard",
-          },
-          { key: "account", href: "/settings", label: t("nav.account"), icon: <UserIcon />, active: pathname === "/settings" },
-        ]
-      : [
-          { key: "home", href: "/home", label: t("nav.home"), icon: <HomeIcon />, active: pathname === "/home" },
-          { key: "discover", href: "/events", label: t("nav.discover"), icon: <CompassIcon />, active: !!pathname?.startsWith("/events") },
-          { key: "classrooms", href: "/classrooms", label: t("nav.classrooms"), icon: <CapIcon />, active: !!pathname?.startsWith("/classrooms") },
-          { key: "signin", href: "/login", label: t("nav.signIn"), icon: <SignInIcon />, active: false },
-          { key: "register", href: "/register", label: t("nav.getStarted"), icon: <SparkIcon />, active: false },
-        ];
+  const signedIn = !loading && !!user;
+  const items = [
+    { key: "home", href: "/home", label: t("nav.home"), icon: Icon.home, active: pathname === "/home" },
+    { key: "discover", href: "/events", label: t("nav.discover"), icon: Icon.compass, active: pathname.startsWith("/events") },
+    { key: "classrooms", href: "/classrooms", label: t("nav.classrooms"), icon: Icon.cap, active: pathname.startsWith("/classrooms") },
+    {
+      key: "account",
+      href: signedIn ? "/settings" : "/login",
+      label: signedIn ? t("nav.account") : t("nav.signIn"),
+      icon: Icon.user,
+      active: pathname === "/settings" || pathname === "/login" || pathname === "/register",
+    },
+  ];
 
-  return (
-    <nav
-      className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-3 sm:hidden"
-      style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)" }}
+  const tab = (item: (typeof items)[number]) => (
+    <Link
+      key={item.key}
+      href={item.href}
+      aria-label={item.label}
+      aria-current={item.active ? "page" : undefined}
+      className={`pwa-dock-item ${item.active ? "pwa-active" : ""}`}
     >
-      {/* A floating pill, not an edge-to-edge bar: inset from the screen
-          edges on all sides so it reads as one instrument resting on top
-          of the page rather than a strip of chrome bolted to its border. */}
-      <div
-        className="flex h-[60px] w-full max-w-[300px] items-stretch gap-0.5 rounded-full border border-white/[0.10] bg-void-800/85 px-1.5 backdrop-blur-2xl"
-        // No inset top highlight -- it stacked on top of the border along
-        // the top edge only, making the pill's top edge read visibly
-        // thicker than its bottom, same issue as SURFACE in Hud.tsx.
-        style={{ boxShadow: "0 20px 44px -18px rgba(0,0,0,0.6)" }}
-      >
-        {loading ? (
-          <>
-            <TabSkeleton />
-            <TabSkeleton />
-            <TabSkeleton />
-          </>
-        ) : (
-          <TabRow tabs={tabs} />
-        )}
-      </div>
-    </nav>
+      {item.active && <span className="pwa-dock-chip" aria-hidden />}
+      {item.icon}
+    </Link>
   );
-}
-
-function TabRow({ tabs }: { tabs: { key: string; href: string; label: string; icon: React.ReactNode; active: boolean }[] }) {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const indicatorRef = useRef<HTMLSpanElement>(null);
-  const bounceRef = useRef<HTMLSpanElement>(null);
-  const barRef = useRef<HTMLSpanElement>(null);
-  const tabRefs = useRef(new Map<string, HTMLDivElement>());
-  const activeKey = tabs.find((tab) => tab.active)?.key ?? null;
-
-  // useLayoutEffect (not useEffect), same reasoning as LocaleSwitch's
-  // thumb: this measures and positions synchronously before the browser
-  // paints, so a route change never shows one wrong frame of the
-  // indicator sitting at its previous tab before snapping to the right
-  // one -- it's just never painted in the wrong place at all.
-  useLayoutEffect(() => {
-    const track = trackRef.current;
-    const indicator = indicatorRef.current;
-    const bounce = bounceRef.current;
-    const bar = barRef.current;
-    const activeEl = activeKey ? tabRefs.current.get(activeKey) : null;
-    if (!track || !indicator) return;
-
-    if (!activeEl) {
-      indicator.style.opacity = "0";
-      if (bar) bar.style.opacity = "0";
-      return;
-    }
-
-    // activeEl is the flex-1 wrapper div (full tab-column width, not the
-    // 44px icon circle inside it) -- registerRef has to target that
-    // wrapper rather than the circle because next-view-transitions' Link
-    // doesn't forward refs (see TabLink), so the indicator is sized to a
-    // fixed 44px circle and centered on the wrapper's midpoint instead of
-    // matched to its measured width.
-    const SIZE = 44;
-    const trackRect = track.getBoundingClientRect();
-    const activeRect = activeEl.getBoundingClientRect();
-    const centerX = activeRect.left - trackRect.left + activeRect.width / 2;
-    const centerY = activeRect.top - trackRect.top + activeRect.height / 2;
-    indicator.style.opacity = "1";
-    indicator.style.width = `${SIZE}px`;
-    indicator.style.height = `${SIZE}px`;
-    // This is the ONLY thing that sets `transform` on this element --
-    // the landing bounce lives on a separate inner child (bounceRef)
-    // instead of also animating `transform` here, because a CSS
-    // animation's keyframe values fully replace the animated property
-    // for its duration: a scale() keyframe on this same node would blow
-    // away this translate() every time it played, snapping the pill to
-    // the track's top-left corner mid-bounce.
-    indicator.style.transform = `translate(${centerX - SIZE / 2}px, ${centerY - SIZE / 2}px)`;
-
-    // A second, independent indicator: a slim glowing bar riding along the
-    // top of the dock above the active tab -- the PWA-only redesign's
-    // "elevated chip" identity (see the mockup previewed this session),
-    // layered on top of the existing circular glow rather than replacing
-    // it. Only translateX moves (the bar's own top offset is fixed via
-    // CSS), so it never needs its own width/height animation.
-    if (bar) {
-      const BAR_WIDTH = 32;
-      bar.style.opacity = "1";
-      bar.style.transform = `translateX(${centerX - BAR_WIDTH / 2}px)`;
-    }
-
-    // Restart the landing-bounce keyframe on every tab change -- a CSS
-    // animation on an element that never unmounts only plays once ever
-    // unless explicitly restarted. The classic, reliable way to do that:
-    // remove the class, force a synchronous style recalculation by
-    // reading a layout property (offsetWidth -- the read itself is what
-    // forces it; the value isn't otherwise used), then re-add the class.
-    if (bounce) {
-      bounce.classList.remove("nav-pill-pop-play");
-      void bounce.offsetWidth;
-      bounce.classList.add("nav-pill-pop-play");
-    }
-  }, [activeKey]);
 
   return (
-    <div ref={trackRef} className="relative flex flex-1 items-stretch gap-0.5">
-      <span
-        ref={indicatorRef}
-        aria-hidden
-        className="pointer-events-none absolute left-0 top-0 opacity-0 transition-[transform,width,height] duration-500"
-        style={{ transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)" }}
-      >
-        <span
-          ref={bounceRef}
-          className="block h-full w-full rounded-full bg-shu-500/15 drop-shadow-[0_0_8px_rgba(255,45,85,0.45)]"
-        />
-      </span>
-      <span
-        ref={barRef}
-        aria-hidden
-        className="pointer-events-none absolute -top-[9px] left-0 h-[3px] w-8 rounded-full bg-shu-500 opacity-0 shadow-[0_0_10px_rgba(255,45,85,0.7)] transition-[transform,opacity] duration-500"
-        style={{ transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)" }}
-      />
-      {tabs.map((tab, i) => (
-        <TabLink
-          key={tab.key}
-          href={tab.href}
-          active={tab.active}
-          label={tab.label}
-          icon={tab.icon}
-          // The middle tab rides raised above the dock as its own filled
-          // circle (the mockup's "elevated chip" identity) instead of
-          // sitting flush with the other four -- it's always shu-colored
-          // regardless of route, the same way a FAB reads as a fixed
-          // point of the dock rather than just another destination.
-          elevated={i === 2}
-          registerRef={(el) => {
-            // Not registered for the elevated tab: its own permanent
-            // raised styling already signals "this is here" -- sliding
-            // the circular glow/bar onto it when its route is active
-            // would just overlap a differently-shaped element for no
-            // reason. Leaving it unregistered means tabRefs.get(key)
-            // comes back undefined and the indicator/bar simply hide
-            // (the existing "no activeEl" branch), exactly as intended.
-            if (i === 2) return;
-            if (el) tabRefs.current.set(tab.key, el);
-            else tabRefs.current.delete(tab.key);
-          }}
-        />
-      ))}
+    <div className="pwa-dock-wrap">
+      <nav className="pwa-dock" aria-label="Primary">
+        {tab(items[0])}
+        {tab(items[1])}
+        <div className="pwa-fab-slot">
+          <Link className="pwa-fab" href={signedIn ? "/scan" : "/login"} aria-label={t("pwa.scanToCheckIn")}>
+            {Icon.scan}
+          </Link>
+        </div>
+        {tab(items[2])}
+        {tab(items[3])}
+      </nav>
     </div>
-  );
-}
-
-function TabLink({
-  href,
-  active,
-  label,
-  icon,
-  elevated,
-  registerRef,
-}: {
-  href: string;
-  active: boolean;
-  label: string;
-  icon: React.ReactNode;
-  elevated?: boolean;
-  registerRef: (el: HTMLDivElement | null) => void;
-}) {
-  // A tiny local burst list, not the app-wide ClickRippleLayer -- that one
-  // renders inside each page's own scrollable root at a lower z-index than
-  // this `fixed` nav's opaque background, so it's never actually visible
-  // on a nav tap no matter how it's positioned. This stays self-contained
-  // to the ~44px tap target and above everything else in the nav's own
-  // stacking context.
-  const [blooms, setBlooms] = useState<number[]>([]);
-  const nextBloomId = useRef(0);
-
-  function spawnBloom() {
-    const id = nextBloomId.current++;
-    setBlooms((prev) => [...prev, id]);
-    window.setTimeout(() => {
-      setBlooms((prev) => prev.filter((b) => b !== id));
-    }, 650);
-  }
-
-  if (elevated) {
-    return (
-      <div className="relative z-10 flex flex-1 justify-center">
-        <Link
-          href={href}
-          aria-label={label}
-          aria-current={active ? "page" : undefined}
-          onPointerDown={spawnBloom}
-          className="relative -mt-7 flex h-14 w-14 items-center justify-center rounded-full text-white transition-transform duration-200 active:scale-95"
-          style={{
-            background: "linear-gradient(160deg, #ff5c73, #c81036)",
-            boxShadow: "0 12px 26px -8px rgba(255,45,85,0.65), 0 0 0 6px #0f141c",
-          }}
-        >
-          {blooms.map((id) => (
-            <span
-              key={id}
-              aria-hidden
-              className="nav-tap-bloom pointer-events-none absolute left-1/2 top-1/2 h-14 w-14 rounded-full bg-white/25"
-            />
-          ))}
-          <span className="relative flex h-6 w-6 items-center justify-center">{icon}</span>
-        </Link>
-      </div>
-    );
-  }
-
-  return (
-    // The measurement target for the sliding indicator (see TabRow) is
-    // this wrapping div, not the <Link> itself -- next-view-transitions'
-    // Link is a plain function component, not wrapped in forwardRef, so a
-    // ref passed straight to it silently never reaches the underlying
-    // anchor. A div wrapper sized identically to its Link child sidesteps
-    // that rather than fighting it.
-    <div ref={registerRef} className="relative z-10 flex flex-1">
-      <Link
-        href={href}
-        aria-label={label}
-        aria-current={active ? "page" : undefined}
-        onPointerDown={spawnBloom}
-        // active: here is Tailwind's :active pseudo-class (the CSS state
-        // while pressed), unrelated to the `active` prop (whether this is
-        // the current route) despite the name collision. The press itself
-        // is a light, asymmetric squash (flatter on Y than X) rather than a
-        // uniform shrink -- reads as a soft, compressible pill instead of
-        // the whole tap target just shrinking in place. It used to spring
-        // back past 1.0 on release (an overshoot easing) -- that's the
-        // "thump": settling to a pure deceleration curve with no bounce
-        // past rest, and a shallower squash, reads as a gentle press
-        // instead of a jab.
-        className={`flex flex-1 items-center justify-center transition-colors duration-200 active:scale-x-[0.94] active:scale-y-[0.9] ${
-          active ? "text-shu-300" : "text-white/45 active:text-white/70"
-        }`}
-        style={{ transitionProperty: "color, transform", transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)" }}
-      >
-        {blooms.map((id) => (
-          <span key={id} aria-hidden className="nav-tap-bloom pointer-events-none absolute left-1/2 top-1/2 h-11 w-11 rounded-full bg-white/25" />
-        ))}
-        <span className="relative flex h-11 w-11 items-center justify-center rounded-full">{icon}</span>
-      </Link>
-    </div>
-  );
-}
-
-function TabSkeleton() {
-  return (
-    <div className="flex flex-1 items-center justify-center" aria-hidden>
-      <span className="h-11 w-11 animate-pulse rounded-full bg-white/[0.08]" />
-    </div>
-  );
-}
-
-const iconProps = {
-  width: 21,
-  height: 21,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: "currentColor",
-  strokeWidth: 1.75,
-  strokeLinecap: "round" as const,
-  strokeLinejoin: "round" as const,
-};
-
-function HomeIcon() {
-  return (
-    <svg {...iconProps}>
-      <path d="M4 11.5L12 4l8 7.5" />
-      <path d="M6 10v8.5a1 1 0 001 1h3.5v-5h3v5H17a1 1 0 001-1V10" />
-    </svg>
-  );
-}
-
-function CompassIcon() {
-  // A proper symmetric compass needle (two points reflected through the
-  // circle's center: 15,9 <-> 9,15 and 13,13 <-> 11,11), not the
-  // hand-approximated quadrilateral this used before, whose points didn't
-  // actually mirror each other and rendered as a visibly lopsided blob.
-  return (
-    <svg {...iconProps}>
-      <circle cx="12" cy="12" r="9" />
-      <polygon points="15,9 13,13 9,15 11,11" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
-
-function CapIcon() {
-  return (
-    <svg {...iconProps}>
-      <path d="M12 4.5l9 4.5-9 4.5-9-4.5z" />
-      <path d="M6.5 11v4.5c0 1.2 2.5 3 5.5 3s5.5-1.8 5.5-3V11" />
-    </svg>
-  );
-}
-
-function GridIcon() {
-  return (
-    <svg {...iconProps}>
-      <rect x="4" y="4" width="7" height="7" rx="1.4" />
-      <rect x="13" y="4" width="7" height="7" rx="1.4" />
-      <rect x="4" y="13" width="7" height="7" rx="1.4" />
-      <rect x="13" y="13" width="7" height="7" rx="1.4" />
-    </svg>
-  );
-}
-
-function UserIcon() {
-  return (
-    <svg {...iconProps}>
-      <circle cx="12" cy="8.5" r="3.5" />
-      <path d="M5 20c0-3.6 3.1-6.5 7-6.5s7 2.9 7 6.5" />
-    </svg>
-  );
-}
-
-function SignInIcon() {
-  return (
-    <svg {...iconProps}>
-      <path d="M10 4h7a1.5 1.5 0 011.5 1.5v13A1.5 1.5 0 0117 20h-7" />
-      <path d="M14 12H3.5" />
-      <path d="M7 8l-3.5 4L7 16" />
-    </svg>
-  );
-}
-
-function SparkIcon() {
-  return (
-    <svg {...iconProps}>
-      <path d="M12 3.5l1.8 5.1 5.2 1.8-5.2 1.8-1.8 5.2-1.8-5.2-5.2-1.8 5.2-1.8z" />
-    </svg>
   );
 }
