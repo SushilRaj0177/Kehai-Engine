@@ -191,14 +191,28 @@ function TabRow({ tabs }: { tabs: { key: string; href: string; label: string; ic
         className="pointer-events-none absolute -top-[9px] left-0 h-[3px] w-8 rounded-full bg-shu-500 opacity-0 shadow-[0_0_10px_rgba(255,45,85,0.7)] transition-[transform,opacity] duration-500"
         style={{ transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)" }}
       />
-      {tabs.map((tab) => (
+      {tabs.map((tab, i) => (
         <TabLink
           key={tab.key}
           href={tab.href}
           active={tab.active}
           label={tab.label}
           icon={tab.icon}
+          // The middle tab rides raised above the dock as its own filled
+          // circle (the mockup's "elevated chip" identity) instead of
+          // sitting flush with the other four -- it's always shu-colored
+          // regardless of route, the same way a FAB reads as a fixed
+          // point of the dock rather than just another destination.
+          elevated={i === 2}
           registerRef={(el) => {
+            // Not registered for the elevated tab: its own permanent
+            // raised styling already signals "this is here" -- sliding
+            // the circular glow/bar onto it when its route is active
+            // would just overlap a differently-shaped element for no
+            // reason. Leaving it unregistered means tabRefs.get(key)
+            // comes back undefined and the indicator/bar simply hide
+            // (the existing "no activeEl" branch), exactly as intended.
+            if (i === 2) return;
             if (el) tabRefs.current.set(tab.key, el);
             else tabRefs.current.delete(tab.key);
           }}
@@ -213,12 +227,14 @@ function TabLink({
   active,
   label,
   icon,
+  elevated,
   registerRef,
 }: {
   href: string;
   active: boolean;
   label: string;
   icon: React.ReactNode;
+  elevated?: boolean;
   registerRef: (el: HTMLDivElement | null) => void;
 }) {
   // A tiny local burst list, not the app-wide ClickRippleLayer -- that one
@@ -236,6 +252,33 @@ function TabLink({
     window.setTimeout(() => {
       setBlooms((prev) => prev.filter((b) => b !== id));
     }, 650);
+  }
+
+  if (elevated) {
+    return (
+      <div className="relative z-10 flex flex-1 justify-center">
+        <Link
+          href={href}
+          aria-label={label}
+          aria-current={active ? "page" : undefined}
+          onPointerDown={spawnBloom}
+          className="relative -mt-7 flex h-14 w-14 items-center justify-center rounded-full text-white transition-transform duration-200 active:scale-95"
+          style={{
+            background: "linear-gradient(160deg, #ff5c73, #c81036)",
+            boxShadow: "0 12px 26px -8px rgba(255,45,85,0.65), 0 0 0 6px #0f141c",
+          }}
+        >
+          {blooms.map((id) => (
+            <span
+              key={id}
+              aria-hidden
+              className="nav-tap-bloom pointer-events-none absolute left-1/2 top-1/2 h-14 w-14 rounded-full bg-white/25"
+            />
+          ))}
+          <span className="relative flex h-6 w-6 items-center justify-center">{icon}</span>
+        </Link>
+      </div>
+    );
   }
 
   return (

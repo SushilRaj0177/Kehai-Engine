@@ -9,6 +9,7 @@ import { PageGlow } from "@/components/ui/PageGlow";
 import { ClickRippleLayer } from "@/components/ui/ClickRipple";
 import { SHU, KEHAI, SURFACE, HERO_SHADOW, SectionHead, MetricStrip, Meter, Avatar, Dial, PulseDot, FlameIcon, useElapsed } from "@/components/ui/Hud";
 import { useAuth } from "@/lib/auth-context";
+import { useIsStandalone } from "@/lib/useStandalone";
 import {
   useMyRegistrations,
   useEnrolledClassrooms,
@@ -33,6 +34,7 @@ const ATTENTION_THRESHOLD = 0.75;
 
 export default function HomePage() {
   const { t, locale } = useLocale();
+  const isStandalone = useIsStandalone();
   const { user, loading: authLoading } = useAuth();
   const { data: registrations } = useMyRegistrations(!!user);
   const { data: enrolled } = useEnrolledClassrooms();
@@ -75,6 +77,22 @@ export default function HomePage() {
       <PageGlow />
       <NavBar />
       <div className="page-stagger relative mx-auto max-w-2xl space-y-8 px-4 pb-28 pt-5 sm:px-6 sm:pt-8">
+        {/* NavBar hides itself entirely in standalone mode (MobileBottomNav
+            covers the same destinations from the bottom) -- without this,
+            a PWA visitor had no top chrome at all. A small identity row,
+            not a full bar: just the mark, since MobileBottomNav already
+            owns navigation and there's nothing else here worth a whole bar. */}
+        {isStandalone && (
+          <div className="flex items-center gap-2 px-1">
+            <span
+              className="flex h-[30px] w-[30px] items-center justify-center rounded-[9px] font-display text-[15px] font-black leading-none"
+              style={{ background: "linear-gradient(155deg, #ff5c73, #c81036)", boxShadow: "0 4px 14px -4px rgba(255,45,85,0.55)" }}
+            >
+              気
+            </span>
+            <span className="font-mono text-[11px] font-bold tracking-[0.2em] text-white/55">KEHAI</span>
+          </div>
+        )}
         <header className="px-1">
           <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-white/30">
             {formatDate(new Date().toISOString(), locale)}
