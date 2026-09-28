@@ -569,13 +569,14 @@ function DeleteClassroomSection({
             <Label htmlFor="delete-classroom-confirm">   <span className="uppercase">TYPE "</span>   <span className="normal-case">{classroomName}</span>   <span className="uppercase">" TO CONFIRM</span> </Label>
             <Input id="delete-classroom-confirm" value={typedName} onChange={(e) => setTypedName(e.target.value)} />
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Button variant="danger" size="sm" loading={deleting} onClick={confirmDelete} disabled={typedName.trim().toLowerCase() !== classroomName.trim().toLowerCase()}>
               {t("classroomDetail.deleteClassroomConfirm")}
             </Button>
             <Button
               variant="ghost"
               size="sm"
+              className="border border-white/10 px-4 py-2 text-white/60 hover:border-white/20 hover:text-white"
               onClick={() => {
                 setConfirming(false);
                 setTypedName("");
