@@ -290,7 +290,14 @@ export function PwaHome({
           <div className="pwa-mark">気</div>
           <span className="pwa-wordmark">KEHAI</span>
         </div>
-        <PwaBell />
+        <div className="pwa-top-actions">
+          {signedIn && (
+            <Link className="pwa-bell" href={org ? `/orgs/${org.slug}` : "/dashboard"} aria-label={t("nav.console")}>
+              {Icon.grid}
+            </Link>
+          )}
+          <PwaBell />
+        </div>
       </div>
 
       <div>
