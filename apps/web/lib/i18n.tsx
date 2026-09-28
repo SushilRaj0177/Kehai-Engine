@@ -507,6 +507,10 @@ const dict = {
     noEvents: { en: "No events match", ja: "該当するイベントはありません" },
     scanTitle: { en: "Scan to check in", ja: "スキャンしてチェックイン" },
     scanHint: { en: "Point your camera at the session QR code.", ja: "セッションのQRコードにカメラを向けてください。" },
+    scanSearching: { en: "Searching for a code…", ja: "コードを探しています…" },
+    stepScan: { en: "Scan", ja: "スキャン" },
+    stepLocate: { en: "Locate", ja: "位置確認" },
+    stepDone: { en: "Checked in", ja: "出席完了" },
     scanInvalid: { en: "That isn't a Kehai check-in code.", ja: "Kehai のチェックインコードではありません。" },
   },
   eventDetail: {

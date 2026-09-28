@@ -761,3 +761,11 @@ body {
     display: none !important;
   }
 }
+
+/* Installed PWA: every remaining screen (classroom detail, settings,
+   my-events, console...) sits on the same #050609 ground and plain
+   glyph set as the rebuilt Home/Discover/Live screens (app/pwa.css). */
+[data-standalone="true"] body {
+  background: #050609;
+  font-feature-settings: normal;
+}

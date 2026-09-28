@@ -54,10 +54,31 @@ export default function ScanPage() {
           <div className="pwa-sub">{t("pwa.scanHint")}</div>
         </div>
       </div>
-      <div className="pwa-panel" style={{ padding: 14 }}>
-        {user && <QrScanner key={attempt} onDecoded={onDecoded} />}
+      <div className="pwa-panel pwa-scan-panel">
+        <div className="pwa-scan-wrap">
+          {user && <QrScanner key={attempt} onDecoded={onDecoded} />}
+          <div className="pwa-scan-overlay" aria-hidden>
+            <i className="pwa-corner pwa-tl" />
+            <i className="pwa-corner pwa-tr" />
+            <i className="pwa-corner pwa-bl" />
+            <i className="pwa-corner pwa-br" />
+            <span className="pwa-beam" />
+          </div>
+        </div>
+        <div className="pwa-scan-status">
+          <span className="pwa-pulse-dot" />
+          {t("pwa.scanSearching")}
+        </div>
       </div>
       {error && <p className="pwa-error">{error}</p>}
+      <div className="pwa-steps">
+        {[t("pwa.stepScan"), t("pwa.stepLocate"), t("pwa.stepDone")].map((label, i) => (
+          <div key={label} className={`pwa-step ${i === 0 ? "pwa-on" : ""}`}>
+            <b>{String(i + 1).padStart(2, "0")}</b>
+            <span>{label}</span>
+          </div>
+        ))}
+      </div>
     </PwaScreen>
   );
 }
