@@ -365,7 +365,7 @@ function DeleteAccountSection({ standalone }: { standalone?: boolean }) {
               />
             </div>
           )}
-          <div className="flex items-center gap-3">
+          <div className={standalone ? "flex flex-wrap items-center gap-3" : "flex items-center gap-3"}>
             <Button
               variant="danger"
               size="sm"
