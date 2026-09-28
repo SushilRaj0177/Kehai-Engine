@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { LoadingBlock } from "@/components/ui/States";
 import { PageGlow } from "@/components/ui/PageGlow";
 import { ClickRippleLayer } from "@/components/ui/ClickRipple";
+import { DebugStandaloneBadge } from "@/components/DebugStandaloneBadge";
 import { SHU, KEHAI, SURFACE, HERO_SHADOW, SectionHead, MetricStrip, Meter, Avatar, Dial, PulseDot, FlameIcon, useElapsed } from "@/components/ui/Hud";
 import { useAuth } from "@/lib/auth-context";
 import {
@@ -72,6 +73,7 @@ export default function HomePage() {
 
   return (
     <ClickRippleLayer className="relative min-h-screen">
+      <DebugStandaloneBadge />
       <PageGlow />
       <NavBar />
       <div className="page-stagger relative mx-auto max-w-2xl space-y-8 px-4 pb-28 pt-5 sm:px-6 sm:pt-8">
