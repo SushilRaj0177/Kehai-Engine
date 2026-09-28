@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useLocale } from "@/lib/i18n";
 import { useIsStandalone } from "@/lib/useStandalone";
 import { Icon } from "@/components/pwa/shared";
+import { PwaNotifier } from "@/components/pwa/notifications";
 
 // The installed PWA's dock, exactly as the approved mockup draws it: a slim
 // glass strip with Home / Discover / Classrooms / Account, a glowing chip
@@ -51,6 +52,7 @@ export function MobileBottomNav() {
 
   return (
     <div className="pwa-dock-wrap">
+      <PwaNotifier />
       <nav className="pwa-dock" aria-label="Primary">
         {tab(items[0])}
         {tab(items[1])}

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import jsQR from "jsqr";
 import { useTransitionRouter as useRouter } from "next-view-transitions";
 import { QrScanner } from "@/components/QrScanner";
 import { Icon, PwaScreen } from "@/components/pwa/shared";
@@ -18,6 +19,36 @@ export default function ScanPage() {
   const { user, loading } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [reading, setReading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  // Fallback for a phone whose camera can't focus on a screen, or a code
+  // someone shared as a screenshot. Geofencing still has to pass on the
+  // next step, so a forwarded image alone can't check anyone in remotely.
+  async function onFile(file: File | undefined) {
+    if (!file) return;
+    setError(null);
+    setReading(true);
+    try {
+      const bitmap = await createImageBitmap(file);
+      const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(bitmap.width * scale);
+      canvas.height = Math.round(bitmap.height * scale);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("no canvas");
+      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(img.data, img.width, img.height, { inversionAttempts: "attemptBoth" });
+      if (code?.data) onDecoded(code.data);
+      else setError(t("pwa.uploadNoCode"));
+    } catch {
+      setError(t("pwa.uploadNoCode"));
+    } finally {
+      setReading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
 
   useEffect(() => {
     if (isStandalone === false) router.replace("/events");
@@ -71,6 +102,10 @@ export default function ScanPage() {
         </div>
       </div>
       {error && <p className="pwa-error">{error}</p>}
+      <button type="button" className="pwa-btn-x pwa-v-secondary pwa-s-md" onClick={() => fileRef.current?.click()} disabled={reading}>
+        {reading ? t("pwa.uploadReading") : t("pwa.uploadScreenshot")}
+      </button>
+      <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => onFile(e.target.files?.[0])} />
       <div className="pwa-steps">
         {[t("pwa.stepScan"), t("pwa.stepLocate"), t("pwa.stepDone")].map((label, i) => (
           <div key={label} className={`pwa-step ${i === 0 ? "pwa-on" : ""}`}>

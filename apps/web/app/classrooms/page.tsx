@@ -95,7 +95,7 @@ export default function ClassroomsHubPage() {
                   setShowCreate(false);
                 }}
               >
-                {showJoin ? t("common.cancel") : t("classroomHub.joinClassroom")}
+                {showJoin ? t("common.cancel") : t("pwa.join")}
               </Button>
               <Button
                 variant="terminal"
@@ -105,7 +105,7 @@ export default function ClassroomsHubPage() {
                   setShowJoin(false);
                 }}
               >
-                {showCreate ? t("common.cancel") : t("classroomHub.newClassroom")}
+                {showCreate ? t("common.cancel") : t("pwa.newClass")}
               </Button>
             </div>
           </div>
@@ -146,6 +146,10 @@ export default function ClassroomsHubPage() {
             </div>
           )}
 
+          {(() => {
+            // Teaching but not enrolled anywhere: lead with what they actually use.
+            const teachFirst = !enrolledLoading && !enrolled?.length && (teaching?.length ?? 0) > 0;
+            const enrolledSection = (
           <section className="mt-7">
             <h2 className="mb-3 px-1 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-white/35">
               {t("classroomHub.enrolledHeading")}
@@ -153,18 +157,17 @@ export default function ClassroomsHubPage() {
             {enrolledLoading ? (
               <LoadingBlock />
             ) : !enrolled?.length ? (
-              <EmptyState
-                glyph="学"
+              <CompactEmpty
                 title={t("classroomHub.enrolledEmptyTitle")}
                 description={t("classroomHub.enrolledEmptyDescription")}
                 action={
                   <Button variant="terminal" size="sm" onClick={() => setShowJoin(true)}>
-                    {t("classroomHub.joinClassroom")}
+                    {t("pwa.join")}
                   </Button>
                 }
               />
             ) : !filteredEnrolled?.length ? (
-              <EmptyState glyph="学" title={t("classroomHub.noMatchTitle")} description={t("classroomHub.noMatchDescription")} />
+              <CompactEmpty title={t("classroomHub.noMatchTitle")} description={t("classroomHub.noMatchDescription")} />
             ) : (
               <div className={`${SURFACE} divide-y divide-white/[0.05] overflow-hidden`}>
                 {filteredEnrolled.map((e) => (
@@ -173,26 +176,26 @@ export default function ClassroomsHubPage() {
               </div>
             )}
           </section>
-
-          <section className="mt-8">
+            );
+            const teachingSection = (
+          <section className="mt-7">
             <h2 className="mb-3 px-1 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-white/35">
               {t("classroomHub.teachingHeading")}
             </h2>
             {teachingLoading ? (
               <LoadingBlock />
             ) : !teaching?.length ? (
-              <EmptyState
-                glyph="級"
+              <CompactEmpty
                 title={t("classroomHub.teachingEmptyTitle")}
                 description={t("classroomHub.teachingEmptyDescription")}
                 action={
                   <Button variant="terminal" size="sm" onClick={() => setShowCreate(true)}>
-                    {t("classroomHub.newClassroom")}
+                    {t("pwa.newClass")}
                   </Button>
                 }
               />
             ) : !filteredTeaching?.length ? (
-              <EmptyState glyph="級" title={t("classroomHub.noMatchTitle")} description={t("classroomHub.noMatchDescription")} />
+              <CompactEmpty title={t("classroomHub.noMatchTitle")} description={t("classroomHub.noMatchDescription")} />
             ) : (
               <div className={`${SURFACE} divide-y divide-white/[0.05] overflow-hidden`}>
                 {filteredTeaching.map((c) => (
@@ -201,6 +204,19 @@ export default function ClassroomsHubPage() {
               </div>
             )}
           </section>
+            );
+            return teachFirst ? (
+              <>
+                {teachingSection}
+                {enrolledSection}
+              </>
+            ) : (
+              <>
+                {enrolledSection}
+                {teachingSection}
+              </>
+            );
+          })()}
         </div>
       </ClickRippleLayer>
     );
@@ -585,6 +601,20 @@ function TeachingRow({
           {copiedId === `${c.id}-code` ? t("classroomHub.copied") : t("classroomHub.copyCode")}
         </button>
       </div>
+    </div>
+  );
+}
+
+// Installed-PWA empty state: a single tight panel instead of the tall,
+// watermark-backed EmptyState, so an empty section doesn't eat the screen.
+function CompactEmpty({ title, description, action }: { title: string; description?: string; action?: React.ReactNode }) {
+  return (
+    <div className="pwa-card flex items-center gap-4 px-5 py-4">
+      <div className="min-w-0 flex-1">
+        <p className="text-[14px] font-bold text-white/85">{title}</p>
+        {description && <p className="mt-1 text-[12px] leading-relaxed text-white/40">{description}</p>}
+      </div>
+      {action && <div className="shrink-0">{action}</div>}
     </div>
   );
 }

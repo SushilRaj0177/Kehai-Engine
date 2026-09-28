@@ -6,6 +6,7 @@ import { apiFetch, ApiError } from "@/lib/api";
 import { useClassroom, useClassroomHeatmap, useClassroomRoster, useClassroomSessions } from "@/lib/hooks";
 import { getCheckInWindow } from "@/lib/checkin-window";
 import type { ClassroomSummary, EnrolledClassroom, MyRegistration, OrgOverview } from "@/lib/types";
+import { PwaBell } from "./notifications";
 import { Icon, PwaDial, PwaHeat, PwaScreen, lastHeatLevels, shortDate } from "./shared";
 
 type T = (key: string, vars?: Record<string, string | number>) => string;
@@ -289,9 +290,7 @@ export function PwaHome({
           <div className="pwa-mark">気</div>
           <span className="pwa-wordmark">KEHAI</span>
         </div>
-        <Link className="pwa-bell" href="/settings" aria-label={t("pwa.notifications")}>
-          {Icon.bell}
-        </Link>
+        <PwaBell />
       </div>
 
       <div>
