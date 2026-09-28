@@ -51,7 +51,7 @@ export default function DiscoverEventsPage() {
     <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
-      <div className="page-stagger relative mx-auto max-w-6xl px-6 py-20">
+      <div className="page-stagger relative mx-auto max-w-6xl px-6 py-10 sm:py-14">
         <KanjiMark glyph="催事" className="absolute -right-6 top-0 text-[6rem] sm:text-[10rem]" />
         {/* z-20 on every following block here -- above KanjiMark's own
             hardcoded z-10; see orgs/[slug]/page.tsx. */}

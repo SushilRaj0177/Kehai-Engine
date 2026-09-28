@@ -271,7 +271,7 @@ export default function LandingPage() {
             full-width heading, and without this the glyph (painted above,
             since z-index beats DOM order once either side sets one) tinted
             individual letters wherever its strokes crossed the text. */}
-        <div className="relative z-20 mx-auto flex max-w-7xl flex-col items-start px-6 py-16 md:py-20">
+        <div className="relative z-20 mx-auto flex max-w-7xl flex-col items-start px-6 py-10 md:py-16">
           {/* Slightly smaller + more opaque on mobile only (bg-shu-500/20 vs
               the desktop 10%) — sm: below restores the exact original
               values, and since this is a breakpoint (not a fixed width) it
@@ -321,8 +321,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="relative mx-auto max-w-5xl px-6 py-28 md:py-36">
-        <Reveal variant="curtain" className="mb-16 max-w-2xl">
+      <section className="relative mx-auto max-w-5xl px-6 py-16 md:py-24">
+        <Reveal variant="curtain" className="mb-10 max-w-2xl">
           <span className="text-xs font-semibold uppercase tracking-widest text-shu-400">{t("pillars.kicker")}</span>
           <h2 className={`mt-3 font-display text-4xl font-bold text-white md:text-5xl ${
               locale === "ja" ? "leading-[1.65]" : "leading-tight"
@@ -335,7 +335,7 @@ export default function LandingPage() {
         <div className="divide-y divide-white/[0.06]">
           {pillars.map((p, i) => (
             <Reveal key={p.glyph} delayMs={i * 80}>
-              <div className="group grid gap-4 py-10 sm:grid-cols-[auto_1fr] sm:items-center sm:gap-10">
+              <div className="group grid gap-4 py-7 sm:grid-cols-[auto_1fr] sm:items-center sm:gap-10">
                 <PillarGlyph
                   ref={(el) => {
                     pillarRefs.current[i] = el;
@@ -353,10 +353,10 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="relative overflow-hidden bg-void-900/40 py-28 md:py-36">
+      <section className="relative overflow-hidden bg-void-900/40 py-16 md:py-24">
         <KanjiMark glyph="信" accent="kehai" className="absolute -right-6 bottom-0 text-[16rem]" />
         <div className="relative mx-auto max-w-5xl px-6">
-          <Reveal className="mb-16 max-w-2xl">
+          <Reveal className="mb-10 max-w-2xl">
             <span className="text-xs font-semibold uppercase tracking-widest text-kehai-400">{t("flow.kicker")}</span>
             <h2 className={`mt-3 font-display text-4xl font-bold text-white md:text-5xl ${
               locale === "ja" ? "leading-[1.65]" : "leading-tight"
@@ -387,7 +387,7 @@ export default function LandingPage() {
             </div>
             {steps.map((step, i) => (
               <Reveal key={step.en} delayMs={i * 90}>
-                <li className="group relative flex items-start gap-6 py-8 sm:gap-9">
+                <li className="group relative flex items-start gap-6 py-6 sm:gap-9">
                   <span
                     ref={i === steps.length - 1 ? flowLastIconRef : undefined}
                     className="relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-void-950 ring-1 ring-white/10 transition-all duration-300 group-hover:scale-110 group-hover:ring-shu-400/50 sm:h-[70px] sm:w-[70px]"

@@ -92,7 +92,7 @@ export default function LoginPage() {
     <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
-      <div className="page-stagger relative mx-auto flex min-h-[calc(100vh-160px)] max-w-xl flex-col justify-center px-6 py-16">
+      <div className="page-stagger relative mx-auto flex min-h-[calc(100vh-200px)] max-w-xl flex-col justify-center px-6 py-10">
         {/* Responsive size (was a flat 12rem) — unconditionally that large,
             the glyph was wide enough to sit behind the card on a narrow
             phone the same way the hero's did before its z-20 fix; z-20

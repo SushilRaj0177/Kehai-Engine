@@ -72,7 +72,7 @@ export default function HomePage() {
       <ClickRippleLayer className="relative min-h-screen">
         <PageGlow />
         <NavBar />
-        <div className="relative mx-auto max-w-lg px-6 py-24 text-center">
+        <div className="relative mx-auto max-w-lg px-6 py-12 sm:py-16 text-center">
           <p className="text-white/60">{t("home.signInPrompt")}</p>
           <Link href="/login">
             <Button className="mt-4">{t("common.signIn")}</Button>

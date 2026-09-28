@@ -122,7 +122,7 @@ export default function EventControlRoomPage() {
       <ClickRippleLayer className="relative min-h-screen">
         <PageGlow />
         <NavBar />
-        <div className="relative mx-auto max-w-lg px-6 py-24">
+        <div className="relative mx-auto max-w-lg px-6 py-12 sm:py-16">
           <EmptyState title={t("eventDetail.notFoundTitle")} description={t("eventDetail.notFoundDescription")} />
         </div>
       </ClickRippleLayer>
@@ -167,7 +167,7 @@ export default function EventControlRoomPage() {
     <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
-      <div className="page-stagger relative mx-auto max-w-6xl px-6 py-16">
+      <div className="page-stagger relative mx-auto max-w-6xl px-6 py-10 sm:py-12">
         <KanjiMark glyph="現場" className="absolute -right-6 top-0 text-[5rem] sm:text-[9rem]" />
 
         {/* z-20 -- above KanjiMark's own hardcoded z-10; see orgs/[slug]/page.tsx. */}

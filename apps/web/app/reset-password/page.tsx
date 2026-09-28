@@ -57,7 +57,7 @@ export default function ResetPasswordPage() {
       <ClickRippleLayer className="relative min-h-screen">
         <PageGlow />
         <NavBar />
-        <div className="relative mx-auto max-w-lg px-6 py-24">
+        <div className="relative mx-auto max-w-lg px-6 py-12 sm:py-16">
           <EmptyState
             title={t("auth.resetPasswordInvalidTitle")}
             description={t("auth.resetPasswordInvalidDescription")}
@@ -135,7 +135,7 @@ export default function ResetPasswordPage() {
     <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
-      <div className="page-stagger relative mx-auto flex min-h-[calc(100vh-160px)] max-w-xl flex-col justify-center px-6 py-16">
+      <div className="page-stagger relative mx-auto flex min-h-[calc(100vh-200px)] max-w-xl flex-col justify-center px-6 py-10">
         <KanjiMark glyph="鍵" className="absolute -right-6 top-0 text-[7rem] sm:-right-10 sm:text-[12rem]" />
 
         <span className="relative z-20 text-xs font-semibold uppercase tracking-widest text-shu-400">

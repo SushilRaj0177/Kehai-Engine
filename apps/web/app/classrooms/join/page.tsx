@@ -47,7 +47,7 @@ export default function ClassroomJoinLandingPage() {
     <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
-      <div className="page-stagger relative mx-auto flex min-h-[calc(100vh-160px)] max-w-xl flex-col justify-center px-6 py-16">
+      <div className="page-stagger relative mx-auto flex min-h-[calc(100vh-200px)] max-w-xl flex-col justify-center px-6 py-10">
         <KanjiMark glyph="級" className="absolute -right-6 top-0 text-[7rem] sm:-right-10 sm:text-[12rem]" />
 
         <span className="relative z-20 text-xs font-semibold uppercase tracking-widest text-shu-400">

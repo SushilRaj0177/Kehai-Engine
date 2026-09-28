@@ -60,7 +60,7 @@ export default function ClassroomsHubPage() {
       <ClickRippleLayer className="relative min-h-screen">
         <PageGlow />
         <NavBar />
-        <div className="relative mx-auto max-w-lg px-6 py-24 text-center">
+        <div className="relative mx-auto max-w-lg px-6 py-12 sm:py-16 text-center">
           <p className="text-white/60">{t("dashboard.signInPrompt")}</p>
           <Link href="/login">
             <Button className="mt-4">{t("common.signIn")}</Button>
@@ -226,7 +226,7 @@ export default function ClassroomsHubPage() {
     <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
-      <div className="page-stagger relative mx-auto max-w-6xl px-6 py-20">
+      <div className="page-stagger relative mx-auto max-w-6xl px-6 py-10 sm:py-14">
         <KanjiMark glyph="級" className="absolute -right-4 top-0 text-[6rem] sm:text-[10rem]" />
         <div className="relative z-20 flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -345,7 +345,7 @@ export default function ClassroomsHubPage() {
           )}
         </div>
 
-        <div className="relative z-20 mt-16">
+        <div className="relative z-20 mt-10">
           <h2 className="mb-6 font-display text-xl font-bold text-white/70">{t("classroomHub.teachingHeading")}</h2>
           {teachingLoading ? (
             <LoadingBlock />

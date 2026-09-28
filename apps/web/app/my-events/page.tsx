@@ -77,7 +77,7 @@ export default function MyEventsPage() {
     <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
-      <div className="page-stagger relative mx-auto max-w-5xl px-6 py-20">
+      <div className="page-stagger relative mx-auto max-w-5xl px-6 py-10 sm:py-14">
         <KanjiMark glyph="出席" className="absolute -right-6 top-0 text-[5rem] sm:text-[9rem]" />
 
         {/* z-20 on every following block here -- above KanjiMark's own
@@ -95,11 +95,11 @@ export default function MyEventsPage() {
         </div>
 
         {isLoading ? (
-          <div className="mt-16">
+          <div className="mt-10">
             <LoadingBlock />
           </div>
         ) : !registrations?.length ? (
-          <div className="mt-16">
+          <div className="mt-10">
             <EmptyState
               glyph="無"
               title={t("myEvents.emptyTitle")}
@@ -107,7 +107,7 @@ export default function MyEventsPage() {
             />
           </div>
         ) : (
-          <div className="mt-16 space-y-16">
+          <div className="mt-10 space-y-12">
             {upcoming.length > 0 && (
               <RegistrationGroup label={t("myEvents.upcoming")} registrations={upcoming} />
             )}

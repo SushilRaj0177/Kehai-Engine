@@ -64,19 +64,20 @@ export function NavBar() {
           </Link>
 
           <nav className="hidden items-center gap-1 md:flex">
-            <NavLink href="/events" active={!!pathname?.startsWith("/events")}>
+            <NavLink href="/events" icon={NavIcons.discover} active={!!pathname?.startsWith("/events")}>
               {t("nav.discover")}
             </NavLink>
             {user && (
-              <NavLink href="/my-events" active={pathname === "/my-events"}>
+              <NavLink href="/my-events" icon={NavIcons.myEvents} active={pathname === "/my-events"}>
                 {t("nav.myEvents")}
               </NavLink>
             )}
-            <NavLink href="/classrooms" active={!!pathname?.startsWith("/classrooms")}>
+            <NavLink href="/classrooms" icon={NavIcons.classrooms} active={!!pathname?.startsWith("/classrooms")}>
               {t("nav.classrooms")}
             </NavLink>
             {user && (
               <NavLink
+                icon={NavIcons.console}
                 href={primaryOrg ? `/orgs/${primaryOrg.slug}` : "/dashboard"}
                 active={!!pathname?.startsWith("/orgs") || pathname === "/dashboard"}
               >
@@ -227,18 +228,69 @@ export function LocaleSwitch({ locale, onToggle }: { locale: "en" | "ja"; onTogg
   );
 }
 
-function NavLink({ href, active, children }: { href: string; active?: boolean; children: React.ReactNode }) {
+// Desktop nav item: an icon chip + label inside a pill. Inactive items stay
+// quiet and brighten on hover (icon tints cyan and lifts); the active one
+// gets a soft raised fill, a shu-tinted icon and a glowing underline.
+function NavLink({ href, active, icon, children }: { href: string; active?: boolean; icon: React.ReactNode; children: string }) {
   return (
     <Link
       href={href}
-      className={`group relative rounded-full px-4 py-2 text-sm font-semibold tracking-wide transition-all duration-200 ${
-        active ? "bg-white/[0.08] text-white" : "text-white/55 hover:bg-white/[0.06] hover:text-white"
+      title={children}
+      aria-label={children}
+      aria-current={active ? "page" : undefined}
+      className={`group relative flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-1.5 text-sm lg:pr-4 font-semibold tracking-wide transition-all duration-300 ${
+        active
+          ? "bg-gradient-to-b from-white/[0.10] to-white/[0.03] text-white ring-1 ring-white/10"
+          : "text-white/55 hover:bg-white/[0.05] hover:text-white"
       }`}
     >
-      {children}
+      <span
+        aria-hidden
+        className={`grid h-7 w-7 place-items-center rounded-full transition-all duration-300 group-hover:-translate-y-px ${
+          active ? "bg-shu-500/20 text-shu-300 shadow-[0_0_12px_rgba(255,45,85,0.35)]" : "bg-white/[0.05] text-white/45 group-hover:bg-kehai-500/15 group-hover:text-kehai-300"
+        }`}
+      >
+        {icon}
+      </span>
+      {/* Icon-only between md and lg, where five labelled pills plus the
+          language switch and account controls don't fit on one line. */}
+      <span className="hidden whitespace-nowrap lg:inline">{children}</span>
+      {active && (
+        <span aria-hidden className="absolute -bottom-[3px] left-1/2 h-[2px] w-6 -translate-x-1/2 rounded-full bg-shu-500 shadow-[0_0_8px_rgba(255,45,85,0.8)]" />
+      )}
     </Link>
   );
 }
+
+const navIconProps = { width: 14, height: 14, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+const NavIcons = {
+  discover: (
+    <svg {...navIconProps}>
+      <circle cx="12" cy="12" r="9" />
+      <polygon points="15,9 13,13 9,15 11,11" fill="currentColor" stroke="none" />
+    </svg>
+  ),
+  myEvents: (
+    <svg {...navIconProps}>
+      <rect x="3.5" y="5" width="17" height="15" rx="2" />
+      <path d="M8 3v4M16 3v4M3.5 10h17" />
+    </svg>
+  ),
+  classrooms: (
+    <svg {...navIconProps}>
+      <path d="M12 4.5l9 4.5-9 4.5-9-4.5z" />
+      <path d="M6.5 11v4.5c0 1.2 2.5 3 5.5 3s5.5-1.8 5.5-3V11" />
+    </svg>
+  ),
+  console: (
+    <svg {...navIconProps}>
+      <rect x="4" y="4" width="7" height="7" rx="1.4" />
+      <rect x="13" y="4" width="7" height="7" rx="1.4" />
+      <rect x="4" y="13" width="7" height="7" rx="1.4" />
+      <rect x="13" y="13" width="7" height="7" rx="1.4" />
+    </svg>
+  ),
+};
 
 function VerifyEmailBanner() {
   const { t } = useLocale();

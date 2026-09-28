@@ -43,7 +43,7 @@ export function EventDetailClient() {
       <ClickRippleLayer className="relative min-h-screen">
         <PageGlow />
         <NavBar />
-        <div className="relative mx-auto max-w-lg px-6 py-24">
+        <div className="relative mx-auto max-w-lg px-6 py-12 sm:py-16">
           <EmptyState title={t("eventDetail.notFoundTitle")} description={t("eventDetail.notFoundDescription")} />
         </div>
       </ClickRippleLayer>
@@ -205,7 +205,7 @@ export function EventDetailClient() {
     <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
-      <div className="page-stagger relative mx-auto max-w-3xl px-6 py-20">
+      <div className="page-stagger relative mx-auto max-w-3xl px-6 py-10 sm:py-14">
         <KanjiMark glyph="詳細" className="absolute -right-6 top-0 text-[5rem] sm:text-[9rem]" />
 
         <Link

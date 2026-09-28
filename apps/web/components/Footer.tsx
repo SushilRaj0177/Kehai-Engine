@@ -57,7 +57,7 @@ export function Footer() {
         気配
       </span>
 
-      <div className="relative mx-auto max-w-7xl px-6 py-24">
+      <div className="relative mx-auto max-w-7xl px-6 py-12 sm:py-16">
         <div className="grid gap-14 sm:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div>
             <div className="group flex items-center gap-2.5">
@@ -95,7 +95,7 @@ export function Footer() {
           ))}
         </div>
 
-        <div className="relative mt-16 flex flex-col-reverse items-start gap-4 text-xs text-white/30 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative mt-10 flex flex-col-reverse items-start gap-4 text-xs text-white/30 sm:flex-row sm:items-center sm:justify-between">
           <span className="flex items-center gap-2 font-display">
             <span className="relative flex h-1.5 w-1.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/60" />

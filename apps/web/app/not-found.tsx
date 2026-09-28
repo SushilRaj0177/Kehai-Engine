@@ -16,7 +16,7 @@ export default function NotFound() {
     <ClickRippleLayer className="relative flex min-h-screen flex-col">
       <PageGlow />
       <NavBar />
-      <div className="page-stagger relative z-20 mx-auto flex w-full max-w-3xl flex-1 items-center px-6 py-20">
+      <div className="page-stagger relative z-20 mx-auto flex w-full max-w-3xl flex-1 items-center px-6 py-10 sm:py-14">
         <EmptyState
           glyph="無"
           title={t("notFound.title")}

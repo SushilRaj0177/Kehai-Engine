@@ -52,7 +52,7 @@ export default function OrgPage() {
       <ClickRippleLayer className="relative min-h-screen">
         <PageGlow />
         <NavBar />
-        <div className="relative mx-auto max-w-lg px-6 py-24">
+        <div className="relative mx-auto max-w-lg px-6 py-12 sm:py-16">
           <EmptyState title={t("orgDetail.notFoundTitle")} description={t("orgDetail.notFoundDescription")} />
         </div>
       </ClickRippleLayer>
@@ -173,7 +173,7 @@ export default function OrgPage() {
     <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
-      <div className="page-stagger relative mx-auto max-w-6xl px-6 py-20">
+      <div className="page-stagger relative mx-auto max-w-6xl px-6 py-10 sm:py-14">
         <KanjiMark glyph="催" className="absolute -right-6 top-0 text-[6rem] sm:text-[10rem]" />
         {/* z-20 -- above KanjiMark's own hardcoded z-10. Without it, this
             row (position: relative, z-index: auto) paints *behind* the
@@ -273,7 +273,7 @@ export default function OrgPage() {
             </div>
           )}
 
-          <div className="relative mt-16">
+          <div className="relative mt-10">
             <EventsPanel
               org={org}
               overview={overview}
@@ -287,7 +287,7 @@ export default function OrgPage() {
             />
           </div>
 
-          <div className="relative mt-16">
+          <div className="relative mt-10">
             <h2 className="mb-6 font-display text-xl font-bold text-white/70">{t("orgMembers.heading")}</h2>
             <Card>
               <CardBody>
@@ -297,7 +297,7 @@ export default function OrgPage() {
           </div>
 
           {isAdmin && (
-            <div className="relative mt-16">
+            <div className="relative mt-10">
               <h2 className="mb-6 font-display text-xl font-bold text-white/70">{t("auditLog.heading")}</h2>
               <Card>
                 <CardBody>
@@ -308,14 +308,14 @@ export default function OrgPage() {
           )}
 
           {isAdmin && (
-            <div className="relative mt-16">
+            <div className="relative mt-10">
               <h2 className="mb-6 font-display text-xl font-bold text-white/70">{t("orgDetail.webhookHeading")}</h2>
               <WebhookSection org={org} />
             </div>
           )}
 
           {org.role === "OWNER" && (
-            <div className="relative mt-16">
+            <div className="relative mt-10">
               <h2 className="mb-6 font-display text-xl font-bold text-shu-400">{t("orgDetail.dangerZoneHeading")}</h2>
               <DeleteOrgSection org={org} />
             </div>

@@ -318,7 +318,7 @@ export default function NewEventPage() {
     <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
-      <div className="page-stagger relative mx-auto max-w-3xl px-6 py-20">
+      <div className="page-stagger relative mx-auto max-w-3xl px-6 py-10 sm:py-14">
         <KanjiMark glyph="新" className="absolute -right-4 top-0 text-[5rem] sm:text-[9rem]" />
         <span className="relative z-20 text-xs font-semibold uppercase tracking-widest text-shu-400">{t("eventNew.createKicker")}</span>
         <h1 className="relative z-20 mt-3 font-display text-4xl font-black text-white md:text-5xl">{t("eventNew.title")}</h1>

@@ -19,18 +19,6 @@ const ghostSizes: Record<Size, string> = {
   lg: "text-base px-5 py-2.5 gap-2.5",
 };
 
-// A terminal prompt line, not a HUD panel: a flat left rule standing in for
-// the whole border, a "&gt;" glyph where a shell prompt would sit, and a
-// blinking cursor block closing the label out — no floating corners, no
-// clip-path, nothing that needs to escape the button's own box. Reserved for
-// tight-space clusters (hero CTAs, empty-state actions) where the HUD
-// bracket variant's outside-the-box marks don't have room to breathe.
-const terminalSizes: Record<Size, string> = {
-  sm: "text-xs px-3 py-1.5 gap-1.5",
-  md: "text-sm px-4 py-2 gap-2",
-  lg: "text-base px-5 py-2.5 gap-2",
-};
-
 // A HUD targeting-reticle, not a card: four free-floating corner brackets
 // framing a mostly-transparent, square-edged box, closing in flush against
 // it on hover while a scanline sweeps through and the fill washes in. Reads
@@ -164,38 +152,52 @@ export const Button = forwardRef<HTMLButtonElement, Props>(function Button(
     );
   }
 
-  if (variant === "terminal") {
+  // Browser CTA style: a pill with a shu-to-kehai gradient hairline, the
+  // label in the display face, and a solid shu arrow disc that slides
+  // forward on hover. Used wherever "terminal" is asked for (hero CTAs,
+  // empty-state actions, form submits) so every primary call-to-action in
+  // the browser reads the same way.
+  if (variant === "terminal" || variant === "primary") {
+    const pad = size === "sm" ? "pl-4 pr-1 py-1 gap-2.5 text-[13px]" : size === "lg" ? "pl-6 pr-1.5 py-1.5 gap-4 text-base" : "pl-5 pr-1.5 py-1.5 gap-3 text-sm";
+    const disc = size === "sm" ? "h-6 w-6" : size === "lg" ? "h-9 w-9" : "h-8 w-8";
     return (
       <button
         ref={ref}
         disabled={disabled || loading}
         style={style}
         className={cn(
-          "group inline-flex items-center justify-center border-l-2 border-shu-500 bg-shu-500/[0.07] font-mono font-semibold uppercase tracking-[0.08em] text-shu-200",
-          // No active:scale here (unlike the other variants) -- this reads
-          // as an inline terminal prompt, not a card, so a shrink-on-press
-          // would look like a rendering glitch rather than a button
-          // press. A quick brighter flash on press is the honest
-          // equivalent of that same feedback for this shape.
-          "transition-colors duration-150 hover:bg-shu-500/[0.16] hover:text-white active:bg-shu-500/[0.24]",
-          "disabled:opacity-40 disabled:cursor-not-allowed",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-shu-400/60",
-          terminalSizes[size],
+          "group relative inline-flex rounded-full bg-gradient-to-r from-shu-500/80 via-white/15 to-kehai-400/70 p-px",
+          "shadow-[0_10px_30px_-14px_rgba(255,45,85,0.55)] transition-[transform,box-shadow] duration-300 ease-out",
+          "hover:-translate-y-0.5 hover:shadow-[0_16px_40px_-14px_rgba(255,45,85,0.75)] active:translate-y-0 active:scale-[0.98]",
+          "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-shu-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-void-950",
           className
         )}
         {...props}
       >
-        <span aria-hidden className="text-shu-400 transition-colors duration-150 group-hover:text-white">
-          &gt;
+        <span
+          className={cn(
+            "flex w-full items-center justify-between rounded-full bg-void-950/95 font-display font-semibold tracking-wide text-white/90 transition-colors duration-300 group-hover:bg-void-900/90 group-hover:text-white",
+            pad
+          )}
+        >
+          <span className="flex-1 text-center">{children}</span>
+          <span
+            aria-hidden
+            className={cn(
+              "grid shrink-0 place-items-center rounded-full bg-gradient-to-br from-shu-400 to-shu-600 text-white shadow-[0_0_14px_rgba(255,45,85,0.55)] transition-transform duration-300 ease-out group-hover:translate-x-0.5",
+              disc
+            )}
+          >
+            {loading ? (
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
+            )}
+          </span>
         </span>
-        {loading ? (
-          <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-        ) : (
-          <>
-            <span>{children}</span>
-            <span aria-hidden className="terminal-cursor ml-0.5 inline-block h-[1em] w-[2px] bg-current align-middle" />
-          </>
-        )}
       </button>
     );
   }
