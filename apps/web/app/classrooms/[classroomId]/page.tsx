@@ -25,7 +25,7 @@ import { MyAttendanceHistory } from "@/components/MyAttendanceHistory";
 import { AttendanceHeatmap } from "@/components/AttendanceHeatmap";
 import { SessionTrendChart } from "@/components/charts/SessionTrendChart";
 import { LiveIndicator } from "@/components/ui/LiveIndicator";
-import { SURFACE, HERO_SHADOW, SectionHead, MetricStrip, Dial, PulseDot, HudTabs } from "@/components/ui/Hud";
+import { SURFACE, HERO_SHADOW, SectionHead, MetricStrip, Dial, PulseDot, HudTabs, Avatar, useElapsed } from "@/components/ui/Hud";
 import { useClassroom, useClassroomHeatmap, useClassroomRoster, useClassroomSessions } from "@/lib/hooks";
 import { useIsStandalone } from "@/lib/useStandalone";
 import { subscribeToClassroom } from "@/lib/realtime";
@@ -741,6 +741,14 @@ function TeacherStandaloneBody({
           <div className="flex justify-end px-1">
             <LiveIndicator connected={liveConnected} />
           </div>
+          {classroom.openSession && (
+            <LiveSessionHero
+              classroomId={classroomId}
+              openSessionId={classroom.openSession.id}
+              openedAt={sessions?.find((s) => s.status === "OPEN")?.openedAt}
+              studentCount={classroom.studentCount}
+            />
+          )}
           <ClassSessionManager classroomId={classroomId} openSession={classroom.openSession} onSessionsChanged={onSaved} />
         </div>
       )}
@@ -839,6 +847,82 @@ function TeacherStandaloneBody({
         </div>
       )}
     </div>
+  );
+}
+
+// The mockup's "Live Session control room" hero -- real present-count and
+// elapsed time, sitting above ClassSessionManager's existing QR/rotation/
+// end-session panel (kept as-is: its kiosk fullscreen mode and rotation
+// countdown are real, proven functionality not worth re-deriving here).
+// No fabricated geofence radar with invented dot positions -- the actual
+// roster doesn't carry per-student coordinates, so this uses the same
+// Dial arc the rest of the app already draws real ratios with, plus a
+// feed of who's actually checked in, sorted by their real last-attended
+// timestamp (accurate for this purpose: checkedInOpenSession=true means
+// that timestamp IS their check-in for the session currently open).
+function LiveSessionHero({
+  classroomId,
+  openSessionId,
+  openedAt,
+  studentCount,
+}: {
+  classroomId: string;
+  openSessionId: string;
+  openedAt: string | undefined;
+  studentCount: number;
+}) {
+  const { t } = useLocale();
+  const { data: roster } = useClassroomRoster(classroomId);
+  const elapsed = useElapsed(openedAt);
+  const present = (roster ?? [])
+    .filter((r) => r.checkedInOpenSession)
+    .sort((a, b) => new Date(b.lastAttendedAt ?? 0).getTime() - new Date(a.lastAttendedAt ?? 0).getTime());
+  const ratio = studentCount > 0 ? present.length / studentCount : 0;
+
+  return (
+    <div className={`${SURFACE} flex flex-col items-center gap-4 p-6 text-center`}>
+      <span className="inline-flex items-center gap-2 rounded-full border border-shu-500/40 bg-shu-500/[0.08] px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-shu-300">
+        <PulseDot />
+        {t("home.sessionLive")}
+      </span>
+
+      <Dial value={ratio} accent="#ff2d55" active size={132}>
+        <span className="font-mono text-[38px] font-black leading-none text-white">{present.length}</span>
+        <span className="mt-1 font-mono text-[9px] uppercase tracking-[0.12em] text-white/40">
+          {t("classroomDetail.presentCount", { count: present.length })}
+        </span>
+      </Dial>
+
+      {elapsed && (
+        <p className="font-mono text-[12px] text-white/45">
+          {t("home.runningFor", { duration: elapsed })}
+        </p>
+      )}
+
+      {present.length > 0 && (
+        <div className="w-full space-y-1 border-t border-white/[0.06] pt-3 text-left">
+          <p className="mb-1 font-mono text-[9.5px] uppercase tracking-[0.14em] text-white/30">{t("classroomDetail.rosterHeading")}</p>
+          {present.slice(0, 5).map((row) => (
+            <div key={row.student.id} className="flex items-center gap-2.5 py-1">
+              <Avatar name={row.student.name} url={row.student.avatarUrl} />
+              <span className="min-w-0 flex-1 truncate text-[13px] text-white/80">{row.student.name}</span>
+              <CheckIcon />
+            </div>
+          ))}
+          {present.length > 5 && (
+            <p className="pt-1 font-mono text-[10px] text-white/30">+{present.length - 5}</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5ff4ff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 13l4 4L19 7" />
+    </svg>
   );
 }
 
