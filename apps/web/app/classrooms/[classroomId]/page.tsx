@@ -566,11 +566,11 @@ function DeleteClassroomSection({
       {confirming ? (
         <div className="space-y-3 rounded-lg border border-shu-500/20 bg-shu-500/5 p-4">
           <div>
-            <Label htmlFor="delete-classroom-confirm">{t("classroomDetail.typeNameToConfirm", { name: classroomName })}</Label>
+            <Label htmlFor="delete-classroom-confirm" className="normal-case">{t("classroomDetail.typeNameToConfirm", { name: classroomName })}</Label>
             <Input id="delete-classroom-confirm" value={typedName} onChange={(e) => setTypedName(e.target.value)} />
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="danger" size="sm" loading={deleting} onClick={confirmDelete} disabled={typedName !== classroomName}>
+            <Button variant="danger" size="sm" loading={deleting} onClick={confirmDelete} disabled={typedName.trim().toLowerCase() !== classroomName.trim().toLowerCase()}>
               {t("classroomDetail.deleteClassroomConfirm")}
             </Button>
             <Button
