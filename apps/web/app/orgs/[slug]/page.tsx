@@ -100,27 +100,6 @@ export default function OrgPage() {
 
           {mobileTab === "events" && (
             <div className="space-y-6">
-              {overview && overview.events.length > 0 && (
-                <section>
-                  <SectionHead title={t("orgDetail.trendHeading")} />
-                  <div className={`${SURFACE} p-4`}>
-                    <OrgAttendanceTrendChart events={overview.events} />
-                  </div>
-                </section>
-              )}
-
-              {events && events.length > 0 && (
-                <div className="relative">
-                  <SearchIcon className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
-                  <input
-                    value={q}
-                    onChange={(e) => setQ(e.target.value)}
-                    placeholder={t("orgDetail.searchPlaceholder")}
-                    className="h-11 w-full rounded-full border border-white/[0.08] bg-white/[0.04] pl-10 pr-4 text-sm text-white placeholder:text-white/30 focus:border-shu-500/40 focus:outline-none"
-                  />
-                </div>
-              )}
-
               {eventsLoading ? (
                 <LoadingBlock />
               ) : !events?.length ? (
@@ -142,6 +121,15 @@ export default function OrgPage() {
                     <StandaloneEventRow key={event.id} org={org} event={event} locale={locale} t={t} />
                   ))}
                 </div>
+              )}
+
+              {overview && overview.events.length > 0 && (
+                <section>
+                  <SectionHead title={t("orgDetail.trendHeading")} />
+                  <div className={`${SURFACE} p-4`}>
+                    <OrgAttendanceTrendChart events={overview.events} />
+                  </div>
+                </section>
               )}
             </div>
           )}
