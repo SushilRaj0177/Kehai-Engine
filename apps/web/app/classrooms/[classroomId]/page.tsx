@@ -566,7 +566,7 @@ function DeleteClassroomSection({
       {confirming ? (
         <div className="space-y-3 rounded-lg border border-shu-500/20 bg-shu-500/5 p-4">
           <div>
-            <Label htmlFor="delete-classroom-confirm" className="normal-case">{t("classroomDetail.typeNameToConfirm", { name: classroomName })}</Label>
+            <Label htmlFor="delete-classroom-confirm">   <span className="uppercase">TYPE "</span>   <span className="normal-case">{classroomName}</span>   <span className="uppercase">" TO CONFIRM</span> </Label>
             <Input id="delete-classroom-confirm" value={typedName} onChange={(e) => setTypedName(e.target.value)} />
           </div>
           <div className="flex items-center gap-3">
