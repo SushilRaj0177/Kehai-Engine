@@ -49,6 +49,8 @@ export interface EventSummary {
   latitude: number;
   longitude: number;
   geofenceRadiusM: number;
+  locationSource?: LocationSource | null;
+  locationAccuracyM?: number | null;
   qrRotationSeconds: number;
   capacity?: number | null;
   organization?: { id: string; name: string; slug: string };
@@ -179,6 +181,10 @@ export interface ClassroomDetail {
   semesterLabel: string | null;
   hasGeofence: boolean;
   geofenceRadiusM: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  locationSource?: LocationSource | null;
+  locationAccuracyM?: number | null;
   createdAt: string;
   isTeacher: boolean;
   isEnrolled: boolean;
@@ -239,3 +245,5 @@ export interface LeaderboardEntry {
   longestStreak: number;
   attendanceRate: number;
 }
+
+export type LocationSource = "GPS" | "SEARCH" | "PIN" | "MANUAL";

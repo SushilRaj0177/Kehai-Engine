@@ -20,6 +20,8 @@ import { useMyClassrooms, useEnrolledClassrooms } from "@/lib/hooks";
 import { apiFetch, ApiError } from "@/lib/api";
 import { useLocale } from "@/lib/i18n";
 import type { ClassroomSummary, EnrolledClassroom } from "@/lib/types";
+import { VenueLocationPicker } from "@/components/VenueLocationPicker";
+import { emptyVenueLocation, venueError, venuePayload, type VenueLocation } from "@/lib/geofence";
 
 export default function ClassroomsHubPage() {
   const { t } = useLocale();
@@ -425,30 +427,18 @@ function CreateClassroomForm({ onCreated, compact = false }: { onCreated: () => 
   const [courseCode, setCourseCode] = useState("");
   const [semesterLabel, setSemesterLabel] = useState("");
   const [enableGeofence, setEnableGeofence] = useState(false);
-  const [latitude, setLatitude] = useState("");
-  const [longitude, setLongitude] = useState("");
-  const [radius, setRadius] = useState("100");
-  const [locating, setLocating] = useState(false);
+  const [loc, setLoc] = useState<VenueLocation>(() => emptyVenueLocation());
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  function useMyLocation() {
-    if (!navigator.geolocation) return;
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLatitude(pos.coords.latitude.toFixed(6));
-        setLongitude(pos.coords.longitude.toFixed(6));
-        setLocating(false);
-      },
-      () => setLocating(false),
-      { enableHighAccuracy: true, timeout: 8000 }
-    );
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    const locErr = enableGeofence ? venueError(loc) : null;
+    if (locErr) {
+      setError(t(locErr));
+      return;
+    }
     setLoading(true);
     try {
       const classroom = await apiFetch<{ id: string }>("/api/classrooms", {
@@ -457,9 +447,7 @@ function CreateClassroomForm({ onCreated, compact = false }: { onCreated: () => 
           name,
           courseCode: courseCode || undefined,
           semesterLabel: semesterLabel || undefined,
-          latitude: enableGeofence && latitude ? Number(latitude) : undefined,
-          longitude: enableGeofence && longitude ? Number(longitude) : undefined,
-          geofenceRadiusM: enableGeofence && radius ? Number(radius) : undefined,
+          ...(enableGeofence ? venuePayload(loc) : {}),
         }),
       });
       onCreated();
@@ -502,26 +490,7 @@ function CreateClassroomForm({ onCreated, compact = false }: { onCreated: () => 
 
         {enableGeofence && (
           <div className="mt-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-white/40">{t("classroomHub.geofenceHeading")}</span>
-              <button type="button" onClick={useMyLocation} className="text-xs font-medium text-shu-400 hover:text-shu-300">
-                {locating ? t("classroomHub.locating") : t("classroomHub.useMyLocation")}
-              </button>
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div>
-                <Label htmlFor="classroom-lat">{t("classroomHub.latitudeLabel")}</Label>
-                <Input id="classroom-lat" value={latitude} onChange={(e) => setLatitude(e.target.value)} />
-              </div>
-              <div>
-                <Label htmlFor="classroom-lng">{t("classroomHub.longitudeLabel")}</Label>
-                <Input id="classroom-lng" value={longitude} onChange={(e) => setLongitude(e.target.value)} />
-              </div>
-              <div>
-                <Label htmlFor="classroom-radius">{t("classroomHub.radiusLabel")}</Label>
-                <Input id="classroom-radius" type="number" min={10} max={5000} value={radius} onChange={(e) => setRadius(e.target.value)} />
-              </div>
-            </div>
+            <VenueLocationPicker value={loc} onChange={setLoc} idPrefix={compact ? "s-classroom" : "classroom"} />
           </div>
         )}
       </div>

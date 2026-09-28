@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MIN_GEOFENCE_RADIUS_M, MAX_GEOFENCE_RADIUS_M, locationMetaFields } from "./location.js";
 
 const geofenceAllOrNothing = (d: {
   latitude?: number | null;
@@ -21,7 +22,8 @@ export const createClassroomSchema = z
     semesterLabel: z.string().trim().max(60).optional(),
     latitude: z.coerce.number().min(-90).max(90).optional(),
     longitude: z.coerce.number().min(-180).max(180).optional(),
-    geofenceRadiusM: z.coerce.number().int().min(10).max(5000).optional(),
+    geofenceRadiusM: z.coerce.number().int().min(MIN_GEOFENCE_RADIUS_M).max(MAX_GEOFENCE_RADIUS_M).optional(),
+    ...locationMetaFields,
   })
   .refine(geofenceAllOrNothing, GEOFENCE_REFINE);
 
@@ -34,9 +36,12 @@ export const updateClassroomSchema = z
     // the old value untouched.
     courseCode: z.string().trim().max(40).optional().nullable(),
     semesterLabel: z.string().trim().max(60).optional().nullable(),
-    latitude: z.coerce.number().min(-90).max(90).optional(),
-    longitude: z.coerce.number().min(-180).max(180).optional(),
-    geofenceRadiusM: z.coerce.number().int().min(10).max(5000).optional(),
+    // Nullable so a teacher can switch the campus geofence off again
+    // (all three null together still satisfies geofenceAllOrNothing).
+    latitude: z.coerce.number().min(-90).max(90).optional().nullable(),
+    longitude: z.coerce.number().min(-180).max(180).optional().nullable(),
+    geofenceRadiusM: z.coerce.number().int().min(MIN_GEOFENCE_RADIUS_M).max(MAX_GEOFENCE_RADIUS_M).optional().nullable(),
+    ...locationMetaFields,
   })
   .refine(geofenceAllOrNothing, GEOFENCE_REFINE);
 

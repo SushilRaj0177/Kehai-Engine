@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MIN_GEOFENCE_RADIUS_M, MAX_GEOFENCE_RADIUS_M, locationMetaFields } from "./location.js";
 
 export const createEventSchema = z
   .object({
@@ -19,7 +20,8 @@ export const createEventSchema = z
     capacity: z.coerce.number().int().positive().optional().nullable(),
     latitude: z.coerce.number().min(-90).max(90),
     longitude: z.coerce.number().min(-180).max(180),
-    geofenceRadiusM: z.coerce.number().int().min(10).max(5000).default(100),
+    geofenceRadiusM: z.coerce.number().int().min(MIN_GEOFENCE_RADIUS_M).max(MAX_GEOFENCE_RADIUS_M).default(100),
+    ...locationMetaFields,
     // Widened from an original 300s (5 min) cap: organizers reasonably want
     // anywhere from a fast 30s rotation up to multi-hour windows for long,
     // low-risk events — 86400s (24h) covers that without an arbitrary wall.

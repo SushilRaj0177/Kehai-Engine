@@ -15,9 +15,11 @@ export interface CreateClassroomInput {
   name: string;
   courseCode?: string | null;
   semesterLabel?: string | null;
-  latitude?: number;
-  longitude?: number;
-  geofenceRadiusM?: number;
+  latitude?: number | null;
+  longitude?: number | null;
+  geofenceRadiusM?: number | null;
+  locationSource?: string | null;
+  locationAccuracyM?: number | null;
 }
 
 /** Normalizes any Date/timestamp to UTC midnight of that calendar day. */
@@ -59,6 +61,8 @@ export async function createClassroom(teacherId: string, input: CreateClassroomI
       latitude: input.latitude,
       longitude: input.longitude,
       geofenceRadiusM: input.geofenceRadiusM,
+      locationSource: input.locationSource,
+      locationAccuracyM: input.locationAccuracyM,
     },
   });
 }
@@ -245,6 +249,12 @@ export async function getClassroomDetail(classroomId: string, userId: string) {
     joinCode: isTeacher ? classroom.joinCode : undefined,
     hasGeofence: classroom.latitude != null,
     geofenceRadiusM: classroom.geofenceRadiusM,
+    // Exact venue coordinates are teacher-only (students only need to know
+    // a fence exists); the teacher needs them to review/re-lock the venue.
+    latitude: isTeacher ? classroom.latitude : undefined,
+    longitude: isTeacher ? classroom.longitude : undefined,
+    locationSource: isTeacher ? classroom.locationSource : undefined,
+    locationAccuracyM: isTeacher ? classroom.locationAccuracyM : undefined,
     createdAt: classroom.createdAt,
     isTeacher,
     isEnrolled,

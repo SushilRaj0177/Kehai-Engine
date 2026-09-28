@@ -29,6 +29,8 @@ import type { CheckInWindow } from "@/lib/checkin-window";
 import { useLocale } from "@/lib/i18n";
 import { SURFACE, SectionHead, MetricStrip, HudTabs } from "@/components/ui/Hud";
 import { useIsStandalone } from "@/lib/useStandalone";
+import { ApproximateVenueNotice, VenueLocationPicker } from "@/components/VenueLocationPicker";
+import { getPreciseFix, isApproximate, venueError, venueFromRecord, venuePayload, type VenueLocation } from "@/lib/geofence";
 
 // Same convention as the "restart" and event-creation flows — the
 // endsAt column stays non-nullable, so "no fixed end time" is
@@ -207,6 +209,8 @@ export default function EventControlRoomPage() {
           </div>
         </div>
         {statusError && <ErrorBlock message={statusError} className="relative mt-3" />}
+
+        {org && <ApproxVenueFlag event={event} onSaved={() => mutate()} className="relative z-20 mt-4" />}
 
         {org && event.status !== "COMPLETED" && event.status !== "CANCELLED" && (
           <div className="relative z-20 mt-4 flex flex-col gap-3">
@@ -387,10 +391,55 @@ function EditTimingPanel({ event, onSaved, bare = false }: { event: EventSummary
 // Name, description, venue, capacity were all editable through the API
 // (updateEventSchema covers the full create schema) but had no UI at
 // all — an organizer with a typo'd venue or a capacity that needs
-// bumping had no path short of calling the API directly. Geofence
-// lat/long/radius stay out of scope here: editing where check-in is
-// physically anchored deserves the map picker the creation form has,
-// not a bare number field, and is a bigger, riskier change.
+// bumping had no path short of calling the API directly. The venue
+// geofence uses the same VenueLocationPicker as the creation form.
+// Persistent flag for a venue pinned from search / map / typed coords: the
+// organizer can re-anchor it to their GPS the moment they arrive, which is
+// what makes the geofence a real anti-fraud check.
+function ApproxVenueFlag({ event, onSaved, className = "" }: { event: EventSummary; onSaved: () => void; className?: string }) {
+  const { t } = useLocale();
+  const [locking, setLocking] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const ended = event.status === "COMPLETED" || event.status === "CANCELLED";
+
+  async function lock() {
+    setLocking(true);
+    setMsg(null);
+    try {
+      const fix = await getPreciseFix();
+      const accuracyM = Math.round(fix.accuracy);
+      await apiFetch(`/api/events/${event.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          latitude: Number(fix.latitude.toFixed(6)),
+          longitude: Number(fix.longitude.toFixed(6)),
+          locationSource: "GPS",
+          locationAccuracyM: accuracyM,
+        }),
+      });
+      setMsg({ ok: true, text: t("venuePicker.lockedToast", { m: accuracyM }) });
+      onSaved();
+    } catch (err) {
+      const code = (err as GeolocationPositionError)?.code;
+      setMsg({
+        ok: false,
+        text: err instanceof ApiError ? err.message : code === 1 ? t("venuePicker.gpsDenied") : code === 3 ? t("venuePicker.gpsTimeout") : t("venuePicker.gpsUnavailable"),
+      });
+    } finally {
+      setLocking(false);
+    }
+  }
+
+  if (msg?.ok) return <p className={`text-sm text-kehai-300 ${className}`}>✓ {msg.text}</p>;
+  if (ended || !isApproximate(event.locationSource)) return null;
+  return (
+    <div className={className}>
+      <ApproximateVenueNotice onLock={lock} locking={locking} />
+      {msg && <p className="mt-2 text-xs text-shu-300">{msg.text}</p>}
+    </div>
+  );
+}
+
 function EditDetailsPanel({ event, onSaved, bare = false }: { event: EventSummary; onSaved: () => void; bare?: boolean }) {
   const { t } = useLocale();
   const [open, setOpen] = useState(false);
@@ -398,10 +447,7 @@ function EditDetailsPanel({ event, onSaved, bare = false }: { event: EventSummar
   const [description, setDescription] = useState(event.description ?? "");
   const [venue, setVenue] = useState(event.venue);
   const [capacity, setCapacity] = useState(event.capacity != null ? String(event.capacity) : "");
-  const [latitude, setLatitude] = useState(String(event.latitude));
-  const [longitude, setLongitude] = useState(String(event.longitude));
-  const [geofenceRadiusM, setGeofenceRadiusM] = useState(String(event.geofenceRadiusM));
-  const [locating, setLocating] = useState(false);
+  const [loc, setLoc] = useState<VenueLocation>(() => venueFromRecord(event));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -416,27 +462,7 @@ function EditDetailsPanel({ event, onSaved, bare = false }: { event: EventSummar
     setDescription(event.description ?? "");
     setVenue(event.venue);
     setCapacity(event.capacity != null ? String(event.capacity) : "");
-    setLatitude(String(event.latitude));
-    setLongitude(String(event.longitude));
-    setGeofenceRadiusM(String(event.geofenceRadiusM));
-  }
-
-  function useMyLocation() {
-    if (!navigator.geolocation) return;
-    setLocating(true);
-    setError(null);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLatitude(pos.coords.latitude.toFixed(6));
-        setLongitude(pos.coords.longitude.toFixed(6));
-        setLocating(false);
-      },
-      (err) => {
-        setError(err.message);
-        setLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 8000 }
-    );
+    setLoc(venueFromRecord(event));
   }
 
   async function save() {
@@ -444,23 +470,11 @@ function EditDetailsPanel({ event, onSaved, bare = false }: { event: EventSummar
     setSaved(false);
 
     // Number("") is 0 and Number("abc") is NaN, both of which would
-    // otherwise sail through JSON.stringify (NaN silently becomes null,
-    // then the server's z.coerce.number() turns that back into 0) and
-    // quietly relocate the live check-in boundary to (0, 0) with no error
-    // anywhere in the chain. Catch it here instead.
-    const lat = Number(latitude);
-    const lng = Number(longitude);
-    const radius = Number(geofenceRadiusM);
-    if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
-      setError(t("eventControl.geofenceInvalidLat"));
-      return;
-    }
-    if (!Number.isFinite(lng) || lng < -180 || lng > 180) {
-      setError(t("eventControl.geofenceInvalidLng"));
-      return;
-    }
-    if (!Number.isFinite(radius) || radius < 10 || radius > 5000) {
-      setError(t("eventControl.geofenceInvalidRadius"));
+    // otherwise quietly relocate the live check-in boundary to (0, 0) —
+    // venueError catches that plus a radius below the enforced minimum.
+    const locErr = venueError(loc);
+    if (locErr) {
+      setError(t(locErr));
       return;
     }
 
@@ -473,9 +487,7 @@ function EditDetailsPanel({ event, onSaved, bare = false }: { event: EventSummar
           description: description.trim() || null,
           venue,
           capacity: capacity.trim() ? Number(capacity) : null,
-          latitude: lat,
-          longitude: lng,
-          geofenceRadiusM: radius,
+          ...venuePayload(loc),
         }),
       });
       onSaved();
@@ -516,35 +528,7 @@ function EditDetailsPanel({ event, onSaved, bare = false }: { event: EventSummar
       <div className="border-t border-white/[0.06] pt-4">
         <p className="mb-1 text-[11px] uppercase tracking-wider text-white/35">{t("eventControl.geofenceHeading")}</p>
         <p className="mb-3 text-xs text-amber-300/70">{t("eventControl.geofenceEditWarning")}</p>
-        <div className="mb-3 flex flex-wrap items-center gap-3">
-          <Button type="button" variant="secondary" size="sm" loading={locating} onClick={useMyLocation}>
-            {locating ? t("eventNew.locating") : t("eventNew.useMyLocation")}
-          </Button>
-          <span className="text-sm text-white/45">
-            {latitude}, {longitude}
-          </span>
-        </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div>
-            <Label htmlFor="edit-lat">{t("eventNew.latitudeLabel")}</Label>
-            <Input id="edit-lat" value={latitude} onChange={(e) => setLatitude(e.target.value)} />
-          </div>
-          <div>
-            <Label htmlFor="edit-lng">{t("eventNew.longitudeLabel")}</Label>
-            <Input id="edit-lng" value={longitude} onChange={(e) => setLongitude(e.target.value)} />
-          </div>
-          <div>
-            <Label htmlFor="edit-radius">{t("eventNew.radiusLabel")}</Label>
-            <Input
-              id="edit-radius"
-              type="number"
-              min={10}
-              max={5000}
-              value={geofenceRadiusM}
-              onChange={(e) => setGeofenceRadiusM(e.target.value)}
-            />
-          </div>
-        </div>
+        <VenueLocationPicker value={loc} onChange={setLoc} idPrefix="edit-venue" />
       </div>
       {error && <ErrorBlock message={error} />}
       <div className="flex flex-wrap items-center gap-3">
@@ -680,6 +664,8 @@ function StandaloneEventControlRoom({
       </header>
 
       {statusError && <ErrorBlock message={statusError} />}
+
+      {org && <ApproxVenueFlag event={event} onSaved={onSaved} />}
 
       {showWindowWarning && (
         <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">

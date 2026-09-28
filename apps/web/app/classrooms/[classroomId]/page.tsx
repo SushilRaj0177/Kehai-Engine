@@ -32,6 +32,8 @@ import { subscribeToClassroom } from "@/lib/realtime";
 import { apiFetch, ApiError } from "@/lib/api";
 import type { ClassroomDetail, ClassSessionSummary, HeatmapResponse } from "@/lib/types";
 import { useLocale } from "@/lib/i18n";
+import { ApproximateVenueNotice, VenueLocationPicker } from "@/components/VenueLocationPicker";
+import { getPreciseFix, isApproximate, venueError, venueFromRecord, venuePayload, type VenueLocation } from "@/lib/geofence";
 
 export default function ClassroomDetailPage() {
   const { t } = useLocale();
@@ -173,6 +175,7 @@ export default function ClassroomDetailPage() {
               {[classroom.courseCode, classroom.semesterLabel].filter(Boolean).join(" · ")}
               {classroom.openSession && ` · ${classroom.openSession.label || t("classroomDetail.untitledSession")}`}
             </p>
+            <ClassroomApproxFlag classroom={classroom} onSaved={() => mutate()} className="mt-4 max-w-2xl" />
             {classroom.isTeacher && (
               <div className="mt-3">
                 <EditClassroomDetailsPanel classroom={classroom} onSaved={() => mutate()} />
@@ -350,9 +353,54 @@ export default function ClassroomDetailPage() {
 // Name, course code, and semester label were all editable through the API
 // (updateClassroomSchema covers them) but had no UI — a teacher who typo'd
 // the classroom name or is reusing it for a new semester had no path short
-// of calling the API directly. Geofence lat/long/radius stay out of scope,
-// same reasoning as the event edit panel: relocating where check-in is
-// physically anchored deserves the map picker the creation form has.
+// of calling the API directly. The optional campus geofence uses the same
+// VenueLocationPicker as creation, and can be switched on/off later.
+// Same persistent "approximate venue" flag as the event console, for a
+// classroom fence pinned from search / map / typed coordinates.
+function ClassroomApproxFlag({ classroom, onSaved, className = "" }: { classroom: ClassroomDetail; onSaved: () => void; className?: string }) {
+  const { t } = useLocale();
+  const [locking, setLocking] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  async function lock() {
+    setLocking(true);
+    setMsg(null);
+    try {
+      const fix = await getPreciseFix();
+      const accuracyM = Math.round(fix.accuracy);
+      await apiFetch(`/api/classrooms/${classroom.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          latitude: Number(fix.latitude.toFixed(6)),
+          longitude: Number(fix.longitude.toFixed(6)),
+          geofenceRadiusM: classroom.geofenceRadiusM ?? 100,
+          locationSource: "GPS",
+          locationAccuracyM: accuracyM,
+        }),
+      });
+      setMsg({ ok: true, text: t("venuePicker.lockedToast", { m: accuracyM }) });
+      onSaved();
+    } catch (err) {
+      const code = (err as GeolocationPositionError)?.code;
+      setMsg({
+        ok: false,
+        text: err instanceof ApiError ? err.message : code === 1 ? t("venuePicker.gpsDenied") : code === 3 ? t("venuePicker.gpsTimeout") : t("venuePicker.gpsUnavailable"),
+      });
+    } finally {
+      setLocking(false);
+    }
+  }
+
+  if (msg?.ok) return <p className={`text-sm text-kehai-300 ${className}`}>✓ {msg.text}</p>;
+  if (!classroom.isTeacher || !classroom.hasGeofence || !isApproximate(classroom.locationSource)) return null;
+  return (
+    <div className={className}>
+      <ApproximateVenueNotice onLock={lock} locking={locking} />
+      {msg && <p className="mt-2 text-xs text-shu-300">{msg.text}</p>}
+    </div>
+  );
+}
+
 function EditClassroomDetailsPanel({
   classroom,
   onSaved,
@@ -371,6 +419,8 @@ function EditClassroomDetailsPanel({
   const [name, setName] = useState(classroom.name);
   const [courseCode, setCourseCode] = useState(classroom.courseCode ?? "");
   const [semesterLabel, setSemesterLabel] = useState(classroom.semesterLabel ?? "");
+  const [fenceOn, setFenceOn] = useState(classroom.hasGeofence);
+  const [loc, setLoc] = useState<VenueLocation>(() => venueFromRecord(classroom));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -382,16 +432,28 @@ function EditClassroomDetailsPanel({
     setName(classroom.name);
     setCourseCode(classroom.courseCode ?? "");
     setSemesterLabel(classroom.semesterLabel ?? "");
+    setFenceOn(classroom.hasGeofence);
+    setLoc(venueFromRecord(classroom));
   }
 
   async function save() {
-    setSaving(true);
     setError(null);
     setSaved(false);
+    const locErr = fenceOn ? venueError(loc) : null;
+    if (locErr) {
+      setError(t(locErr));
+      return;
+    }
+    setSaving(true);
     try {
+      const fence = fenceOn
+        ? venuePayload(loc)
+        : classroom.hasGeofence
+          ? { latitude: null, longitude: null, geofenceRadiusM: null, locationSource: null, locationAccuracyM: null }
+          : {};
       await apiFetch(`/api/classrooms/${classroom.id}`, {
         method: "PATCH",
-        body: JSON.stringify({ name, courseCode: courseCode.trim() || null, semesterLabel: semesterLabel.trim() || null }),
+        body: JSON.stringify({ name, courseCode: courseCode.trim() || null, semesterLabel: semesterLabel.trim() || null, ...fence }),
       });
       onSaved();
       setSaved(true);
@@ -426,6 +488,23 @@ function EditClassroomDetailsPanel({
           <Input id="edit-classroom-semester" value={semesterLabel} onChange={(e) => setSemesterLabel(e.target.value)} />
         </div>
       </div>
+      <div className="border-t border-white/[0.06] pt-4">
+        <label className="flex items-center gap-2 text-sm text-white/70">
+          <input
+            type="checkbox"
+            checked={fenceOn}
+            onChange={(e) => setFenceOn(e.target.checked)}
+            className="h-4 w-4 rounded border-white/20 bg-white/5 accent-kehai-500"
+          />
+          {t("classroomHub.enableGeofence")}
+        </label>
+        <p className="mt-1.5 text-[11px] text-white/35">{t("classroomHub.geofenceHelp")}</p>
+        {fenceOn && (
+          <div className="mt-4">
+            <VenueLocationPicker value={loc} onChange={setLoc} idPrefix="edit-classroom-venue" />
+          </div>
+        )}
+      </div>
       {error && <ErrorBlock message={error} />}
       <div className="flex flex-wrap items-center gap-3">
         <Button size="sm" loading={saving} onClick={save}>
@@ -442,7 +521,7 @@ function EditClassroomDetailsPanel({
   if (bare) return fields;
 
   return (
-    <Card className="max-w-lg">
+    <Card className="w-full max-w-2xl">
       <CardBody>{fields}</CardBody>
     </Card>
   );
@@ -724,6 +803,8 @@ function TeacherStandaloneBody({
           { value: `${Math.round(avgRate * 100)}%`, label: t("home.avgRateLabel") },
         ]}
       />
+
+      <ClassroomApproxFlag classroom={classroom} onSaved={onSaved} />
 
       <HudTabs
         tabs={[

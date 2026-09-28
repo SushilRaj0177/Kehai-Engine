@@ -183,6 +183,12 @@ model Event {
   latitude        Float
   longitude       Float
   geofenceRadiusM Int   @default(100)
+  // How the venue pin was set: GPS (organizer stood at the venue — the only
+  // source precise enough for the geofence to be a real anti-fraud check),
+  // SEARCH (map geocoder result), PIN (dropped/dragged on the map) or
+  // MANUAL (typed coordinates). Null = legacy row, source unknown.
+  locationSource    String?
+  locationAccuracyM Int?
 
   // QR lifecycle
   qrSecret          String // per-event signing secret for rotating QR tokens
@@ -308,6 +314,8 @@ model Classroom {
   latitude        Float?
   longitude       Float?
   geofenceRadiusM Int?
+  locationSource    String? // see Event.locationSource
+  locationAccuracyM Int?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

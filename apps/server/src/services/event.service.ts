@@ -22,6 +22,8 @@ export interface CreateEventInput {
   latitude: number;
   longitude: number;
   geofenceRadiusM: number;
+  locationSource?: string | null;
+  locationAccuracyM?: number | null;
   qrRotationSeconds: number;
 }
 

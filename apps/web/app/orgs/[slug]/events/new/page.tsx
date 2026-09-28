@@ -18,6 +18,8 @@ import { toLocalDatetimeInputValue } from "@/lib/format";
 import { useLocale } from "@/lib/i18n";
 import { SURFACE, SectionHead } from "@/components/ui/Hud";
 import { useIsStandalone } from "@/lib/useStandalone";
+import { VenueLocationPicker } from "@/components/VenueLocationPicker";
+import { emptyVenueLocation, hasCoords, venueError, venueFromRecord, venuePayload, type VenueLocation } from "@/lib/geofence";
 
 const defaultStart = new Date(Date.now() + 24 * 60 * 60 * 1000);
 const defaultEnd = new Date(defaultStart.getTime() + 2 * 60 * 60 * 1000);
@@ -45,17 +47,12 @@ export default function NewEventPage() {
     venue: "",
     startsAt: toLocalDatetimeInputValue(defaultStart),
     endsAt: toLocalDatetimeInputValue(defaultEnd),
-    latitude: "",
-    longitude: "",
-    geofenceRadiusM: "100",
     capacity: "",
     qrRotationSeconds: "20",
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [locating, setLocating] = useState(false);
-  const [locationSet, setLocationSet] = useState(false);
-  const [manualCoords, setManualCoords] = useState(false);
+  const [loc, setLoc] = useState<VenueLocation>(() => emptyVenueLocation());
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [openEnded, setOpenEnded] = useState(false);
   const isStandalone = useIsStandalone();
@@ -75,38 +72,21 @@ export default function NewEventPage() {
       name: `${sourceEvent.name} (copy)`,
       description: sourceEvent.description ?? "",
       venue: sourceEvent.venue,
-      latitude: String(sourceEvent.latitude),
-      longitude: String(sourceEvent.longitude),
-      geofenceRadiusM: String(sourceEvent.geofenceRadiusM),
       capacity: sourceEvent.capacity != null ? String(sourceEvent.capacity) : "",
       qrRotationSeconds: String(sourceEvent.qrRotationSeconds),
     }));
-    setLocationSet(true);
+    setLoc(venueFromRecord(sourceEvent));
     setPrefilled(true);
   }, [sourceEvent, prefilled]);
-
-  function useMyLocation() {
-    if (!navigator.geolocation) return;
-    setLocating(true);
-    setError(null);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        set("latitude", pos.coords.latitude.toFixed(6));
-        set("longitude", pos.coords.longitude.toFixed(6));
-        setLocationSet(true);
-        setLocating(false);
-      },
-      (err) => {
-        setError(err.message);
-        setLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 8000 }
-    );
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!org) return;
+    const locErr = venueError(loc);
+    if (locErr) {
+      setError(t(locErr));
+      return;
+    }
     setError(null);
     setLoading(true);
     try {
@@ -120,9 +100,7 @@ export default function NewEventPage() {
           endsAt: openEnded
             ? new Date(new Date(form.startsAt).getTime() + OPEN_ENDED_HORIZON_MS).toISOString()
             : new Date(form.endsAt).toISOString(),
-          latitude: Number(form.latitude),
-          longitude: Number(form.longitude),
-          geofenceRadiusM: Number(form.geofenceRadiusM),
+          ...venuePayload(loc),
           capacity: form.capacity ? Number(form.capacity) : undefined,
           qrRotationSeconds: Number(form.qrRotationSeconds),
         }),
@@ -216,54 +194,7 @@ export default function NewEventPage() {
             <section>
               <SectionHead title={t("eventNew.geofenceHeading")} />
               <div className={`${SURFACE} space-y-4 p-4`}>
-                <div className="flex flex-wrap items-center gap-3">
-                  <Button type="button" size="sm" variant={locationSet ? "secondary" : "cyan"} loading={locating} onClick={useMyLocation}>
-                    {locating ? t("eventNew.locating") : t("eventNew.useMyLocation")}
-                  </Button>
-                  {locationSet && (
-                    <span className="font-mono text-[12px] text-kehai-400">
-                      ✓ {form.latitude}, {form.longitude}
-                    </span>
-                  )}
-                </div>
-                <p className="text-[11px] text-white/35">{locationSet ? t("eventNew.locationSetHint") : t("eventNew.locationNotSetHint")}</p>
-
-                <button
-                  type="button"
-                  onClick={() => setManualCoords((s) => !s)}
-                  className="font-mono text-[11px] font-bold uppercase tracking-wide text-white/45"
-                >
-                  {manualCoords ? t("common.cancel") : t("eventNew.enterManually")}
-                </button>
-
-                {manualCoords && (
-                  <div className="grid grid-cols-1 gap-4 border-t border-white/[0.06] pt-4 sm:grid-cols-2">
-                    <div>
-                      <Label htmlFor="s-lat">{t("eventNew.latitudeLabel")}</Label>
-                      <Input
-                        id="s-lat"
-                        required
-                        value={form.latitude}
-                        onChange={(e) => {
-                          set("latitude", e.target.value);
-                          setLocationSet(!!e.target.value && !!form.longitude);
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="s-lng">{t("eventNew.longitudeLabel")}</Label>
-                      <Input
-                        id="s-lng"
-                        required
-                        value={form.longitude}
-                        onChange={(e) => {
-                          set("longitude", e.target.value);
-                          setLocationSet(!!form.latitude && !!e.target.value);
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
+                <VenueLocationPicker value={loc} onChange={setLoc} idPrefix="s-venue" />
               </div>
             </section>
 
@@ -281,19 +212,6 @@ export default function NewEventPage() {
               {showAdvanced && (
                 <div className={`${SURFACE} mt-3 space-y-4 p-4`}>
                   <div>
-                    <Label htmlFor="s-radius">{t("eventNew.radiusLabel")}</Label>
-                    <Input
-                      id="s-radius"
-                      type="number"
-                      min={10}
-                      max={5000}
-                      required
-                      value={form.geofenceRadiusM}
-                      onChange={(e) => set("geofenceRadiusM", e.target.value)}
-                    />
-                    <p className="mt-1 text-[11px] text-white/35">{t("eventNew.radiusHelp")}</p>
-                  </div>
-                  <div>
                     <Label htmlFor="s-qrRotation">{t("eventNew.rotationLabel")}</Label>
                     <QrRotationInput
                       value={Number(form.qrRotationSeconds) || 20}
@@ -305,7 +223,7 @@ export default function NewEventPage() {
               )}
             </section>
 
-            <Button type="submit" size="lg" className="w-full" loading={loading} disabled={!locationSet}>
+            <Button type="submit" size="lg" className="w-full" loading={loading} disabled={!hasCoords(loc)}>
               {t("eventNew.submit")}
             </Button>
           </form>
@@ -385,52 +303,7 @@ export default function NewEventPage() {
               {t("eventNew.geofenceHeading")}
             </CardHeader>
             <CardBody className="space-y-4">
-              <div className="flex flex-wrap items-center gap-3">
-                <Button type="button" variant={locationSet ? "secondary" : "cyan"} loading={locating} onClick={useMyLocation}>
-                  {locating ? t("eventNew.locating") : t("eventNew.useMyLocation")}
-                </Button>
-                {locationSet && <span className="text-sm text-kehai-400">✓ {form.latitude}, {form.longitude}</span>}
-              </div>
-              <p className="text-[11px] text-white/35">
-                {locationSet ? t("eventNew.locationSetHint") : t("eventNew.locationNotSetHint")}
-              </p>
-
-              <button
-                type="button"
-                onClick={() => setManualCoords((s) => !s)}
-                className="text-xs font-medium text-white/45 hover:text-white/80"
-              >
-                {manualCoords ? t("common.cancel") : t("eventNew.enterManually")}
-              </button>
-
-              {manualCoords && (
-                <div className="grid grid-cols-1 gap-4 border-t border-white/[0.06] pt-4 sm:grid-cols-2">
-                  <div>
-                    <Label htmlFor="lat">{t("eventNew.latitudeLabel")}</Label>
-                    <Input
-                      id="lat"
-                      required
-                      value={form.latitude}
-                      onChange={(e) => {
-                        set("latitude", e.target.value);
-                        setLocationSet(!!e.target.value && !!form.longitude);
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="lng">{t("eventNew.longitudeLabel")}</Label>
-                    <Input
-                      id="lng"
-                      required
-                      value={form.longitude}
-                      onChange={(e) => {
-                        set("longitude", e.target.value);
-                        setLocationSet(!!form.latitude && !!e.target.value);
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
+              <VenueLocationPicker value={loc} onChange={setLoc} idPrefix="venue" />
             </CardBody>
           </Card>
 
@@ -449,13 +322,6 @@ export default function NewEventPage() {
               <Card className="mt-3">
                 <CardBody className="space-y-4">
                   <div>
-                    <Label htmlFor="radius">{t("eventNew.radiusLabel")}</Label>
-                    <Input id="radius" type="number" min={10} max={5000} required value={form.geofenceRadiusM} onChange={(e) => set("geofenceRadiusM", e.target.value)} />
-                    <p className="mt-1 text-[11px] text-white/35">
-                      {t("eventNew.radiusHelp")}
-                    </p>
-                  </div>
-                  <div>
                     <Label htmlFor="qrRotation">{t("eventNew.rotationLabel")}</Label>
                     <QrRotationInput
                       value={Number(form.qrRotationSeconds) || 20}
@@ -470,7 +336,7 @@ export default function NewEventPage() {
             )}
           </div>
 
-          <Button type="submit" size="lg" className="w-full" loading={loading} disabled={!locationSet}>
+          <Button type="submit" size="lg" className="w-full" loading={loading} disabled={!hasCoords(loc)}>
             {t("eventNew.submit")}
           </Button>
         </form>

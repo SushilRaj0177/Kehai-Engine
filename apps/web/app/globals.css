@@ -762,3 +762,29 @@ body {
   background: #050609;
   font-feature-settings: normal;
 }
+
+/* Venue picker map: dark Leaflet chrome so the controls read as part of
+   the HUD instead of stock white widgets. */
+.venue-map .leaflet-control-zoom {
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 10px !important;
+  overflow: hidden;
+}
+.venue-map .leaflet-control-zoom a {
+  background: rgba(8, 10, 15, 0.85) !important;
+  color: rgba(255, 255, 255, 0.75) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(8px);
+}
+.venue-map .leaflet-control-zoom a:hover {
+  color: #5ff4ff !important;
+}
+.venue-map .leaflet-control-attribution {
+  background: rgba(0, 0, 0, 0.55) !important;
+  color: rgba(255, 255, 255, 0.4) !important;
+  font-size: 9px;
+  border-top-left-radius: 6px;
+}
+.venue-map .leaflet-control-attribution a {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
