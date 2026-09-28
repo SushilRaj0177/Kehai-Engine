@@ -72,14 +72,7 @@ body {
    closer to two colored lights in the room than a soft haze. Only
    intensity/blur change here; position and size stay PageGlow's own
    Tailwind utilities so this never fights their cascade order. */
-[data-standalone="true"] .page-glow-shu {
-  background-color: rgba(255, 45, 85, 0.3);
-  filter: blur(90px);
-}
-[data-standalone="true"] .page-glow-kehai {
-  background-color: rgba(34, 226, 245, 0.2);
-  filter: blur(90px);
-}
+/* installed-app corner glows: see app/pwa.css */
 
 /* SURFACE (Hud.tsx) -- browser-tab default: a solid dark panel on a dark
    ground, no shadow. */

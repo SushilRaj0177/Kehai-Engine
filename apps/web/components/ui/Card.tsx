@@ -1,7 +1,13 @@
+"use client";
+
 import { cn } from "@/lib/cn";
 import type { HTMLAttributes } from "react";
+import { useIsStandalone } from "@/lib/useStandalone";
 
 export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  // Installed PWA: the rebuilt screens' panel surface (app/pwa.css).
+  const standalone = useIsStandalone();
+  if (standalone === true) return <div className={cn("pwa-card", className)} {...props} />;
   return (
     <div
       className={cn(
@@ -20,6 +26,8 @@ export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
 }
 
 export function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  const standalone = useIsStandalone();
+  if (standalone === true) return <div className={cn(className, "pwa-card-header")} {...props} />;
   return <div className={cn("border-b border-white/[0.06] px-6 py-5", className)} {...props} />;
 }
 

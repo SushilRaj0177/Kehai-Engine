@@ -1,4 +1,7 @@
+"use client";
+
 import { cn } from "@/lib/cn";
+import { useIsStandalone } from "@/lib/useStandalone";
 import { forwardRef, type InputHTMLAttributes, type LabelHTMLAttributes, type TextareaHTMLAttributes } from "react";
 
 export function Label({ className, ...props }: LabelHTMLAttributes<HTMLLabelElement>) {
@@ -25,6 +28,8 @@ interface InputExtraProps {
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement> & InputExtraProps>(
   function Input({ className, underline = true, ...props }, ref) {
+    const standalone = useIsStandalone();
+    if (standalone === true) return <input ref={ref} className={cn("pwa-field", className)} {...props} />;
     return (
       <div className="relative">
         <input ref={ref} className={cn(fieldBase, !underline && "border-b-0", className)} {...props} />
@@ -38,6 +43,8 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<H
   { className, ...props },
   ref
 ) {
+  const standalone = useIsStandalone();
+  if (standalone === true) return <textarea ref={ref} className={cn("pwa-field pwa-textarea", className)} {...props} />;
   return (
     <div className="relative">
       <textarea ref={ref} className={cn(fieldBase, "resize-none", className)} {...props} />

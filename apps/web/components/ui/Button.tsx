@@ -1,5 +1,8 @@
+"use client";
+
 import { cn } from "@/lib/cn";
 import { forwardRef, type ButtonHTMLAttributes } from "react";
+import { useIsStandalone } from "@/lib/useStandalone";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger" | "cyan" | "terminal";
 type Size = "sm" | "md" | "lg";
@@ -118,6 +121,24 @@ export const Button = forwardRef<HTMLButtonElement, Props>(function Button(
   { className, variant = "primary", size = "md", loading, disabled, children, style, ...props },
   ref
 ) {
+  // Installed PWA: the rebuilt screens' button language (app/pwa.css)
+  // instead of the browser's HUD brackets / terminal prompt.
+  const standalone = useIsStandalone();
+  if (standalone === true && variant !== "ghost") {
+    return (
+      <button
+        ref={ref}
+        disabled={disabled || loading}
+        style={style}
+        className={cn("pwa-btn-x", `pwa-v-${variant}`, `pwa-s-${size}`, className)}
+        {...props}
+      >
+        {loading ? <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" /> : null}
+        {children}
+      </button>
+    );
+  }
+
   // Reached for on nearly every minor, frequent action (Cancel, a dropdown
   // item, a small table action) — it skips the HUD apparatus entirely so
   // it doesn't compete with the buttons meant to stand out.
