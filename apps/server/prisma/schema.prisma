@@ -194,6 +194,10 @@ model Event {
   qrSecret          String // per-event signing secret for rotating QR tokens
   qrRotationSeconds Int     @default(20)
   qrRevoked         Boolean @default(false)
+  // Rotation windows are counted from here, so the displayed QR is a pure
+  // function of time: every request inside one window gets the same code.
+  // Reset whenever the rotation interval changes or the event restarts.
+  qrEpochAt         DateTime @default(now())
 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -380,6 +384,7 @@ model ClassSession {
 
   qrSecret          String
   qrRotationSeconds Int    @default(20)
+  qrEpochAt         DateTime @default(now()) // see Event.qrEpochAt
 
   openedAt DateTime  @default(now())
   closedAt DateTime?

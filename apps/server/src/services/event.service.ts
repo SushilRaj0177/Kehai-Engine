@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { prisma } from "../lib/prisma.js";
 import { HttpError } from "../lib/http-error.js";
 import { issueQrToken } from "../utils/qrToken.js";
+import { currentQrWindow } from "../utils/qrWindow.js";
 import { sendEmail } from "../utils/mailer.js";
 import { signUnsubscribeToken } from "../utils/unsubscribeToken.js";
 import { env } from "../config/env.js";
@@ -84,7 +85,13 @@ export async function updateEvent(eventId: string, input: Partial<CreateEventInp
   if (event.status === "COMPLETED" || event.status === "CANCELLED") {
     throw HttpError.badRequest("Cannot edit a completed or cancelled event");
   }
-  const updated = await prisma.event.update({ where: { id: eventId }, data: input });
+  // A new rotation interval starts a fresh window grid from now, so the
+  // new interval takes effect immediately and runs its full length.
+  const rotationChanged = input.qrRotationSeconds !== undefined && input.qrRotationSeconds !== event.qrRotationSeconds;
+  const updated = await prisma.event.update({
+    where: { id: eventId },
+    data: rotationChanged ? { ...input, qrEpochAt: new Date() } : input,
+  });
 
   // Raising capacity (or removing the cap) can open spots for anyone
   // already on the waitlist — check whenever capacity was part of this
@@ -138,6 +145,7 @@ export async function transitionEventStatus(eventId: string, nextStatus: EventSt
       status: nextStatus,
       cancelledAt: nextStatus === "CANCELLED" ? new Date() : null,
       qrRevoked: isRestart ? false : undefined,
+      qrEpochAt: isRestart ? new Date() : undefined,
       startsAt: isRestartingLive ? now : undefined,
       endsAt: isRestartingLive ? new Date(now.getTime() + 365 * 24 * 60 * 60_000) : undefined,
     },
@@ -310,9 +318,16 @@ export async function issueEventQr(eventId: string) {
     throw HttpError.badRequest("Event must be published or active to issue a check-in QR code");
   }
 
-  const ttl = Math.max(event.qrRotationSeconds * 2, 30); // grace window beyond one rotation
-  const { token, jti, expiresAt } = issueQrToken(event.id, event.qrSecret, ttl);
-  return { token, jti, expiresAt, rotationSeconds: event.qrRotationSeconds };
+  const window = currentQrWindow(event.qrEpochAt, event.qrRotationSeconds);
+  const { token, jti, expiresAt } = issueQrToken(event.id, event.qrSecret, window, event.qrRotationSeconds);
+  return {
+    token,
+    jti,
+    expiresAt,
+    rotationSeconds: event.qrRotationSeconds,
+    rotatesAt: window.rotatesAt,
+    secondsRemaining: window.secondsRemaining,
+  };
 }
 
 export async function revokeEventQr(eventId: string) {

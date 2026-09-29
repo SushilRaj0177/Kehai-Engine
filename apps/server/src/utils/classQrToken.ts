@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { nanoid } from "nanoid";
+import { graceSeconds, windowJti, type QrWindow } from "./qrWindow.js";
 import { env } from "../config/env.js";
 
 /**
@@ -27,18 +27,19 @@ function classSigningSecret(sessionId: string, qrSecret: string): string {
   return `${env.QR_SIGNING_PEPPER}:${sessionId}:${qrSecret}`;
 }
 
-export function issueClassQrToken(sessionId: string, qrSecret: string, ttlSeconds: number): {
+export function issueClassQrToken(sessionId: string, qrSecret: string, window: QrWindow, rotationSeconds: number): {
   token: string;
   jti: string;
   expiresAt: Date;
 } {
-  const jti = nanoid(21);
   const secret = classSigningSecret(sessionId, qrSecret);
-  const token = jwt.sign({ sessionId, typ: "class_qr" } as Omit<ClassQrTokenPayload, "jti">, secret, {
-    jwtid: jti,
-    expiresIn: ttlSeconds,
-  });
-  return { token, jti, expiresAt: new Date(Date.now() + ttlSeconds * 1000) };
+  const jti = windowJti(secret, window.index);
+  const iat = Math.floor(window.startsAt.getTime() / 1000);
+  const exp = Math.floor(window.rotatesAt.getTime() / 1000) + graceSeconds(rotationSeconds);
+  // Explicit iat/exp + a window-derived jti: HS256 over identical input is
+  // byte-identical, so every request in this window returns the same token.
+  const token = jwt.sign({ sessionId, typ: "class_qr", jti, iat, exp }, secret, { noTimestamp: true });
+  return { token, jti, expiresAt: new Date(exp * 1000) };
 }
 
 export function verifyClassQrToken(token: string, sessionId: string, qrSecret: string): ClassQrTokenPayload {

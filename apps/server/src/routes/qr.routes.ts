@@ -13,9 +13,11 @@ qrRouter.get(
   requireAuth,
   requireOrgRole("ORGANIZER"),
   asyncHandler(async (req, res) => {
-    const { token, expiresAt, rotationSeconds } = await eventService.issueEventQr(req.params.eventId);
+    const { token, expiresAt, rotationSeconds, rotatesAt, secondsRemaining } = await eventService.issueEventQr(req.params.eventId);
     const deepLink = `${env.WEB_ORIGIN}/attend/${req.params.eventId}?t=${encodeURIComponent(token)}`;
     const dataUrl = await QRCode.toDataURL(deepLink, { margin: 1, width: 480, color: { dark: "#0a0e14", light: "#ffffff" } });
-    res.json({ dataUrl, expiresAt, rotationSeconds });
+    // no-store: a cached response would hand back a stale window's code.
+    res.set("Cache-Control", "no-store");
+    res.json({ dataUrl, expiresAt, rotationSeconds, rotatesAt, secondsRemaining });
   })
 );

@@ -256,13 +256,14 @@ classroomRouter.get(
   requireAuth,
   requireClassroomTeacher(),
   asyncHandler(async (req, res) => {
-    const { token, expiresAt, rotationSeconds } = await classroomService.issueSessionQr(
+    const { token, expiresAt, rotationSeconds, rotatesAt, secondsRemaining } = await classroomService.issueSessionQr(
       req.params.classroomId,
       req.params.sessionId
     );
     const deepLink = `${env.WEB_ORIGIN}/classrooms/${req.params.classroomId}/checkin?t=${encodeURIComponent(token)}`;
     const dataUrl = await QRCode.toDataURL(deepLink, { margin: 1, width: 480, color: { dark: "#0a0e14", light: "#ffffff" } });
-    res.json({ dataUrl, expiresAt, rotationSeconds });
+    res.set("Cache-Control", "no-store");
+    res.json({ dataUrl, expiresAt, rotationSeconds, rotatesAt, secondsRemaining });
   })
 );
 

@@ -13,6 +13,8 @@ interface QrResponse {
   dataUrl: string;
   expiresAt: string;
   rotationSeconds: number;
+  secondsRemaining?: number;
+  rotatesAt?: string;
 }
 
 // The approved mockup's Live Session artboard: a full-screen control room
@@ -59,7 +61,9 @@ export function PwaLiveSession({ classroomId }: { classroomId: string }) {
     try {
       const data = await apiFetch<QrResponse>(`/api/classrooms/${classroomId}/sessions/${openSession.id}/qr`);
       setQr(data);
-      setCountdown(Math.min(86400, Math.max(0, data.rotationSeconds)));
+      // Count down what's left of the server's current window, not a fresh
+      // full interval -- reloading mid-window keeps the same code and time.
+      setCountdown(Math.min(86400, Math.max(1, data.secondsRemaining ?? data.rotationSeconds)));
     } catch {
       // keep the last good code on screen; the next tick retries
     }

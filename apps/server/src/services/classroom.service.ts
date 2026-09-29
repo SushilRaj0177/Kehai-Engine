@@ -5,6 +5,7 @@ import { prisma } from "../lib/prisma.js";
 import { HttpError } from "../lib/http-error.js";
 import { generateJoinCode } from "../utils/joinCode.js";
 import { verifyClassQrToken, issueClassQrToken, type ClassQrTokenPayload } from "../utils/classQrToken.js";
+import { currentQrWindow } from "../utils/qrWindow.js";
 import { checkGeofence } from "../utils/geo.js";
 import { checkImpossibleTravel, isDuplicateLocation, hasZeroAccuracy, type FlagReason } from "../utils/fraud.js";
 import { computeStreaks, type StreakDay } from "../utils/streaks.js";
@@ -681,7 +682,7 @@ export async function reopenSession(classroomId: string, sessionId: string) {
 
   return prisma.classSession.update({
     where: { id: session.id },
-    data: { status: "OPEN", closedAt: null },
+    data: { status: "OPEN", closedAt: null, qrEpochAt: new Date() },
   });
 }
 
@@ -750,7 +751,10 @@ export async function updateSession(classroomId: string, sessionId: string, inpu
     where: { id: session.id },
     data: {
       ...(input.label !== undefined ? { label: input.label || null } : {}),
-      ...(input.qrRotationSeconds !== undefined ? { qrRotationSeconds: input.qrRotationSeconds } : {}),
+      // A changed interval restarts the window grid so it takes effect now.
+      ...(input.qrRotationSeconds !== undefined && input.qrRotationSeconds !== session.qrRotationSeconds
+        ? { qrRotationSeconds: input.qrRotationSeconds, qrEpochAt: new Date() }
+        : {}),
     },
   });
 }
@@ -764,9 +768,16 @@ export async function issueSessionQr(classroomId: string, sessionId: string) {
   const session = await getOwnedSession(classroomId, sessionId);
   if (session.status !== "OPEN") throw HttpError.badRequest("This session is closed — restart it first");
 
-  const ttl = Math.max(session.qrRotationSeconds * 2, 30);
-  const { token, jti, expiresAt } = issueClassQrToken(session.id, session.qrSecret, ttl);
-  return { token, jti, expiresAt, rotationSeconds: session.qrRotationSeconds };
+  const window = currentQrWindow(session.qrEpochAt, session.qrRotationSeconds);
+  const { token, jti, expiresAt } = issueClassQrToken(session.id, session.qrSecret, window, session.qrRotationSeconds);
+  return {
+    token,
+    jti,
+    expiresAt,
+    rotationSeconds: session.qrRotationSeconds,
+    rotatesAt: window.rotatesAt,
+    secondsRemaining: window.secondsRemaining,
+  };
 }
 
 export interface ClassCheckInInput {

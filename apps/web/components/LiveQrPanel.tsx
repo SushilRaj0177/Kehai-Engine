@@ -13,6 +13,8 @@ interface QrResponse {
   dataUrl: string;
   expiresAt: string;
   rotationSeconds: number;
+  secondsRemaining?: number;
+  rotatesAt?: string;
 }
 
 export function LiveQrPanel({
@@ -46,7 +48,9 @@ export function LiveQrPanel({
       const data = await apiFetch<QrResponse>(`/api/qr/events/${eventId}/qr-image`);
       setQr(data);
       setError(null);
-      setCountdown(Math.min(86400, Math.max(0, data.rotationSeconds)));
+      // Count down what's left of the server's current window, not a fresh
+      // full interval -- reloading mid-window keeps the same code and time.
+      setCountdown(Math.min(86400, Math.max(1, data.secondsRemaining ?? data.rotationSeconds)));
     } catch (err: any) {
       setError(err?.message ?? tRef.current("qrPanel.qrLoadError"));
     }

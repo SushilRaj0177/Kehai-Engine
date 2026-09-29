@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import { prisma } from "../src/lib/prisma.js";
 import { checkIn, manualOverride, revokeAttendance } from "../src/services/attendance.service.js";
 import { issueQrToken } from "../src/utils/qrToken.js";
+import { currentQrWindow } from "../src/utils/qrWindow.js";
 import { transitionEventStatus } from "../src/services/event.service.js";
 
 /**
@@ -58,7 +59,7 @@ afterAll(async () => {
 
 describe("attendance check-in", () => {
   it("succeeds when inside the geofence with a valid QR token", async () => {
-    const { token } = issueQrToken(eventId, qrSecret, 30);
+    const { token } = issueQrToken(eventId, qrSecret, currentQrWindow(new Date(), 30), 30);
     const result = await checkIn({
       eventId,
       userId,
@@ -71,7 +72,7 @@ describe("attendance check-in", () => {
   });
 
   it("rejects a duplicate check-in for the same user and event", async () => {
-    const { token } = issueQrToken(eventId, qrSecret, 30);
+    const { token } = issueQrToken(eventId, qrSecret, currentQrWindow(new Date(), 30), 30);
     await expect(
       checkIn({
         eventId,
@@ -88,7 +89,7 @@ describe("attendance check-in", () => {
     const otherUser = await prisma.user.create({
       data: { name: "Far Away", email: `far-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
     });
-    const { token } = issueQrToken(eventId, qrSecret, 30);
+    const { token } = issueQrToken(eventId, qrSecret, currentQrWindow(new Date(), 30), 30);
     await expect(
       checkIn({
         eventId,
@@ -106,7 +107,7 @@ describe("attendance check-in", () => {
     const otherUser = await prisma.user.create({
       data: { name: "Wrong Event", email: `wrong-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
     });
-    const bogusToken = issueQrToken("some-other-event-id", qrSecret, 30).token;
+    const bogusToken = issueQrToken("some-other-event-id", qrSecret, currentQrWindow(new Date(), 30), 30).token;
     await expect(
       checkIn({
         eventId,
@@ -215,7 +216,7 @@ describe("check-in webhook notifications", () => {
     const attendee = await prisma.user.create({
       data: { name: "Webhook Attendee", email: `webhook-attendee-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
     });
-    const { token } = issueQrToken(eventId, qrSecret, 30);
+    const { token } = issueQrToken(eventId, qrSecret, currentQrWindow(new Date(), 30), 30);
     await checkIn({
       eventId,
       userId: attendee.id,
@@ -245,7 +246,7 @@ describe("check-in webhook notifications", () => {
     const attendee = await prisma.user.create({
       data: { name: "No Webhook Attendee", email: `no-webhook-${crypto.randomUUID()}@example.com`, provider: "PASSWORD" },
     });
-    const { token } = issueQrToken(eventId, qrSecret, 30);
+    const { token } = issueQrToken(eventId, qrSecret, currentQrWindow(new Date(), 30), 30);
     await checkIn({
       eventId,
       userId: attendee.id,
