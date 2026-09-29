@@ -304,12 +304,8 @@ export function PwaHome({
         <p className="pwa-greet-label">{dateLabel}</p>
         <h1 className="pwa-greet">
           {greeting},
-          {firstName && (
-            <>
-              <br />
-              <b>{firstName}</b>
-            </>
-          )}
+           <br />
+           <b>{firstName || "User"}</b>
         </h1>
       </div>
 
