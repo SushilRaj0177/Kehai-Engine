@@ -907,6 +907,7 @@ const dict = {
     },
   },
   classroomDetail: {
+    tabOverview: { en: "Overview", ja: "概要" },
     notFoundTitle: { en: "Classroom not found", ja: "クラスが見つかりません" },
     notFoundDescription: {
       en: "You may not be enrolled or teaching this classroom, or it doesn't exist.",

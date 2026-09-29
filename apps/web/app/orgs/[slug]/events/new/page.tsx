@@ -236,7 +236,7 @@ export default function NewEventPage() {
     <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
-      <div className="page-stagger relative mx-auto max-w-3xl px-6 py-10 sm:py-14">
+      <div className="page-stagger relative mx-auto max-w-3xl px-6 py-10 sm:py-14 lg:max-w-6xl">
         <KanjiMark glyph="新" className="absolute -right-4 top-0 text-[5rem] sm:text-[9rem]" />
         <span className="relative z-20 text-xs font-semibold uppercase tracking-widest text-shu-400">{t("eventNew.createKicker")}</span>
         <h1 className="relative z-20 mt-3 font-display text-4xl font-black text-white md:text-5xl">{t("eventNew.title")}</h1>
@@ -244,10 +244,14 @@ export default function NewEventPage() {
           {t("eventNew.subtitle")}
         </p>
 
-        <form onSubmit={handleSubmit} className="relative z-20 mt-12 space-y-6">
-          {error && <ErrorBlock message={error} />}
-
-          <Card>
+        {/* Wide screens: details on the left, the venue map on the right
+            (sticky), so the whole form is visible without scrolling. */}
+        {error && <ErrorBlock message={error} className="relative z-20 mt-8" />}
+        <form
+          onSubmit={handleSubmit}
+          className="relative z-20 mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start"
+        >
+          <Card className="lg:col-start-1">
             <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">{t("eventNew.detailsHeading")}</CardHeader>
             <CardBody className="space-y-4">
               <div>
@@ -298,7 +302,7 @@ export default function NewEventPage() {
             </CardBody>
           </Card>
 
-          <Card>
+          <Card className="lg:sticky lg:top-24 lg:col-start-2 lg:row-span-3 lg:row-start-1">
             <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">
               {t("eventNew.geofenceHeading")}
             </CardHeader>
@@ -307,7 +311,7 @@ export default function NewEventPage() {
             </CardBody>
           </Card>
 
-          <div className="border-t border-white/[0.06] pt-2">
+          <div className="border-t border-white/[0.06] pt-2 lg:col-start-1">
             <button
               type="button"
               onClick={() => setShowAdvanced((s) => !s)}
@@ -336,7 +340,7 @@ export default function NewEventPage() {
             )}
           </div>
 
-          <Button type="submit" size="lg" className="w-full" loading={loading} disabled={!hasCoords(loc)}>
+          <Button type="submit" size="lg" className="w-full lg:col-start-1" loading={loading} disabled={!hasCoords(loc)}>
             {t("eventNew.submit")}
           </Button>
         </form>

@@ -139,7 +139,7 @@ export default function DashboardPage() {
           />
         )}
 
-        <div className="relative mt-14">
+        <div className="relative mt-8">
           {isLoading ? (
             <LoadingBlock />
           ) : !orgs?.length ? (

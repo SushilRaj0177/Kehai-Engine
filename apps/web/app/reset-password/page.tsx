@@ -145,7 +145,7 @@ export default function ResetPasswordPage() {
           {t("auth.resetPasswordTitle")}
         </h1>
 
-        <Card className="relative z-20 mt-12">
+        <Card className="relative z-20 mt-8">
           <CardBody>{formBody}</CardBody>
         </Card>
       </div>

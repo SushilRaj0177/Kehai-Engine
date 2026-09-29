@@ -183,8 +183,8 @@ export default function OrgPage() {
             of the New Event button. */}
         <div className="relative z-20 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="font-display text-4xl font-black text-white md:text-5xl">{org.name}</h1>
-            <p className="mt-2 text-base text-white/40">/{org.slug}</p>
+            <h1 className="font-display text-3xl font-black text-white md:text-4xl">{org.name}</h1>
+            <p className="mt-1 text-sm text-white/40">/{org.slug}</p>
           </div>
           <Link href={`/orgs/${org.slug}/events/new`}>
             <Button size="lg">{t("orgDetail.newEvent")}</Button>
@@ -260,23 +260,25 @@ export default function OrgPage() {
           </div>
         </div>
 
-        {/* --- Desktop (md and up): original full layout --- */}
+        {/* --- Desktop (md and up): one-screen dashboard. KPIs in a single
+            row, the event list as the primary column, and everything
+            secondary (trend, team, activity, settings) in a sticky tabbed
+            sidebar -- so nothing requires scrolling past something else. --- */}
         <div className="hidden md:block">
           {overview && (
-            <div className="relative mt-14 grid grid-cols-2 gap-8 sm:grid-cols-3 lg:grid-cols-6">
-              <MiniStat label={t("orgDetail.statEvents")} value={overview.totalEvents} />
-              <MiniStat label={t("orgDetail.statCompleted")} value={overview.completedEvents} />
-              <MiniStat label={t("orgDetail.statRegistrations")} value={overview.totalRegistrations} />
-              <MiniStat label={t("orgDetail.statAttendance")} value={overview.totalAttendance} />
-              <MiniStat label={t("orgDetail.statAvgRate")} value={`${Math.round((overview.averageAttendanceRate ?? 0) * 100)}%`} />
-              <MiniStat label={t("orgDetail.statRecurringRate")} value={`${Math.round((overview.recurringAttendeeRate ?? 0) * 100)}%`} />
+            <div className="relative z-20 mt-8 grid grid-cols-3 gap-3 lg:grid-cols-6">
+              <KpiTile label={t("orgDetail.statEvents")} value={overview.totalEvents} />
+              <KpiTile label={t("orgDetail.statCompleted")} value={overview.completedEvents} />
+              <KpiTile label={t("orgDetail.statRegistrations")} value={overview.totalRegistrations} />
+              <KpiTile label={t("orgDetail.statAttendance")} value={overview.totalAttendance} />
+              <KpiTile label={t("orgDetail.statAvgRate")} value={`${Math.round((overview.averageAttendanceRate ?? 0) * 100)}%`} accent="shu" />
+              <KpiTile label={t("orgDetail.statRecurringRate")} value={`${Math.round((overview.recurringAttendeeRate ?? 0) * 100)}%`} accent="kehai" />
             </div>
           )}
 
-          <div className="relative mt-10">
-            <EventsPanel
+          <div className="relative z-20 mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+            <DesktopEventsPanel
               org={org}
-              overview={overview}
               events={events}
               eventsLoading={eventsLoading}
               filteredEvents={filteredEvents}
@@ -285,41 +287,18 @@ export default function OrgPage() {
               locale={locale}
               t={t}
             />
+            <div className="space-y-6 lg:sticky lg:top-24">
+              {overview && overview.events.length > 0 && (
+                <Card>
+                  <CardBody className="py-4">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">{t("orgDetail.trendHeading")}</p>
+                    <OrgAttendanceTrendChart events={overview.events} />
+                  </CardBody>
+                </Card>
+              )}
+              <DesktopSidePanel org={org} isAdmin={isAdmin} />
+            </div>
           </div>
-
-          <div className="relative mt-10">
-            <h2 className="mb-6 font-display text-xl font-bold text-white/70">{t("orgMembers.heading")}</h2>
-            <Card>
-              <CardBody>
-                <OrgMembers orgId={org.id} callerRole={org.role} />
-              </CardBody>
-            </Card>
-          </div>
-
-          {isAdmin && (
-            <div className="relative mt-10">
-              <h2 className="mb-6 font-display text-xl font-bold text-white/70">{t("auditLog.heading")}</h2>
-              <Card>
-                <CardBody>
-                  <AuditLogPanel orgId={org.id} />
-                </CardBody>
-              </Card>
-            </div>
-          )}
-
-          {isAdmin && (
-            <div className="relative mt-10">
-              <h2 className="mb-6 font-display text-xl font-bold text-white/70">{t("orgDetail.webhookHeading")}</h2>
-              <WebhookSection org={org} />
-            </div>
-          )}
-
-          {org.role === "OWNER" && (
-            <div className="relative mt-10">
-              <h2 className="mb-6 font-display text-xl font-bold text-shu-400">{t("orgDetail.dangerZoneHeading")}</h2>
-              <DeleteOrgSection org={org} />
-            </div>
-          )}
         </div>
       </div>
     </ClickRippleLayer>
@@ -638,14 +617,172 @@ function StandaloneEventRow({
   );
 }
 
-function MiniStat({ label, value }: { label: string; value: React.ReactNode }) {
+function KpiTile({ label, value, accent }: { label: string; value: React.ReactNode; accent?: "shu" | "kehai" }) {
   return (
-    <div>
-      <div className="font-display text-3xl font-bold text-white md:text-4xl">{value}</div>
-      <div className="mt-1.5 text-xs uppercase tracking-wider text-white/40">{label}</div>
+    <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 backdrop-blur-sm">
+      <div
+        className={`font-display text-2xl font-bold leading-none ${
+          accent === "shu" ? "text-shu-300" : accent === "kehai" ? "text-kehai-300" : "text-white"
+        }`}
+      >
+        {value}
+      </div>
+      <div className="mt-2 truncate text-[11px] uppercase tracking-wider text-white/40" title={label}>
+        {label}
+      </div>
     </div>
   );
 }
+
+type SideTab = "team" | "activity" | "settings";
+
+function DesktopSidePanel({ org, isAdmin }: { org: Organization; isAdmin: boolean }) {
+  const { t } = useLocale();
+  const [tab, setTab] = useState<SideTab>("team");
+  const tabs: { id: SideTab; label: string }[] = [
+    { id: "team", label: t("orgMembers.heading") },
+    ...(isAdmin
+      ? [
+          { id: "activity" as const, label: t("orgDetail.tabActivity") },
+          { id: "settings" as const, label: t("orgDetail.tabSettings") },
+        ]
+      : []),
+  ];
+  return (
+    <Card>
+      <div className="px-5 pt-4">
+        <HudTabs tabs={tabs} active={tab} onChange={setTab} />
+      </div>
+      <CardBody className="scroll-thin max-h-[min(560px,calc(100vh-220px))] overflow-y-auto px-5 py-4">
+        {tab === "team" && <OrgMembers orgId={org.id} callerRole={org.role} />}
+        {tab === "activity" && isAdmin && <AuditLogPanel orgId={org.id} />}
+        {tab === "settings" && isAdmin && (
+          <div className="space-y-6">
+            <div>
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/40">{t("orgDetail.webhookHeading")}</p>
+              <WebhookFields org={org} />
+            </div>
+            {org.role === "OWNER" && (
+              <div className="border-t border-shu-500/20 pt-5">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-shu-400">{t("orgDetail.dangerZoneHeading")}</p>
+                <DeleteOrgFields org={org} />
+              </div>
+            )}
+          </div>
+        )}
+      </CardBody>
+    </Card>
+  );
+}
+
+// Desktop event list: dense rows instead of a 3-up card grid, so a dozen
+// events fit on one screen with name, status, date, venue and turnout
+// scannable in columns.
+function DesktopEventsPanel({
+  org,
+  events,
+  eventsLoading,
+  filteredEvents,
+  q,
+  setQ,
+  locale,
+  t,
+}: {
+  org: Organization;
+  events: EventSummary[] | undefined;
+  eventsLoading: boolean;
+  filteredEvents: EventSummary[] | undefined;
+  q: string;
+  setQ: (v: string) => void;
+  locale: "en" | "ja";
+  t: (key: string, vars?: Record<string, string | number>) => string;
+}) {
+  return (
+    <Card className="overflow-hidden">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.06] px-5 py-3.5">
+        <div className="flex items-baseline gap-2.5">
+          <h2 className="font-display text-lg font-bold text-white">{t("orgDetail.eventsHeading")}</h2>
+          {events && <span className="font-mono text-xs font-bold text-white/35">{events.length}</span>}
+        </div>
+        {events && events.length > 0 && (
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={t("orgDetail.searchPlaceholder")}
+            underline={false}
+            className="h-9 w-64 max-w-full py-1.5 text-sm"
+          />
+        )}
+      </div>
+      {eventsLoading ? (
+        <div className="p-6">
+          <LoadingBlock />
+        </div>
+      ) : !events?.length ? (
+        <div className="p-6">
+          <EmptyState
+            glyph="催"
+            title={t("orgDetail.emptyTitle")}
+            description={t("orgDetail.emptyDescription")}
+            action={
+              <Link href={`/orgs/${org.slug}/events/new`}>
+                <Button>{t("orgDetail.createEvent")}</Button>
+              </Link>
+            }
+          />
+        </div>
+      ) : !filteredEvents?.length ? (
+        <div className="p-6">
+          <EmptyState glyph="催" title={t("orgDetail.noMatchTitle")} description={t("orgDetail.noMatchDescription")} />
+        </div>
+      ) : (
+        <ul className="scroll-thin max-h-[min(640px,calc(100vh-260px))] divide-y divide-white/[0.05] overflow-y-auto">
+          {filteredEvents.map((event) => {
+            const reg = event._count.registrations;
+            const att = event._count.attendances;
+            const rate = reg > 0 ? Math.min(1, att / reg) : 0;
+            return (
+              <li key={event.id}>
+                <Link
+                  href={`/orgs/${org.slug}/events/${event.id}`}
+                  className="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-5 py-3.5 transition-colors hover:bg-white/[0.03] xl:grid-cols-[minmax(0,1fr)_200px_150px_auto]"
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2.5">
+                      <p className="truncate font-semibold text-white transition-colors group-hover:text-shu-300">{event.name}</p>
+                      <Badge status={event.status}>{t(`badge.status.${event.status}`)}</Badge>
+                    </div>
+                    <p className="mt-0.5 truncate text-xs text-white/40">
+                      {event.venue}
+                      <span className="xl:hidden"> · {formatDateRange(event.startsAt, event.endsAt, locale)}</span>
+                    </p>
+                  </div>
+                  <p className="hidden truncate text-xs text-white/45 xl:block">{formatDateRange(event.startsAt, event.endsAt, locale)}</p>
+                  <div className="hidden xl:block">
+                    <div className="flex items-baseline justify-between text-xs">
+                      <span className="font-semibold text-white/80">
+                        {att}
+                        <span className="text-white/35">/{reg}</span>
+                      </span>
+                      <span className="font-mono text-[10px] text-white/35">{Math.round(rate * 100)}%</span>
+                    </div>
+                    <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-white/[0.07]">
+                      <div className="h-full rounded-full bg-gradient-to-r from-shu-500 to-kehai-400" style={{ width: `${rate * 100}%` }} />
+                    </div>
+                  </div>
+                  <span className="text-white/25 transition-all group-hover:translate-x-0.5 group-hover:text-white/70" aria-hidden>
+                    →
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
 
 // Compact bordered widget for the mobile stat strip -- a plain
 // number+label pair (MiniStat, used on desktop) reads fine spread across

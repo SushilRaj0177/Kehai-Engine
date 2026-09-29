@@ -105,7 +105,7 @@ export default function LoginPage() {
         <h1 className="relative z-20 mt-3 font-display text-4xl font-black text-white md:text-5xl">{t("auth.loginTitle")}</h1>
         <p className="relative z-20 mt-3 text-lg text-white/50">{t("auth.loginSubtitle")}</p>
 
-        <Card className="relative z-20 mt-12">
+        <Card className="relative z-20 mt-8">
           <CardBody>{formBody}</CardBody>
         </Card>
 

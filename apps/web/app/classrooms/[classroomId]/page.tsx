@@ -51,6 +51,7 @@ export default function ClassroomDetailPage() {
   const { data: heatmap } = useClassroomHeatmap(classroomId, classroom?.isTeacher ? studentParam : undefined);
   const { data: sessions } = useClassroomSessions(classroom?.isTeacher ? classroomId : undefined);
 
+  const [deskTab, setDeskTab] = useState<"overview" | "roster" | "leaderboard" | "activity" | "settings">("overview");
   const [liveConnected, setLiveConnected] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -171,17 +172,13 @@ export default function ClassroomDetailPage() {
               )}
             </div>
             <h1 className="font-display text-3xl font-black text-white md:text-4xl">{classroom.name}</h1>
-            <p className="mt-2 text-base text-white/45">
+            <p className="mt-1 text-base text-white/45">
               {[classroom.courseCode, classroom.semesterLabel].filter(Boolean).join(" · ")}
               {classroom.openSession && ` · ${classroom.openSession.label || t("classroomDetail.untitledSession")}`}
             </p>
             <ClassroomApproxFlag classroom={classroom} onSaved={() => mutate()} className="mt-4 max-w-2xl" />
-            {classroom.isTeacher && (
-              <div className="mt-3">
-                <EditClassroomDetailsPanel classroom={classroom} onSaved={() => mutate()} />
-              </div>
-            )}
-            <div className="mt-3">
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              {classroom.isTeacher && <EditClassroomDetailsPanel classroom={classroom} onSaved={() => mutate()} />}
               <ClassroomCalendarButton classroomId={classroomId} />
             </div>
           </div>
@@ -196,52 +193,103 @@ export default function ClassroomDetailPage() {
         </div>
 
         {classroom.isTeacher ? (
-          <div className="relative z-20 mt-12 grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
-            <div className="space-y-6">
-              <Card>
-                <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">
-                  {t("classroomDetail.heatmapHeading")}
-                </CardHeader>
-                <CardBody>
-                  {viewingStudent && (
-                    <button
-                      type="button"
-                      onClick={() => router.push(`/classrooms/${classroomId}`)}
-                      className="mb-4 text-sm font-medium text-kehai-400 hover:text-kehai-300"
-                    >
-                      {t("classroomDetail.backToClassView")}
-                    </button>
-                  )}
-                  {heatmap ? <AttendanceHeatmap data={heatmap} /> : <LoadingBlock />}
-                </CardBody>
-              </Card>
+          // Desktop: tabbed main column instead of eight stacked cards, with
+          // the session controls (live QR) and share/at-risk in a side rail
+          // -- the teacher sees what matters without scrolling past the rest.
+          <div className="relative z-20 mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start">
+            <div className="min-w-0 space-y-5">
+              <HudTabs
+                tabs={[
+                  { id: "overview" as const, label: t("classroomDetail.tabOverview") },
+                  { id: "roster" as const, label: t("classroomDetail.rosterHeading") },
+                  { id: "leaderboard" as const, label: t("leaderboard.heading") },
+                  { id: "activity" as const, label: t("auditLog.heading") },
+                  { id: "settings" as const, label: t("classroomDetail.tabSettings") },
+                ]}
+                active={viewingStudent ? "overview" : deskTab}
+                onChange={setDeskTab}
+              />
 
-              {!viewingStudent && (
-                <Card>
-                  <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">
-                    {t("classroomDetail.trendHeading")}
+              {(deskTab === "overview" || viewingStudent) && (
+                <div className="space-y-6">
+                  <Card>
+                    <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">
+                      {t("classroomDetail.heatmapHeading")}
+                    </CardHeader>
+                    <CardBody>
+                      {viewingStudent && (
+                        <button
+                          type="button"
+                          onClick={() => router.push(`/classrooms/${classroomId}`)}
+                          className="mb-4 text-sm font-medium text-kehai-400 hover:text-kehai-300"
+                        >
+                          {t("classroomDetail.backToClassView")}
+                        </button>
+                      )}
+                      {heatmap ? <AttendanceHeatmap data={heatmap} /> : <LoadingBlock />}
+                    </CardBody>
+                  </Card>
+
+                  {!viewingStudent && (
+                    <Card>
+                      <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">
+                        {t("classroomDetail.trendHeading")}
+                      </CardHeader>
+                      <CardBody>
+                        {sessions ? (
+                          <SessionTrendChart sessions={sessions} studentCount={classroom.studentCount} />
+                        ) : (
+                          <LoadingBlock />
+                        )}
+                      </CardBody>
+                    </Card>
+                  )}
+                </div>
+              )}
+
+              {!viewingStudent && deskTab === "roster" && (
+                <Card id="roster">
+                  <CardHeader className="flex flex-wrap items-center justify-between gap-3">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-white/40">
+                      {t("classroomDetail.rosterHeading")}
+                    </span>
+                    <ClassroomExportButtons classroomId={classroomId} />
                   </CardHeader>
                   <CardBody>
-                    {sessions ? (
-                      <SessionTrendChart sessions={sessions} studentCount={classroom.studentCount} />
-                    ) : (
-                      <LoadingBlock />
-                    )}
+                    <ClassroomRoster classroomId={classroomId} openSessionId={classroom.openSession?.id} />
                   </CardBody>
                 </Card>
               )}
 
-              <Card id="roster">
-                <CardHeader className="flex flex-wrap items-center justify-between gap-3">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-white/40">
-                    {t("classroomDetail.rosterHeading")}
-                  </span>
-                  <ClassroomExportButtons classroomId={classroomId} />
-                </CardHeader>
-                <CardBody>
-                  <ClassroomRoster classroomId={classroomId} openSessionId={classroom.openSession?.id} />
-                </CardBody>
-              </Card>
+              {!viewingStudent && deskTab === "leaderboard" && (
+                <Card>
+                  <CardBody>
+                    <ClassroomLeaderboard classroomId={classroomId} />
+                  </CardBody>
+                </Card>
+              )}
+
+              {!viewingStudent && deskTab === "activity" && (
+                <Card>
+                  <CardBody>
+                    <AuditLogPanel classroomId={classroomId} />
+                  </CardBody>
+                </Card>
+              )}
+
+              {!viewingStudent && deskTab === "settings" && (
+                <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
+                  <Card>
+                    <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">
+                      {t("bulkEnroll.label")}
+                    </CardHeader>
+                    <CardBody>
+                      <BulkEnrollForm classroomId={classroomId} onEnrolled={() => mutateRoster()} />
+                    </CardBody>
+                  </Card>
+                  <DeleteClassroomSection classroomId={classroomId} classroomName={classroom.name} />
+                </div>
+              )}
             </div>
 
             <div className="space-y-6">
@@ -250,26 +298,6 @@ export default function ClassroomDetailPage() {
                 openSession={classroom.openSession}
                 onSessionsChanged={() => mutate()}
               />
-
-              <AtRiskStudents classroomId={classroomId} />
-
-              <Card>
-                <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">
-                  {t("leaderboard.heading")}
-                </CardHeader>
-                <CardBody>
-                  <ClassroomLeaderboard classroomId={classroomId} />
-                </CardBody>
-              </Card>
-
-              <Card>
-                <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">
-                  {t("auditLog.heading")}
-                </CardHeader>
-                <CardBody>
-                  <AuditLogPanel classroomId={classroomId} />
-                </CardBody>
-              </Card>
 
               <Card>
                 <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">
@@ -280,20 +308,12 @@ export default function ClassroomDetailPage() {
                 </CardBody>
               </Card>
 
-              <Card>
-                <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">
-                  {t("bulkEnroll.label")}
-                </CardHeader>
-                <CardBody>
-                  <BulkEnrollForm classroomId={classroomId} onEnrolled={() => mutateRoster()} />
-                </CardBody>
-              </Card>
-
-              <DeleteClassroomSection classroomId={classroomId} classroomName={classroom.name} />
+              <AtRiskStudents classroomId={classroomId} />
             </div>
           </div>
         ) : (
-          <div className="relative z-20 mt-12 space-y-6">
+          <div className="relative z-20 mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+            <div className="min-w-0 space-y-6">
             {!classroom.openSession && <ErrorBlock message={t("classroomDetail.noOpenSessionHint")} />}
             <Card>
               <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">
@@ -311,6 +331,8 @@ export default function ClassroomDetailPage() {
               </CardBody>
             </Card>
 
+            </div>
+            <div className="space-y-6">
             <Card>
               <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">
                 {t("leaderboard.heading")}
@@ -328,7 +350,7 @@ export default function ClassroomDetailPage() {
                 </div>
                 {leaveError && <ErrorBlock message={leaveError} />}
                 {confirmingLeave ? (
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
                     <Button variant="danger" size="sm" loading={leaving} onClick={leaveClassroom}>
                       {t("classroomDetail.confirmLeave")}
                     </Button>
@@ -343,6 +365,7 @@ export default function ClassroomDetailPage() {
                 )}
               </CardBody>
             </Card>
+            </div>
           </div>
         )}
       </div>

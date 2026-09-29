@@ -95,7 +95,7 @@ export default function ForgotPasswordPage() {
         </h1>
         <p className="relative z-20 mt-3 text-lg text-white/50">{t("auth.forgotPasswordSubtitle")}</p>
 
-        <Card className="relative z-20 mt-12">
+        <Card className="relative z-20 mt-8">
           <CardBody>{formBody}</CardBody>
         </Card>
 

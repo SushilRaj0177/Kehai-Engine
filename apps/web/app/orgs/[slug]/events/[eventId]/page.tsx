@@ -248,14 +248,16 @@ export default function EventControlRoomPage() {
           </div>
         )}
 
-        <div className="relative mt-12 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="relative mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatTile label={t("eventControl.statRegistrations")} value={registrations} />
           <StatTile label={t("eventControl.statAttendance")} value={attendance} accent="shu" />
           <StatTile label={t("eventControl.statAttendanceRate")} value={`${Math.round(rate * 100)}%`} accent="cyan" ring={rate} />
           <StatTile label={t("eventControl.statNoShowRate")} value={`${Math.round((analytics?.noShowRate ?? (1 - rate)) * 100)}%`} />
         </div>
 
-        <div className="relative mt-14 grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
+        {/* QR + AI sit in a sticky right rail so the live code stays on
+            screen while the organizer scrolls the attendee list. */}
+        <div className="relative mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start">
           <div className="space-y-6">
             <Card>
               <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">{t("eventControl.arrivalTimeline")}</CardHeader>
@@ -272,7 +274,7 @@ export default function EventControlRoomPage() {
             </Card>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-6 lg:sticky lg:top-24 lg:order-last">
             <LiveQrPanel
               eventId={event.id}
               active={event.status === "PUBLISHED" || event.status === "ACTIVE"}
@@ -582,19 +584,19 @@ function StatTile({
   ring?: number;
 }) {
   return (
-    <div className="flex min-w-0 items-center gap-4 rounded-2xl border border-white/[0.09] bg-white/[0.04] px-4 py-4 backdrop-blur-xl">
+    <div className="flex min-w-0 items-center gap-3.5 rounded-2xl border border-white/[0.09] bg-white/[0.04] px-4 py-3 backdrop-blur-xl">
       {ring !== undefined && (
         // The ring eats into a narrow mobile tile's width just enough to
         // force the label onto two cramped lines while its sibling tile
         // sits flush on one — the colored percentage already carries the
         // same information, so the ring is a desktop-only flourish here.
         <span className="hidden shrink-0 sm:block">
-          <ProgressRing value={ring} size={48} stroke={4} color={accent === "shu" ? "#ff2d55" : "#5ff4ff"} />
+          <ProgressRing value={ring} size={40} stroke={4} color={accent === "shu" ? "#ff2d55" : "#5ff4ff"} />
         </span>
       )}
       <div className="min-w-0">
         <div
-          className={`font-display text-3xl font-bold md:text-4xl ${
+          className={`font-display text-3xl font-bold ${
             accent === "shu" ? "text-shu-400" : accent === "cyan" ? "text-kehai-400" : "text-white"
           }`}
         >

@@ -58,7 +58,7 @@ export default function ClassroomJoinLandingPage() {
         </h1>
         <p className="relative z-20 mt-3 text-lg text-white/50">{t("classroomJoinPage.subtitle")}</p>
 
-        <Card className="relative z-20 mt-12">
+        <Card className="relative z-20 mt-8">
           <CardBody>
             <JoinClassroomForm initialCode={code} onJoined={(result) => router.push(`/classrooms/${result.classroom.id}`)} />
           </CardBody>

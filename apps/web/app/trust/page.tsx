@@ -73,7 +73,7 @@ export default function TrustPage() {
         <h1 className="relative z-20 mt-3 font-display text-4xl font-black text-white md:text-5xl">{t("trust.title")}</h1>
         <p className="relative z-20 mt-3 text-lg text-white/50">{t("trust.subtitle")}</p>
 
-        <div className="relative z-20 mt-12 space-y-5">
+        <div className="relative z-20 mt-8 space-y-5">
           <Section heading={t("trust.honestyHeading")}>
             <p className="text-sm leading-relaxed text-white/60">{t("trust.honestyBody")}</p>
           </Section>

@@ -60,7 +60,7 @@ export default function SettingsPage() {
     <ClickRippleLayer className="relative min-h-screen">
       <PageGlow />
       <NavBar />
-      <div className="page-stagger relative mx-auto max-w-2xl px-6 py-10 sm:py-14">
+      <div className="page-stagger relative mx-auto max-w-2xl px-6 py-10 sm:py-14 lg:max-w-5xl">
         <KanjiMark glyph="設定" className="absolute -right-6 top-0 text-[6rem] sm:text-[10rem]" />
 
         <span className="relative z-20 text-xs font-semibold uppercase tracking-widest text-shu-400">
@@ -68,12 +68,18 @@ export default function SettingsPage() {
         </span>
         <h1 className="relative z-20 mt-3 font-display text-4xl font-black text-white md:text-5xl">{t("settings.title")}</h1>
 
-        <div className="relative z-20 mt-12 space-y-6">
-          <AccountSection />
-          <ProfileSection />
-          <NotificationsSection />
-          {user.provider !== "GOOGLE" && <ChangePasswordSection />}
-          <DeleteAccountSection />
+        {/* Two columns on wide screens: identity/preferences on the left,
+            security on the right -- the whole page fits without scrolling. */}
+        <div className="relative z-20 mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
+          <div className="space-y-6">
+            <AccountSection />
+            <ProfileSection />
+            <NotificationsSection />
+          </div>
+          <div className="space-y-6">
+            {user.provider !== "GOOGLE" && <ChangePasswordSection />}
+            <DeleteAccountSection />
+          </div>
         </div>
       </div>
     </ClickRippleLayer>
