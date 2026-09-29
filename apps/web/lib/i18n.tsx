@@ -270,6 +270,7 @@ const dict = {
       ja: "最初のイベントを作成しましょう — 会場とジオフェンスを設定し、準備ができたら公開してください。",
     },
     createEvent: { en: "Create an event", ja: "イベントを作成" },
+    nextEventHint: { en: "Set the venue, fence and QR rotation — publish when you're ready.", ja: "会場・フェンス・QRの更新間隔を設定し、準備ができたら公開。" },
     registeredCount: { en: "{count} registered", ja: "登録 {count} 件" },
     attendedCount: { en: "{count} attended", ja: "出席 {count} 件" },
     webhookHeading: { en: "Notifications", ja: "通知" },

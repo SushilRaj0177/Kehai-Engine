@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
 import { TiltCard } from "@/components/ui/TiltCard";
 import { Input, Label } from "@/components/ui/Input";
-import { EmptyState, ErrorBlock, LoadingBlock } from "@/components/ui/States";
+import { ErrorBlock, LoadingBlock } from "@/components/ui/States";
 import { KanjiMark } from "@/components/ui/KanjiMark";
 import { PageGlow } from "@/components/ui/PageGlow";
 import { ClickRippleLayer } from "@/components/ui/ClickRipple";
@@ -233,13 +233,13 @@ export default function ClassroomsHubPage() {
         <div className="relative z-20 flex flex-wrap items-end justify-between gap-4">
           <div>
             <span className="text-xs font-semibold uppercase tracking-widest text-shu-400">{t("classroomHub.kicker")}</span>
-            <h1 className="mt-3 font-display text-4xl font-black text-white md:text-5xl">{t("classroomHub.title")}</h1>
-            <p className="mt-3 max-w-xl text-lg text-white/50">{t("classroomHub.subtitle")}</p>
+            <h1 className="mt-2 font-display text-4xl font-black text-white md:text-5xl">{t("classroomHub.title")}</h1>
+            <p className="mt-2 max-w-xl text-base text-white/50">{t("classroomHub.subtitle")}</p>
           </div>
           <div className="flex flex-wrap gap-2.5">
             <Button
               variant="terminal"
-              size="lg"
+              size="md"
               onClick={() => {
                 setShowJoin((s) => !s);
                 setShowCreate(false);
@@ -249,7 +249,7 @@ export default function ClassroomsHubPage() {
             </Button>
             <Button
               variant="terminal"
-              size="lg"
+              size="md"
               onClick={() => {
                 setShowCreate((s) => !s);
                 setShowJoin(false);
@@ -287,7 +287,7 @@ export default function ClassroomsHubPage() {
         )}
 
         {((enrolled && enrolled.length > 0) || (teaching && teaching.length > 0)) && (
-          <div className="relative z-20 mt-10">
+          <div className="relative z-20 mt-6">
             <Input
               value={q}
               onChange={(e) => setQ(e.target.value)}
@@ -298,28 +298,29 @@ export default function ClassroomsHubPage() {
           </div>
         )}
 
-        {/* Classes you're taking come first — for most people (students
-            outnumber teachers) this is the reason they opened this page at
-            all, and the thing they'll come back to check most often. What
-            you teach, plus the join/create utilities above, are secondary
-            and shouldn't push it below the fold. */}
-        <div className="relative z-20 mt-10">
-          <h2 className="mb-6 font-display text-xl font-bold text-white/70">{t("classroomHub.enrolledHeading")}</h2>
+        {(() => {
+          // Same rule as the PWA: nothing joined but something taught ->
+          // lead with what you teach instead of an empty "your classes".
+          const teachFirst = !enrolledLoading && !enrolled?.length && (teaching?.length ?? 0) > 0;
+          const enrolledSection = (
+            <>
+        <section className="relative z-20 mt-8">
+          <h2 className="mb-4 font-display text-lg font-bold text-white/70">{t("classroomHub.enrolledHeading")}</h2>
           {enrolledLoading ? (
             <LoadingBlock />
           ) : !enrolled?.length ? (
-            <EmptyState
+            <BrowserCompactEmpty
               glyph="学"
               title={t("classroomHub.enrolledEmptyTitle")}
               description={t("classroomHub.enrolledEmptyDescription")}
               action={
-                <Button variant="terminal" onClick={() => setShowJoin(true)}>
+                <Button variant="terminal" size="sm" onClick={() => setShowJoin(true)}>
                   {t("classroomHub.joinClassroom")}
                 </Button>
               }
             />
           ) : !filteredEnrolled?.length ? (
-            <EmptyState glyph="学" title={t("classroomHub.noMatchTitle")} description={t("classroomHub.noMatchDescription")} />
+            <BrowserCompactEmpty glyph="学" title={t("classroomHub.noMatchTitle")} description={t("classroomHub.noMatchDescription")} />
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {filteredEnrolled.map((e) => (
@@ -345,25 +346,29 @@ export default function ClassroomsHubPage() {
               ))}
             </div>
           )}
-        </div>
+        </section>
 
-        <div className="relative z-20 mt-10">
-          <h2 className="mb-6 font-display text-xl font-bold text-white/70">{t("classroomHub.teachingHeading")}</h2>
+            </>
+          );
+          const teachingSection = (
+            <>
+        <section className="relative z-20 mt-8">
+          <h2 className="mb-4 font-display text-lg font-bold text-white/70">{t("classroomHub.teachingHeading")}</h2>
           {teachingLoading ? (
             <LoadingBlock />
           ) : !teaching?.length ? (
-            <EmptyState
+            <BrowserCompactEmpty
               glyph="級"
               title={t("classroomHub.teachingEmptyTitle")}
               description={t("classroomHub.teachingEmptyDescription")}
               action={
-                <Button variant="terminal" onClick={() => setShowCreate(true)}>
+                <Button variant="terminal" size="sm" onClick={() => setShowCreate(true)}>
                   {t("classroomHub.newClassroom")}
                 </Button>
               }
             />
           ) : !filteredTeaching?.length ? (
-            <EmptyState glyph="級" title={t("classroomHub.noMatchTitle")} description={t("classroomHub.noMatchDescription")} />
+            <BrowserCompactEmpty glyph="級" title={t("classroomHub.noMatchTitle")} description={t("classroomHub.noMatchDescription")} />
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {filteredTeaching.map((c) => {
@@ -414,7 +419,21 @@ export default function ClassroomsHubPage() {
               })}
             </div>
           )}
-        </div>
+        </section>
+            </>
+          );
+          return teachFirst ? (
+            <>
+              {teachingSection}
+              {enrolledSection}
+            </>
+          ) : (
+            <>
+              {enrolledSection}
+              {teachingSection}
+            </>
+          );
+        })()}
       </div>
     </ClickRippleLayer>
   );
@@ -570,6 +589,33 @@ function TeachingRow({
           {copiedId === `${c.id}-code` ? t("classroomHub.copied") : t("classroomHub.copyCode")}
         </button>
       </div>
+    </div>
+  );
+}
+
+// Browser empty state: one slim row with a small kanji mark instead of the
+// tall watermark EmptyState, so an empty section doesn't fill the screen.
+function BrowserCompactEmpty({
+  glyph,
+  title,
+  description,
+  action,
+}: {
+  glyph: string;
+  title: string;
+  description?: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-white/[0.08] bg-white/[0.03] px-5 py-4 backdrop-blur-xl">
+      <span aria-hidden className="font-display text-3xl font-black leading-none text-white/[0.12]">
+        {glyph}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-bold text-white/85">{title}</p>
+        {description && <p className="mt-0.5 text-xs leading-relaxed text-white/40">{description}</p>}
+      </div>
+      {action && <div className="shrink-0">{action}</div>}
     </div>
   );
 }

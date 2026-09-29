@@ -276,7 +276,7 @@ export default function OrgPage() {
             </div>
           )}
 
-          <div className="relative z-20 mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+          <div className="relative z-20 mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
             <DesktopEventsPanel
               org={org}
               events={events}
@@ -287,8 +287,9 @@ export default function OrgPage() {
               locale={locale}
               t={t}
             />
-            <div className="space-y-6 lg:sticky lg:top-24">
-              {overview && overview.events.length > 0 && (
+            <div className="space-y-6">
+              {/* A one-point "trend" is just an empty card -- only show it once there's a line to draw. */}
+              {overview && overview.events.length > 1 && (
                 <Card>
                   <CardBody className="py-4">
                     <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">{t("orgDetail.trendHeading")}</p>
@@ -698,7 +699,7 @@ function DesktopEventsPanel({
   t: (key: string, vars?: Record<string, string | number>) => string;
 }) {
   return (
-    <Card className="overflow-hidden">
+    <Card className="flex h-full min-h-[320px] flex-col overflow-hidden">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.06] px-5 py-3.5">
         <div className="flex items-baseline gap-2.5">
           <h2 className="font-display text-lg font-bold text-white">{t("orgDetail.eventsHeading")}</h2>
@@ -736,7 +737,8 @@ function DesktopEventsPanel({
           <EmptyState glyph="催" title={t("orgDetail.noMatchTitle")} description={t("orgDetail.noMatchDescription")} />
         </div>
       ) : (
-        <ul className="scroll-thin max-h-[min(640px,calc(100vh-260px))] divide-y divide-white/[0.05] overflow-y-auto">
+        <div className="flex flex-1 flex-col">
+        <ul className="scroll-thin max-h-[min(640px,calc(100vh-260px))] divide-y divide-white/[0.05] overflow-y-auto border-b border-white/[0.05]">
           {filteredEvents.map((event) => {
             const reg = event._count.registrations;
             const att = event._count.attendances;
@@ -778,6 +780,22 @@ function DesktopEventsPanel({
             );
           })}
         </ul>
+        {/* Fills whatever height the side rail leaves, so a short list
+            ends in an intentional prompt instead of a dead empty card. */}
+        <Link
+          href={`/orgs/${org.slug}/events/new`}
+          className="group relative m-4 flex min-h-[132px] flex-1 flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border border-dashed border-white/[0.08] px-5 py-6 text-center transition-colors hover:border-shu-500/40 hover:bg-shu-500/[0.03]"
+        >
+          <span aria-hidden className="pointer-events-none absolute -right-2 -bottom-6 select-none font-display text-[9rem] font-black leading-none text-white/[0.025] transition-colors group-hover:text-shu-500/[0.06]">
+            催
+          </span>
+          <span className="grid h-10 w-10 place-items-center rounded-full bg-white/[0.05] text-xl leading-none text-white/60 ring-1 ring-white/10 transition-all group-hover:bg-shu-500 group-hover:text-white group-hover:ring-shu-400/50 group-hover:shadow-[0_0_20px_-4px_rgba(255,45,85,0.7)]">
+            +
+          </span>
+          <span className="text-sm font-semibold text-white/70 transition-colors group-hover:text-white">{t("orgDetail.createEvent")}</span>
+          <span className="max-w-xs text-xs text-white/35">{t("orgDetail.nextEventHint")}</span>
+        </Link>
+        </div>
       )}
     </Card>
   );

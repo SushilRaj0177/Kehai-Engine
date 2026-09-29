@@ -2,6 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 
+const BASE_ROWS = 24;
+const ROWS = 64;
+// Fall speed is (column height / duration); scaling the duration by the
+// same factor as the height keeps the rain moving exactly as fast as it
+// did at 24 rows.
+const SPEED_SCALE = ROWS / BASE_ROWS;
+
 const GLYPHS =
   "ケハイエンジンシステムデータネットワーク検証出席洞察信頼気配催事組織現場知識確認接続監視解析距離時間座標認証";
 
@@ -26,7 +33,11 @@ function initialMatrix(cols: number, rows: number): string[][] {
  * server-rendered HTML and first client paint match exactly.
  */
 export function KatakanaRain({ columns = 16, className = "" }: { columns?: number; className?: string }) {
-  const rows = 24;
+  // Each column's single copy must be taller than the hero it covers, or
+  // the column's tail end scrolls into view mid-section and it reads as
+  // "shorter" than its neighbours. 24 rows (~554px) was shorter than the
+  // hero; 64 (~1.5k px) covers it at any viewport.
+  const rows = ROWS;
   const [matrix, setMatrix] = useState<string[][]>(() => initialMatrix(columns, rows));
   const matrixRef = useRef(matrix);
   matrixRef.current = matrix;
@@ -59,8 +70,8 @@ export function KatakanaRain({ columns = 16, className = "" }: { columns?: numbe
     <div aria-hidden className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}>
       <div className="flex h-full w-full justify-between">
         {matrix.map((chars, c) => {
-          const duration = 14 + (c % 5) * 3.5;
-          const delay = -(c * 1.7) % duration;
+          const duration = (14 + (c % 5) * 3.5) * SPEED_SCALE;
+          const delay = (-(c * 1.7) % (duration / SPEED_SCALE)) * SPEED_SCALE;
           return (
             <div key={c} className="relative h-full flex-1 overflow-hidden">
               <div
