@@ -378,6 +378,7 @@ function DeleteAccountSection({ standalone }: { standalone?: boolean }) {
             <Button
               variant="ghost"
               size="sm"
+              className="border border-white/10 px-4 py-2 text-white/60 hover:border-white/20 hover:text-white"
               onClick={() => {
                 setConfirming(false);
                 setPassword("");

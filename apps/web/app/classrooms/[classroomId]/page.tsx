@@ -566,7 +566,19 @@ function DeleteClassroomSection({
       {confirming ? (
         <div className="space-y-3 rounded-lg border border-shu-500/20 bg-shu-500/5 p-4">
           <div>
-            <Label htmlFor="delete-classroom-confirm">{t("classroomDetail.typeNameToConfirm", { name: classroomName })}</Label>
+            <Label htmlFor="delete-classroom-confirm">
+              {/* Name keeps its real casing inside the uppercased label, and stays translated. */}
+              {(() => {
+                const [before, after] = t("classroomDetail.typeNameToConfirm", { name: "\u0000" }).split("\u0000");
+                return (
+                  <>
+                    {before}
+                    <span className="normal-case">{classroomName}</span>
+                    {after}
+                  </>
+                );
+              })()}
+            </Label>
             <Input id="delete-classroom-confirm" value={typedName} onChange={(e) => setTypedName(e.target.value)} />
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -576,6 +588,7 @@ function DeleteClassroomSection({
             <Button
               variant="ghost"
               size="sm"
+              className="border border-white/10 px-4 py-2 text-white/60 hover:border-white/20 hover:text-white"
               onClick={() => {
                 setConfirming(false);
                 setTypedName("");
