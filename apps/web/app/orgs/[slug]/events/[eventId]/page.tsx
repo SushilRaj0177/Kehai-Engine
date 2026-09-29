@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { Link } from "next-view-transitions";
 import { NavBar } from "@/components/NavBar";
@@ -17,7 +17,7 @@ import { ProgressRing } from "@/components/ui/ProgressRing";
 import { ArrivalTimelineChart } from "@/components/charts/ArrivalTimelineChart";
 import { AttendeeTable } from "@/components/AttendeeTable";
 import { AiInsightsPanel } from "@/components/AiInsightsPanel";
-import { ExportButtons } from "@/components/ExportButtons";
+import { ExportButtons, downloadEventExport } from "@/components/ExportButtons";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { useEvent, useEventAnalytics, useMyOrganizations } from "@/lib/hooks";
 import { apiFetch, ApiError } from "@/lib/api";
@@ -65,6 +65,7 @@ export default function EventControlRoomPage() {
   // sibling button in the group.
   const [transitioningTo, setTransitioningTo] = useState<EventStatus | null>(null);
   const [extendingBy, setExtendingBy] = useState<number | null>(null);
+  const [editing, setEditing] = useState<"details" | "timing" | null>(null);
   const isStandalone = useIsStandalone();
 
   useEffect(() => {
@@ -172,54 +173,72 @@ export default function EventControlRoomPage() {
       <div className="page-stagger relative mx-auto max-w-6xl px-6 py-10 sm:py-12">
         <KanjiMark glyph="現場" className="absolute -right-6 top-0 text-[5rem] sm:text-[9rem]" />
 
-        {/* z-20 -- above KanjiMark's own hardcoded z-10; see orgs/[slug]/page.tsx. */}
-        <div className="relative z-20 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="mb-3 flex items-center gap-2.5">
+        {/* z-20 -- above KanjiMark's own hardcoded z-10; see orgs/[slug]/page.tsx.
+            One primary lifecycle action + one actions menu, instead of a
+            row of five bracket buttons and two loose edit links. z-30 so
+            the actions menu opens above the banners below it. */}
+        <div className="relative z-30 flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
+            {org && (
+              <Link
+                href={`/orgs/${org.slug}`}
+                className="mb-3 inline-flex items-center gap-1.5 text-sm text-white/40 transition-colors hover:text-white/75"
+              >
+                <span aria-hidden>←</span>
+                {org.name}
+              </Link>
+            )}
+            <div className="mb-2 flex items-center gap-2.5">
               <Badge status={event.status}>{t(`badge.status.${event.status}`)}</Badge>
               <LiveIndicator connected={liveConnected} />
             </div>
             <h1 className="font-display text-3xl font-black text-white md:text-4xl">{event.name}</h1>
-            <p className="mt-2 text-base text-white/45">
+            <p className="mt-1.5 text-base text-white/45">
               {formatDateRange(event.startsAt, event.endsAt, locale)} · {event.venue}
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            {TRANSITIONS[event.status].map((next) => (
-              <Button
-                key={next}
-                variant={next === "CANCELLED" ? "danger" : next === "ACTIVE" ? "primary" : "secondary"}
-                size="sm"
-                loading={transitioningTo === next}
-                disabled={transitioningTo !== null && transitioningTo !== next}
-                onClick={() => transition(next)}
-              >
-                {labelFor(event.status, next, t)}
-              </Button>
-            ))}
-            {org && <ExportButtons eventId={event.id} />}
-            {org && (
-              <Link href={`/orgs/${org.slug}/events/new?from=${event.id}`}>
-                <Button variant="secondary" size="sm">
-                  {t("eventControl.duplicate")}
+          <div className="flex flex-wrap items-center gap-2.5 pt-1">
+            {TRANSITIONS[event.status]
+              .filter((next) => next !== "CANCELLED")
+              .map((next) => (
+                <Button
+                  key={next}
+                  variant="primary"
+                  loading={transitioningTo === next}
+                  disabled={transitioningTo !== null && transitioningTo !== next}
+                  onClick={() => transition(next)}
+                >
+                  {labelFor(event.status, next, t)}
                 </Button>
-              </Link>
+              ))}
+            {org && (
+              <EventActionsMenu
+                event={event}
+                orgSlug={org.slug}
+                canEdit={event.status !== "COMPLETED" && event.status !== "CANCELLED"}
+                canCancel={TRANSITIONS[event.status].includes("CANCELLED")}
+                cancelling={transitioningTo === "CANCELLED"}
+                onEdit={setEditing}
+                onCancelEvent={() => transition("CANCELLED")}
+              />
             )}
           </div>
         </div>
         {statusError && <ErrorBlock message={statusError} className="relative mt-3" />}
 
-        {org && <ApproxVenueFlag event={event} onSaved={() => mutate()} className="relative z-20 mt-4" />}
-
-        {org && event.status !== "COMPLETED" && event.status !== "CANCELLED" && (
-          <div className="relative z-20 mt-4 flex flex-col gap-3">
-            <div className="flex flex-wrap gap-2">
-              <EditTimingPanel event={event} onSaved={() => mutate()} />
-              <EditDetailsPanel event={event} onSaved={() => mutate()} />
-            </div>
+        {org && editing === "details" && (
+          <div className="relative z-20 mt-5">
+            <EditDetailsPanel event={event} onSaved={() => mutate()} startOpen onClose={() => setEditing(null)} />
           </div>
         )}
+        {org && editing === "timing" && (
+          <div className="relative z-20 mt-5 max-w-2xl">
+            <EditTimingPanel event={event} onSaved={() => mutate()} startOpen onClose={() => setEditing(null)} />
+          </div>
+        )}
+
+        {org && <ApproxVenueFlag event={event} onSaved={() => mutate()} className="relative z-20 mt-4" />}
 
         {showWindowWarning && (
           <div className="relative z-20 mt-4 rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
@@ -248,17 +267,17 @@ export default function EventControlRoomPage() {
           </div>
         )}
 
-        <div className="relative mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatTile label={t("eventControl.statRegistrations")} value={registrations} />
-          <StatTile label={t("eventControl.statAttendance")} value={attendance} accent="shu" />
-          <StatTile label={t("eventControl.statAttendanceRate")} value={`${Math.round(rate * 100)}%`} accent="cyan" ring={rate} />
-          <StatTile label={t("eventControl.statNoShowRate")} value={`${Math.round((analytics?.noShowRate ?? (1 - rate)) * 100)}%`} />
-        </div>
 
         {/* QR + AI sit in a sticky right rail so the live code stays on
             screen while the organizer scrolls the attendee list. */}
         <div className="relative mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start">
           <div className="space-y-6">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <StatTile label={t("eventControl.statRegistrations")} value={registrations} />
+            <StatTile label={t("eventControl.statAttendance")} value={attendance} accent="shu" />
+            <StatTile label={t("eventControl.statAttendanceRate")} value={`${Math.round(rate * 100)}%`} accent="cyan" ring={rate} />
+            <StatTile label={t("eventControl.statNoShowRate")} value={`${Math.round((analytics?.noShowRate ?? (1 - rate)) * 100)}%`} />
+          </div>
             <Card>
               <CardHeader className="text-xs font-semibold uppercase tracking-wider text-white/40">{t("eventControl.arrivalTimeline")}</CardHeader>
               <CardBody>
@@ -289,9 +308,182 @@ export default function EventControlRoomPage() {
   );
 }
 
-function EditTimingPanel({ event, onSaved, bare = false }: { event: EventSummary; onSaved: () => void; bare?: boolean }) {
+function EventActionsMenu({
+  event,
+  orgSlug,
+  canEdit,
+  canCancel,
+  cancelling,
+  onEdit,
+  onCancelEvent,
+}: {
+  event: EventSummary;
+  orgSlug: string;
+  canEdit: boolean;
+  canCancel: boolean;
+  cancelling: boolean;
+  onEdit: (which: "details" | "timing") => void;
+  onCancelEvent: () => void;
+}) {
   const { t } = useLocale();
   const [open, setOpen] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [exporting, setExporting] = useState<"csv" | "xlsx" | null>(null);
+  const [exportError, setExportError] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDown(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+        setConfirmCancel(false);
+      }
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setOpen(false);
+        setConfirmCancel(false);
+      }
+    }
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  async function doExport(format: "csv" | "xlsx") {
+    setExporting(format);
+    setExportError(false);
+    try {
+      await downloadEventExport(event.id, format);
+      setOpen(false);
+    } catch {
+      setExportError(true);
+    } finally {
+      setExporting(null);
+    }
+  }
+
+  const item =
+    "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-white/75 transition-colors hover:bg-white/[0.06] hover:text-white disabled:opacity-50";
+  const icon = "h-4 w-4 shrink-0 text-white/40";
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => {
+          setOpen((o) => !o);
+          setConfirmCancel(false);
+        }}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className={`flex h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold transition-all ${
+          open ? "bg-void-800 text-white ring-1 ring-white/20" : "bg-void-900 text-white/80 ring-1 ring-white/10 hover:bg-void-800 hover:text-white"
+        }`}
+      >
+        {t("eventControl.actions")}
+        <svg viewBox="0 0 24 24" className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth={2.4} aria-hidden>
+          <path d="m6 9 6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 top-full z-50 mt-2 w-60 overflow-hidden rounded-2xl border border-white/10 bg-void-900 p-1.5 shadow-[0_24px_60px_-16px_rgba(0,0,0,0.9),0_0_40px_-20px_rgba(255,45,85,0.4)]"
+        >
+          {canEdit && (
+            <>
+              <button type="button" role="menuitem" className={item} onClick={() => { onEdit("details"); setOpen(false); }}>
+                <svg viewBox="0 0 24 24" className={icon} fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
+                  <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                {t("eventControl.editDetails")}
+              </button>
+              <button type="button" role="menuitem" className={item} onClick={() => { onEdit("timing"); setOpen(false); }}>
+                <svg viewBox="0 0 24 24" className={icon} fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 7v5l3 2" strokeLinecap="round" />
+                </svg>
+                {t("eventControl.editTiming")}
+              </button>
+              <div className="my-1 h-px bg-white/[0.07]" />
+            </>
+          )}
+          <button type="button" role="menuitem" className={item} disabled={exporting !== null} onClick={() => doExport("csv")}>
+            <svg viewBox="0 0 24 24" className={icon} fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
+              <path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            {exporting === "csv" ? "…" : t("exportButtons.csv")}
+          </button>
+          <button type="button" role="menuitem" className={item} disabled={exporting !== null} onClick={() => doExport("xlsx")}>
+            <svg viewBox="0 0 24 24" className={icon} fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
+              <path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            {exporting === "xlsx" ? "…" : t("exportButtons.excel")}
+          </button>
+          <Link href={`/orgs/${orgSlug}/events/new?from=${event.id}`} role="menuitem" className={item}>
+            <svg viewBox="0 0 24 24" className={icon} fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
+              <rect x="8" y="8" width="13" height="13" rx="2" />
+              <path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" />
+            </svg>
+            {t("eventControl.duplicate")}
+          </Link>
+          {exportError && <p className="px-3 py-1.5 text-xs text-shu-300">{t("exportButtons.error")}</p>}
+          {canCancel && (
+            <>
+              <div className="my-1 h-px bg-white/[0.07]" />
+              <button
+                type="button"
+                role="menuitem"
+                disabled={cancelling}
+                onClick={() => {
+                  if (!confirmCancel) {
+                    setConfirmCancel(true);
+                    return;
+                  }
+                  onCancelEvent();
+                  setOpen(false);
+                  setConfirmCancel(false);
+                }}
+                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors disabled:opacity-50 ${
+                  confirmCancel ? "bg-shu-500/15 text-shu-200" : "text-shu-300 hover:bg-shu-500/10"
+                }`}
+              >
+                <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="m15 9-6 6M9 9l6 6" strokeLinecap="round" />
+                </svg>
+                {confirmCancel ? t("eventControl.confirmCancelEvent") : t("eventControl.cancelEvent")}
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EditTimingPanel({
+  event,
+  onSaved,
+  bare = false,
+  startOpen = false,
+  onClose,
+}: {
+  event: EventSummary;
+  onSaved: () => void;
+  bare?: boolean;
+  /** Mounted already open from the desktop actions menu; onClose unmounts it. */
+  startOpen?: boolean;
+  onClose?: () => void;
+}) {
+  const { t } = useLocale();
+  const [open, setOpen] = useState(startOpen);
   const [startsAt, setStartsAt] = useState(() => toLocalDatetimeInputValue(new Date(event.startsAt)));
   const [endsAt, setEndsAt] = useState(() => toLocalDatetimeInputValue(new Date(event.endsAt)));
   const [openEnded, setOpenEnded] = useState(
@@ -302,6 +494,10 @@ function EditTimingPanel({ event, onSaved, bare = false }: { event: EventSummary
   const [saved, setSaved] = useState(false);
 
   function toggle() {
+    if (open && onClose) {
+      onClose();
+      return;
+    }
     setOpen((o) => !o);
     setError(null);
     setSaved(false);
@@ -442,9 +638,22 @@ function ApproxVenueFlag({ event, onSaved, className = "" }: { event: EventSumma
   );
 }
 
-function EditDetailsPanel({ event, onSaved, bare = false }: { event: EventSummary; onSaved: () => void; bare?: boolean }) {
+function EditDetailsPanel({
+  event,
+  onSaved,
+  bare = false,
+  startOpen = false,
+  onClose,
+}: {
+  event: EventSummary;
+  onSaved: () => void;
+  bare?: boolean;
+  /** Mounted already open from the desktop actions menu; onClose unmounts it. */
+  startOpen?: boolean;
+  onClose?: () => void;
+}) {
   const { t } = useLocale();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(startOpen);
   const [name, setName] = useState(event.name);
   const [description, setDescription] = useState(event.description ?? "");
   const [venue, setVenue] = useState(event.venue);
@@ -455,6 +664,10 @@ function EditDetailsPanel({ event, onSaved, bare = false }: { event: EventSummar
   const [saved, setSaved] = useState(false);
 
   function toggle() {
+    if (open && onClose) {
+      onClose();
+      return;
+    }
     setOpen((o) => !o);
     setError(null);
     setSaved(false);
@@ -509,7 +722,7 @@ function EditDetailsPanel({ event, onSaved, bare = false }: { event: EventSummar
     );
   }
 
-  const fields = (
+  const detailsCol = (
     <div className="space-y-4">
       <div>
         <Label htmlFor="edit-name">{t("eventNew.eventNameLabel")}</Label>
@@ -527,11 +740,17 @@ function EditDetailsPanel({ event, onSaved, bare = false }: { event: EventSummar
         <Label htmlFor="edit-capacity">{t("eventNew.capacityLabel")}</Label>
         <Input id="edit-capacity" type="number" min={1} value={capacity} onChange={(e) => setCapacity(e.target.value)} />
       </div>
-      <div className="border-t border-white/[0.06] pt-4">
-        <p className="mb-1 text-[11px] uppercase tracking-wider text-white/35">{t("eventControl.geofenceHeading")}</p>
-        <p className="mb-3 text-xs text-amber-300/70">{t("eventControl.geofenceEditWarning")}</p>
-        <VenueLocationPicker value={loc} onChange={setLoc} idPrefix="edit-venue" />
-      </div>
+    </div>
+  );
+  const venueCol = (
+    <div>
+      <p className="mb-1 text-[11px] uppercase tracking-wider text-white/35">{t("eventControl.geofenceHeading")}</p>
+      <p className="mb-3 text-xs text-amber-300/70">{t("eventControl.geofenceEditWarning")}</p>
+      <VenueLocationPicker value={loc} onChange={setLoc} idPrefix="edit-venue" />
+    </div>
+  );
+  const footer = (
+    <>
       {error && <ErrorBlock message={error} />}
       <div className="flex flex-wrap items-center gap-3">
         <Button size="sm" loading={saving} onClick={save}>
@@ -542,6 +761,24 @@ function EditDetailsPanel({ event, onSaved, bare = false }: { event: EventSummar
         </Button>
         {saved && <span className="text-sm text-kehai-400">✓ {t("eventControl.editSaved")}</span>}
       </div>
+    </>
+  );
+
+  // PWA (bare) keeps the single stacked column; the desktop card puts the
+  // text fields and the venue map side by side so it fits one screen.
+  const fields = bare ? (
+    <div className="space-y-4">
+      {detailsCol}
+      <div className="border-t border-white/[0.06] pt-4">{venueCol}</div>
+      {footer}
+    </div>
+  ) : (
+    <div className="space-y-5">
+      <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
+        {detailsCol}
+        <div className="border-t border-white/[0.06] pt-4 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">{venueCol}</div>
+      </div>
+      {footer}
     </div>
   );
 

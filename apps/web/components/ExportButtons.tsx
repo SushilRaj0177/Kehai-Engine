@@ -16,6 +16,23 @@ export function ClassroomExportButtons({ classroomId }: { classroomId: string })
   return <ExportButtonsInternal source={{ kind: "classroom", classroomId }} />;
 }
 
+/** Download an event's attendee export directly (used by the event console's actions menu). */
+export async function downloadEventExport(eventId: string, format: "csv" | "xlsx"): Promise<void> {
+  const res = await fetch(`${getApiBase()}/api/export/events/${eventId}/attendees.${format}`, {
+    headers: { Authorization: `Bearer ${getAccessToken() ?? ""}` },
+  });
+  if (!res.ok) throw new Error("Export failed");
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `attendees.${format}`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 function ExportButtonsInternal({ source }: { source: ExportSource }) {
   const { t } = useLocale();
   const [downloading, setDownloading] = useState<"csv" | "xlsx" | null>(null);
