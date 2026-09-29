@@ -569,8 +569,8 @@ function DeleteClassroomSection({
             <Label htmlFor="delete-classroom-confirm">{t("classroomDetail.typeNameToConfirm", { name: classroomName })}</Label>
             <Input id="delete-classroom-confirm" value={typedName} onChange={(e) => setTypedName(e.target.value)} />
           </div>
-          <div className="flex items-center gap-3">
-            <Button variant="danger" size="sm" loading={deleting} onClick={confirmDelete} disabled={typedName !== classroomName}>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button variant="danger" size="sm" loading={deleting} onClick={confirmDelete} disabled={typedName.trim().toLowerCase() !== classroomName.trim().toLowerCase()}>
               {t("classroomDetail.deleteClassroomConfirm")}
             </Button>
             <Button

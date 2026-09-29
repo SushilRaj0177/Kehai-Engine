@@ -270,6 +270,25 @@ export function ClassSessionManager({
                       {t("classroomDetail.cancelRename")}
                     </Button>
                   </div>
+                ) : confirmingDeleteId === s.id ? (
+                  <div
+                    key={s.id}
+                    className="flex flex-wrap items-center gap-2 rounded-lg border border-shu-500/25 bg-shu-500/[0.06] px-3 py-2 text-sm"
+                  >
+                    <p className="min-w-0 flex-1 basis-40 text-xs text-white/70">
+                      <span className="font-medium text-white">{s.label || t("classroomDetail.untitledSession")}</span>
+                      {" — "}
+                      {t("classroomDetail.confirmDeleteSession")}
+                    </p>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <Button variant="danger" size="sm" loading={!!busySessionIds[s.id]} onClick={() => deleteSession(s.id)}>
+                        {t("classroomDetail.deleteSession")}
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setConfirmingDeleteId(null)}>
+                        {t("classroomDetail.cancelRename")}
+                      </Button>
+                    </div>
+                  </div>
                 ) : (
                   <div
                     key={s.id}
@@ -299,25 +318,6 @@ export function ClassSessionManager({
 
                         {openMenuId === s.id && (
                           <div className="absolute right-0 top-full z-20 mt-1 w-44 overflow-hidden rounded-lg border border-white/10 bg-void-900 shadow-[0_12px_32px_-8px_rgba(0,0,0,0.6)]">
-                            {confirmingDeleteId === s.id ? (
-                              <div className="space-y-2 p-3">
-                                <p className="text-xs text-white/60">{t("classroomDetail.confirmDeleteSession")}</p>
-                                <div className="flex gap-2">
-                                  <Button
-                                    variant="danger"
-                                    size="sm"
-                                    loading={!!busySessionIds[s.id]}
-                                    onClick={() => deleteSession(s.id)}
-                                    className="flex-1"
-                                  >
-                                    {t("classroomDetail.deleteSession")}
-                                  </Button>
-                                  <Button variant="ghost" size="sm" onClick={() => setConfirmingDeleteId(null)}>
-                                    {t("classroomDetail.cancelRename")}
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : (
                               <div className="py-1 text-sm">
                                 <button
                                   type="button"
@@ -338,13 +338,19 @@ export function ClassSessionManager({
                                 )}
                                 <button
                                   type="button"
-                                  onClick={() => setConfirmingDeleteId(s.id)}
+                                  onClick={() => {
+                                    // Confirm inline in the row, not inside this floating menu: on the
+                                    // last row the menu hung past the card edge and got clipped, so
+                                    // its Delete button couldn't be tapped.
+                                    setOpenMenuId(null);
+                                    setRenamingId(null);
+                                    setConfirmingDeleteId(s.id);
+                                  }}
                                   className="block w-full px-3 py-2 text-left text-shu-400 hover:bg-shu-500/10 focus-visible:outline-none focus-visible:bg-shu-500/10"
                                 >
                                   {t("classroomDetail.deleteSession")}
                                 </button>
                               </div>
-                            )}
                           </div>
                         )}
                       </div>

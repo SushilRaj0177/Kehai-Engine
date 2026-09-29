@@ -36,6 +36,11 @@ export function LiveQrPanel({
   const kioskRef = useRef<HTMLDivElement | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // t changes identity on every language toggle; reading it through a ref
+  // keeps fetchQr stable so switching EN/JA never re-issues the QR.
+  const tRef = useRef(t);
+  tRef.current = t;
+
   const fetchQr = useCallback(async () => {
     try {
       const data = await apiFetch<QrResponse>(`/api/qr/events/${eventId}/qr-image`);
@@ -43,9 +48,9 @@ export function LiveQrPanel({
       setError(null);
       setCountdown(Math.min(86400, Math.max(0, data.rotationSeconds)));
     } catch (err: any) {
-      setError(err?.message ?? t("qrPanel.qrLoadError"));
+      setError(err?.message ?? tRef.current("qrPanel.qrLoadError"));
     }
-  }, [eventId, t]);
+  }, [eventId]);
 
   useEffect(() => {
     if (!active) return;

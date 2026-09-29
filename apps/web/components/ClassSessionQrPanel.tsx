@@ -47,6 +47,11 @@ export function ClassSessionQrPanel({
   const kioskRef = useRef<HTMLDivElement | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // t changes identity on every language toggle; reading it through a ref
+  // keeps fetchQr stable so switching EN/JA never re-issues the QR.
+  const tRef = useRef(t);
+  tRef.current = t;
+
   const fetchQr = useCallback(async () => {
     try {
       const data = await apiFetch<QrResponse>(`/api/classrooms/${classroomId}/sessions/${sessionId}/qr`);
@@ -54,9 +59,9 @@ export function ClassSessionQrPanel({
       setError(null);
       setCountdown(Math.min(86400, Math.max(0, data.rotationSeconds)));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t("qrPanel.qrLoadError"));
+      setError(err instanceof ApiError ? err.message : tRef.current("qrPanel.qrLoadError"));
     }
-  }, [classroomId, sessionId, t]);
+  }, [classroomId, sessionId]);
 
   useEffect(() => {
     setQr(null);
