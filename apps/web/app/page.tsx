@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { NavBar } from "@/components/NavBar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/Button";
+import { QR_STUDIO_URL } from "@/lib/links";
 import { KanjiMark, VerticalCaption } from "@/components/ui/KanjiMark";
 import { KatakanaRain } from "@/components/ui/KatakanaRain";
 import { Reveal } from "@/components/ui/Reveal";
@@ -413,6 +414,34 @@ export default function LandingPage() {
             ))}
           </ol>
         </div>
+      </section>
+
+      {/* Sibling tool for people who only need a static code, not the
+          whole organizer console. */}
+      <section className="relative mx-auto max-w-5xl px-6 py-14 md:py-20">
+        <Reveal>
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-shu-500/50 via-white/10 to-kehai-400/40 p-px">
+            <div className="relative grid gap-8 overflow-hidden rounded-3xl bg-void-950/95 px-6 py-8 sm:px-10 sm:py-10 md:grid-cols-[1fr_auto] md:items-center">
+              <span
+                aria-hidden
+                className="pointer-events-none absolute -right-4 -top-10 select-none font-display text-[11rem] font-black leading-none text-shu-500/[0.07]"
+              >
+                符
+              </span>
+              <div className="relative">
+                <span className="text-xs font-semibold uppercase tracking-widest text-kehai-400">{t("qrStudio.kicker")}</span>
+                <h2 className="mt-3 font-display text-3xl font-bold text-white md:text-4xl">{t("qrStudio.title")}</h2>
+                <p className="mt-3 max-w-xl text-base leading-relaxed text-white/60">{t("qrStudio.body")}</p>
+                <p className="mt-4 max-w-xl border-l-2 border-kehai-400/40 pl-3 text-sm text-white/40">{t("qrStudio.note")}</p>
+              </div>
+              <a href={QR_STUDIO_URL} target="_blank" rel="noopener" className="relative justify-self-start md:justify-self-end">
+                <Button variant="primary" size="lg">
+                  {t("qrStudio.cta")}
+                </Button>
+              </a>
+            </div>
+          </div>
+        </Reveal>
       </section>
 
       <Footer />

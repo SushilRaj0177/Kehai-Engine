@@ -99,6 +99,20 @@ const dict = {
       { en: "AI layer explains anomalies and answers questions grounded in exact data.", ja: "AI層が異常を説明し、正確なデータに基づいて質問に答える。" },
     ],
   },
+  qrStudio: {
+    kicker: { en: "Kehai tools", ja: "Kehai ツール" },
+    title: { en: "Just need a QR code?", ja: "QRコードだけ必要ですか？" },
+    body: {
+      en: "Posters, Wi-Fi cards, contact links — design one in QR Studio. No account, nothing leaves your browser, and it checks that your code actually scans before you download it.",
+      ja: "ポスター、Wi-Fiカード、連絡先リンクに。QR Studioならアカウント不要、データはブラウザの外に出ず、ダウンロード前に実際に読み取れるかを確認します。",
+    },
+    note: {
+      en: "A static code can be screenshotted and shared. For attendance, Kehai's signed, rotating, location-checked QR is the one that proves presence.",
+      ja: "静的なコードはスクリーンショットで共有できます。出席の証明には、署名付きで更新され位置も確認するKehaiのQRを。",
+    },
+    cta: { en: "Open QR Studio", ja: "QR Studioを開く" },
+    footerLink: { en: "QR Studio", ja: "QR Studio" },
+  },
   footer: {
     tagline: {
       en: "気配 (kehai) — a sign that someone is present, before it's seen. Attendance you can verify, analytics you can trust.",

@@ -1,6 +1,7 @@
 "use client";
 
 import { Link } from "next-view-transitions";
+import { QR_STUDIO_URL } from "@/lib/links";
 import { useLocale } from "@/lib/i18n";
 
 export function Footer() {
@@ -11,6 +12,7 @@ export function Footer() {
       heading: t("footer.platform"),
       links: [
         { label: t("footer.discoverEvents"), href: "/events" },
+        { label: t("qrStudio.footerLink"), href: QR_STUDIO_URL, external: true },
         { label: t("footer.organizerConsole"), href: "/dashboard" },
         { label: t("footer.signIn"), href: "/login" },
       ],
