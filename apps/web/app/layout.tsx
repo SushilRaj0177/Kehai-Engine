@@ -10,6 +10,7 @@ import { CustomCursor } from "@/components/ui/CustomCursor";
 import { PageTransition } from "@/components/PageTransition";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { StandaloneModeFlag } from "@/components/StandaloneModeFlag";
+import { HapticsLayer } from "@/components/HapticsLayer";
 
 // Space Grotesk carries the brand's actual display voice now — Noto Sans
 // JP's Latin glyphs are what made every heading read as generic/templated
@@ -99,6 +100,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <body className="min-h-screen bg-void-950 font-sans antialiased">
           <ApiBaseSetter apiBase={apiBase} />
           <StandaloneModeFlag />
+          <HapticsLayer />
           <CustomCursor />
           <LocaleProvider>
             <AuthProvider>

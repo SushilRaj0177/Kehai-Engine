@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import jsQR from "jsqr";
 import { useLocale } from "@/lib/i18n";
+import { haptic } from "@/lib/haptics";
 
 export function QrScanner({ onDecoded }: { onDecoded: (data: string) => void }) {
   const { t } = useLocale();
@@ -47,6 +48,7 @@ export function QrScanner({ onDecoded }: { onDecoded: (data: string) => void }) 
           const code = jsQR(imageData.data, imageData.width, imageData.height);
           if (code?.data) {
             setScanning(false);
+            haptic("scan"); // feel the code land, before the check-in starts
             onDecoded(code.data);
             return;
           }

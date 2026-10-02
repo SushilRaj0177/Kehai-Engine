@@ -8,6 +8,7 @@ import { Icon, PwaScreen } from "@/components/pwa/shared";
 import { useIsStandalone } from "@/lib/useStandalone";
 import { useAuth } from "@/lib/auth-context";
 import { useLocale } from "@/lib/i18n";
+import { haptic } from "@/lib/haptics";
 
 // PWA-only: the dock's centre button. Scans any Kehai check-in QR (event or
 // classroom session) and hands off to that check-in flow, so the installed
@@ -68,6 +69,7 @@ export default function ScanPage() {
     } catch {
       // fall through
     }
+    haptic("error");
     setError(t("pwa.scanInvalid"));
     setAttempt((a) => a + 1);
   }

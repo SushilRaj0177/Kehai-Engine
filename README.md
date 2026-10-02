@@ -631,6 +631,19 @@ All routes are under `/api`. Representative endpoints:
   launch screen it was installed with: remove it from the home screen and
   add it again to get the new one.
 
+- **Haptic feedback (phones)** — `lib/haptics.ts` holds the patterns and
+  `components/HapticsLayer.tsx` (mounted once in the layout) gives every
+  finger press on a button, link, tab, switch, checkbox or list row a light
+  **tap** (8 ms); a mouse or pen never triggers it. The moments that matter
+  get their own: a double pulse when the scanner **reads a QR code**, a
+  **success** pattern when a check-in is confirmed (events and classes),
+  and a longer **error** pattern when it's rejected, the code is invalid,
+  or the network fails. It uses the Vibration API (Chrome, Samsung Internet
+  and Firefox on Android); Safari on iPhone doesn't offer it to websites, so
+  there it does nothing. Verified in a phone-profile browser by recording
+  every vibration requested: tap → `[8]`, mouse click → none, confirmed
+  check-in → tap then success, rejected check-in → tap then error.
+
 ## Limitations
 
 - Geofence verification trusts the browser Geolocation API's report; it is

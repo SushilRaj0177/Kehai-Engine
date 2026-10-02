@@ -16,6 +16,7 @@ import { useIsStandalone } from "@/lib/useStandalone";
 import { useAuth } from "@/lib/auth-context";
 import { useEvent } from "@/lib/hooks";
 import { apiFetchWithRetry, ApiError } from "@/lib/api";
+import { haptic } from "@/lib/haptics";
 import { getCheckInWindow } from "@/lib/checkin-window";
 import { formatDateTime } from "@/lib/format";
 import { useLocale } from "@/lib/i18n";
@@ -63,6 +64,7 @@ export default function AttendPage() {
       setToken(t);
       setStep("locate");
     } catch {
+      haptic("error");
       setError(t("attend.invalidQr"));
     }
   }
@@ -104,7 +106,9 @@ export default function AttendPage() {
       );
       setResult(res);
       setStep("done");
+      haptic("success"); // checked in: the one moment worth a real buzz
     } catch (err) {
+      haptic("error");
       if (err instanceof ApiError) {
         setError(err.message);
         if (err.code === "OUTSIDE_GEOFENCE" && err.details) {

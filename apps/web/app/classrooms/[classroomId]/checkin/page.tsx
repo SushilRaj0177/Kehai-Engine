@@ -16,6 +16,7 @@ import { useIsStandalone } from "@/lib/useStandalone";
 import { useAuth } from "@/lib/auth-context";
 import { useClassroom } from "@/lib/hooks";
 import { apiFetchWithRetry, ApiError } from "@/lib/api";
+import { haptic } from "@/lib/haptics";
 import { useLocale } from "@/lib/i18n";
 
 type Step = "scan" | "locate" | "confirm" | "done" | "error";
@@ -63,6 +64,7 @@ export default function ClassroomCheckinPage() {
       qToken = data || null;
     }
     if (!qToken) {
+      haptic("error");
       setError(t("classroomCheckin.invalidQr"));
       return;
     }
@@ -108,7 +110,9 @@ export default function ClassroomCheckinPage() {
       );
       setResult(res);
       setStep("done");
+      haptic("success"); // checked in: the one moment worth a real buzz
     } catch (err) {
+      haptic("error");
       if (err instanceof ApiError) {
         setError(err.message);
         if (err.code === "OUTSIDE_GEOFENCE" && err.details) {
