@@ -65,6 +65,7 @@ event data.
 - Scan the organizer's QR (in-app camera scanner or by opening the code's deep link directly)
 - Share location once, see an honest distance readout, and get a confirmed/rejected check-in with a real reason
 - Cancel a registration, or delete their own account (blocked while they'd strand an organization as its sole owner)
+- Install it to the home screen as an app: its own phone-first screens, a dark launch screen, smooth page switches, and haptic feedback on Android (a tap on presses, a pulse when a code is read, and distinct buzzes for a confirmed or rejected check-in)
 
 **Classrooms (teacher side)** — a second, parallel workflow for tracking a
 class's attendance over a semester rather than a one-off event:
