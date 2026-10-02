@@ -7,7 +7,7 @@
  */
 export function PageGlow() {
   return (
-    <div aria-hidden className="glow-layer pointer-events-none fixed inset-0 z-0 overflow-hidden">
+    <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
       <div className="page-glow-shu absolute -top-32 right-[-12%] h-[520px] w-[720px] rounded-full" />
       <div className="page-glow-kehai absolute bottom-[-18%] left-[-12%] h-[480px] w-[680px] rounded-full" />
     </div>

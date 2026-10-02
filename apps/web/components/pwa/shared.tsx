@@ -17,10 +17,8 @@ export function PwaScreen({
 }) {
   return (
     <div className="pwa-screen">
-      <div className="pwa-glows glow-layer" aria-hidden>
-        <div className="pwa-glow-shu" />
-        <div className="pwa-glow-kehai" />
-      </div>
+      <div className="pwa-glow-shu" aria-hidden />
+      <div className="pwa-glow-kehai" aria-hidden />
       <div
         className={`pwa-scroll pwa-rise ${withDock ? "pwa-with-dock" : ""} ${tight ? "pwa-gap-18" : ""}`}
         style={withDock ? undefined : { paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 24px)" }}
