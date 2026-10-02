@@ -784,6 +784,17 @@ html[data-standalone="true"][data-navigated] .page-stagger > * {
   background: #050609;
   font-feature-settings: normal;
 }
+/* Installed app: Android paints the status bar as a separate solid strip
+   in theme_color (#05070a); installed web apps can't draw behind it there
+   yet. The background glows used to run right up to that strip, leaving a
+   hard line where the black bar met the red glow. Fading the glows in from
+   the top edge makes the page start in the same black as the bar, so the
+   two read as one surface. (Where the app can draw behind the status bar,
+   as on iOS, the fade simply sits behind the system icons.) */
+[data-standalone="true"] .glow-layer {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, rgba(0, 0, 0, 0.55) 34px, #000 84px);
+  mask-image: linear-gradient(to bottom, transparent 0, rgba(0, 0, 0, 0.55) 34px, #000 84px);
+}
 
 /* Venue picker map: dark Leaflet chrome so the controls read as part of
    the HUD instead of stock white widgets. */

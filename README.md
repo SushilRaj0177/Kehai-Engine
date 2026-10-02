@@ -627,7 +627,16 @@ All routes are under `/api`. Representative endpoints:
   (`app/manifest.webmanifest/route.ts`) that leaves the maskable icon out
   for Samsung Internet only (`Vary: User-Agent`, never cached across
   browsers), so its launch screen is dark too, while Chrome keeps the
-  maskable icon it needs for round launcher shapes. An already-installed app picks up a
+  maskable icon it needs for round launcher shapes.
+- **No seam under the status bar (installed app)** — Android paints the
+  status bar as a separate solid strip in `theme_color`, and installed web
+  apps can't draw behind it there yet (iOS can; `viewport-fit=cover` and
+  safe-area padding are already in place for when Android allows it). The
+  background glows used to run right up to that strip, leaving a hard line
+  where black met red. In the installed app the glow layers now fade in
+  from the top edge (a CSS mask on one full-screen wrapper, so the blur
+  isn't clipped), so the page starts in the bar's exact black: measured at
+  the top edge, the difference went from up to 48 to 1 (out of 255). An already-installed app picks up a
   new icon and launch screen when the browser next refreshes it;
   removing and re-adding it to the home screen applies it immediately.
 
