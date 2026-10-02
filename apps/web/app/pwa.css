@@ -1219,6 +1219,12 @@
 .pwa-rise > *:nth-child(5) { animation-delay: 0.2s; }
 .pwa-rise > *:nth-child(6) { animation-delay: 0.25s; }
 .pwa-rise > *:nth-child(n + 7) { animation-delay: 0.3s; }
+/* Only when the app opens: after an in-app navigation (PageTransition sets
+   html[data-navigated]) the page switch itself is the motion, and content
+   starting invisible showed as a black flash between pages. */
+html[data-navigated] .pwa-rise > * {
+  animation: none;
+}
 @keyframes pwa-rise {
   from {
     opacity: 0;

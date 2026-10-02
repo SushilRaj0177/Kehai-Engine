@@ -1,6 +1,10 @@
 "use client";
 
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
+
+// useLayoutEffect warns during SSR on React 18; on the server this is a no-op anyway.
+const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 // Every navigation swaps this wrapper's key, which remounts it and
 // re-triggers the page-enter CSS animation (globals.css). This is
@@ -16,6 +20,16 @@ import { usePathname } from "next/navigation";
 // component trivially testable/SSR-safe without a useEffect+state dance).
 export function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  // After the first in-app navigation, mark <html> so the installed app's
+  // panel fade-up (pwa.css, .pwa-rise) only plays when the app opens, not
+  // on every tab switch: there the page-switch animation is the motion,
+  // and fading the new page's content up from invisible on top of it read
+  // as a black flash. A layout effect, so the mark is set before the new
+  // page's first paint.
+  const firstPath = useRef(pathname);
+  useIsomorphicLayoutEffect(() => {
+    if (pathname !== firstPath.current) document.documentElement.dataset.navigated = "";
+  }, [pathname]);
   const hasNativeViewTransitions = typeof document !== "undefined" && "startViewTransition" in document;
   return (
     <div key={pathname} className={hasNativeViewTransitions ? undefined : "page-transition"}>

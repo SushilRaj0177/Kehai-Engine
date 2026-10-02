@@ -577,8 +577,10 @@ body {
    animation's duration, which would drag the nav along with the page's
    entrance motion instead of leaving it anchored to the viewport. */
 @keyframes page-enter {
+  /* Not from 0: starting fully transparent flashed the dark background
+     between pages. */
   from {
-    opacity: 0;
+    opacity: 0.6;
   }
   to {
     opacity: 1;
@@ -614,10 +616,22 @@ body {
   animation-duration: 0.42s;
   animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
+/* No dark midpoint: the incoming page is fully opaque from the first
+   frame and sits underneath; the outgoing page recedes and fades out on
+   top of it. (When both faded at once, there was a moment where neither
+   page was fully there and the dark background showed through.) Normal
+   blending, since the UA's plus-lighter is only right for two fades that
+   add up to 1. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  mix-blend-mode: normal;
+}
 ::view-transition-old(root) {
+  z-index: 2;
   animation: page-vt-exit 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 ::view-transition-new(root) {
+  z-index: 1;
   animation: page-vt-enter 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 @keyframes page-vt-exit {
@@ -632,11 +646,9 @@ body {
 }
 @keyframes page-vt-enter {
   from {
-    opacity: 0;
     transform: scale(1.02);
   }
   to {
-    opacity: 1;
     transform: scale(1);
   }
 }

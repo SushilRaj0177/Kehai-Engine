@@ -594,6 +594,20 @@ All routes are under `/api`. Representative endpoints:
 - **List endpoints are capped, not unbounded** — event discovery, roster,
   attendee, and org-event queries all take a hard `take` limit, so a large
   organization can't turn a list endpoint into a full-table scan.
+- **Page switches never pass through black** — in the installed app,
+  switching tabs used to flash dark for a moment before the page faded in.
+  Two things caused it: the page-switch View Transition faded the old and
+  new pages at the same time (so mid-way neither was fully there), and the
+  installed-app screens faded their panels up from invisible on every
+  visit. Now the incoming page is fully opaque underneath from the first
+  frame while the outgoing one recedes and fades on top, and the panel
+  fade-up plays only when the app opens (`PageTransition` marks
+  `html[data-navigated]` after the first in-app navigation).
+  `useIsStandalone` uses `useSyncExternalStore`, so a page reached by
+  in-app navigation knows it's in the installed app on its first render.
+  Measured on composited frames: the darkest frame of a tab switch used to
+  sit about 30% below both pages; it now stays within the normal
+  cross-fade between them.
 
 ## Limitations
 
