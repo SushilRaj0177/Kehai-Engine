@@ -49,8 +49,6 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "Kehai",
   },
-  // Served by app/manifest.webmanifest/route.ts (varies by browser; see there).
-  manifest: "/manifest.webmanifest",
   icons: {
     // Full-bleed (iOS rounds the corners itself and turns transparency black).
     apple: "/icons/kehai-apple-180.png",

@@ -106,7 +106,7 @@ export function PwaNotifier() {
     navigator.serviceWorker?.ready
       .then((reg) =>
         fresh.forEach((n) =>
-          reg.showNotification(n.title, { body: n.body, tag: n.id, icon: "/icons/kehai-192.png", badge: "/icons/kehai-badge-96.png", data: { url: n.href } })
+          reg.showNotification(n.title, { body: n.body, tag: n.id, icon: "/icons/kehai-square-192.png", badge: "/icons/kehai-badge-96.png", data: { url: n.href } })
         )
       )
       .catch(() => {});
@@ -145,7 +145,7 @@ export function PwaBell() {
     if (result === "granted" && "serviceWorker" in navigator) {
       const reg = await navigator.serviceWorker.register("/sw.js").catch(() => null);
       await navigator.serviceWorker.ready;
-      reg?.showNotification(t("pwa.nEnabledTitle"), { body: t("pwa.nEnabledBody"), icon: "/icons/kehai-192.png", badge: "/icons/kehai-badge-96.png", tag: "kehai-enabled" });
+      reg?.showNotification(t("pwa.nEnabledTitle"), { body: t("pwa.nEnabledBody"), icon: "/icons/kehai-square-192.png", badge: "/icons/kehai-badge-96.png", tag: "kehai-enabled" });
     }
   }
 

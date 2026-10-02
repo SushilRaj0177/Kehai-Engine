@@ -615,21 +615,21 @@ All routes are under `/api`. Representative endpoints:
   near-black as the app itself (`background_color`/`theme_color`
   `#05070a`), and the page's first paint is already dark (inline
   background on `<html>`), so there's no white between the launch screen
-  and the app. The icon is a flat mark: a red 気 (Noto Sans JP Bold, `shu-500`) on a
-  solid black tile (`void-950`), with no glow or gradient.
-  The regular icons have transparent corners (the old ones were opaque
-  white); the maskable and Apple icons are full-bleed; notifications use a
-  silhouette badge. New file names (`/icons/kehai-*.png`) so no phone or
-  cache keeps the old glowing icon.
-  **Samsung Internet:** it has a known bug where, if the manifest lists a
-  maskable icon, its launch screen crops that icon and draws it on white,
-  ignoring `background_color`. The manifest is therefore a route
-  (`app/manifest.webmanifest/route.ts`) that leaves the maskable icon out
-  for Samsung Internet only (`Vary: User-Agent`, never cached across
-  browsers), so its launch screen is dark too, while Chrome keeps the
-  maskable icon it needs for round launcher shapes. An already-installed app picks up a
-  new icon and launch screen when the browser next refreshes it;
-  removing and re-adding it to the home screen applies it immediately.
+  and the app. The icon is a flat mark: a red 気 (Noto Sans JP Bold,
+  `shu-500`) on a full-bleed black square (`void-950`), with no glow or
+  gradient; the glyph sits well inside the central 80% so any launcher's
+  circle or squircle crop keeps it whole. The Apple icon is full-bleed too,
+  and notifications use a silhouette badge.
+  **No maskable icon, on purpose:** Samsung Internet has a known bug where,
+  if the manifest lists a maskable icon, its launch screen crops that icon
+  and draws it on a white box, ignoring `background_color`. Serving
+  Samsung a different manifest by user-agent doesn't help, because
+  installs are packaged by a server that fetches the manifest itself. With
+  only the full-bleed "any" icons, the launch screen is the black icon on
+  the black background. New file names (`/icons/kehai-square-*.png`) so no
+  phone or cache keeps an old icon. An already-installed app keeps the
+  launch screen it was installed with: remove it from the home screen and
+  add it again to get the new one.
 
 ## Limitations
 
