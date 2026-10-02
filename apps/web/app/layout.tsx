@@ -50,12 +50,13 @@ export const metadata: Metadata = {
     title: "Kehai",
   },
   icons: {
-    apple: "/icons/icon-192.png",
+    // Full-bleed (iOS rounds the corners itself and turns transparency black).
+    apple: "/icons/kehai-apple-180.png",
   },
 };
 
 export const viewport = {
-  themeColor: "#0a0e14",
+  themeColor: "#05070a",
   // Needed for the fixed mobile bottom nav's own safe-area padding
   // (env(safe-area-inset-bottom)) to resolve to anything but 0 on a
   // notched/gesture-bar phone -- without this, the page renders inside
@@ -80,7 +81,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     // Next's navigation in a real document.startViewTransition(), which
     // drives the root page cross-fade (globals.css's page-vt-exit/enter).
     <ViewTransitions>
-      <html lang="en" className={`${notoJp.variable} ${displayFont.variable} ${inter.variable} ${mono.variable}`}>
+      <html
+        lang="en"
+        className={`${notoJp.variable} ${displayFont.variable} ${inter.variable} ${mono.variable}`}
+        // Inline, so the very first paint is already dark: before the
+        // stylesheet arrives the browser's default canvas is white, which
+        // flashed between the launch screen and the app.
+        style={{ backgroundColor: "#05070a" }}
+      >
         {/* Bottom padding to clear MobileBottomNav's floating pill (its own
             h-16/64px plus the gap it floats above the edge by, plus safe-area
             padding) lives in globals.css now, not here as a plain `pb-24` --

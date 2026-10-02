@@ -608,6 +608,18 @@ All routes are under `/api`. Representative endpoints:
   Measured on composited frames: the darkest frame of a tab switch used to
   sit about 30% below both pages; it now stays within the normal
   cross-fade between them.
+- **App icon and launch screen** — the installed app opens on the same
+  near-black as the app itself (`background_color`/`theme_color`
+  `#05070a`), and the page's first paint is already dark (inline
+  background on `<html>`), so there's no white between the launch screen
+  and the app. The icon is the app's own flat mark: white 気 (Noto Sans JP
+  Bold) on a solid vermilion tile (`shu-600`), with no glow or gradient.
+  The regular icons have transparent corners (the old ones were opaque
+  white); the maskable and Apple icons are full-bleed; notifications use a
+  silhouette badge. New file names (`/icons/kehai-*.png`) so no phone or
+  cache keeps the old glowing icon. An already-installed app picks up a
+  new icon and launch screen when the browser next refreshes it;
+  removing and re-adding it to the home screen applies it immediately.
 
 ## Limitations
 
