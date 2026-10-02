@@ -620,7 +620,14 @@ All routes are under `/api`. Representative endpoints:
   The regular icons have transparent corners (the old ones were opaque
   white); the maskable and Apple icons are full-bleed; notifications use a
   silhouette badge. New file names (`/icons/kehai-*.png`) so no phone or
-  cache keeps the old glowing icon. An already-installed app picks up a
+  cache keeps the old glowing icon.
+  **Samsung Internet:** it has a known bug where, if the manifest lists a
+  maskable icon, its launch screen crops that icon and draws it on white,
+  ignoring `background_color`. The manifest is therefore a route
+  (`app/manifest.webmanifest/route.ts`) that leaves the maskable icon out
+  for Samsung Internet only (`Vary: User-Agent`, never cached across
+  browsers), so its launch screen is dark too, while Chrome keeps the
+  maskable icon it needs for round launcher shapes. An already-installed app picks up a
   new icon and launch screen when the browser next refreshes it;
   removing and re-adding it to the home screen applies it immediately.
 
