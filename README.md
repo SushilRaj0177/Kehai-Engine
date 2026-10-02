@@ -612,7 +612,7 @@ All routes are under `/api`. Representative endpoints:
   near-black as the app itself (`background_color`/`theme_color`
   `#05070a`), and the page's first paint is already dark (inline
   background on `<html>`), so there's no white between the launch screen
-  and the app. The icon is the app's own flat mark: white 気 (Noto Sans JP
+  and the app. The icon is the app's own flat mark: black 気 (Noto Sans JP
   Bold) on a solid vermilion tile (`shu-600`), with no glow or gradient.
   The regular icons have transparent corners (the old ones were opaque
   white); the maskable and Apple icons are full-bleed; notifications use a
