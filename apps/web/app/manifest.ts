@@ -16,8 +16,8 @@ export default function manifest(): MetadataRoute.Manifest {
     // goes straight from splash to page with no colour change.
     background_color: "#05070a",
     theme_color: "#05070a",
-    // Flat mark: black 気 on a solid vermilion (shu-600) tile (the app's
-    // tile mark without its gradient). The "any" icons have transparent
+    // Flat mark: red 気 (shu-500) on a solid black tile (void-950), no glow
+    // or gradient. The "any" icons have transparent
     // corners (they used to be opaque white, which showed as a white
     // frame); the maskable one is
     // full-bleed with the glyph inside the safe zone. New file names so no

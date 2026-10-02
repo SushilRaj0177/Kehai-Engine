@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-  <!-- Flat Kehai mark: black 気 on a solid vermilion (shu-600) tile. -->
-  <rect width="32" height="32" rx="9.6" fill="#e01b45"/>
-  <text x="16" y="23.2" text-anchor="middle" font-family="'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', sans-serif" font-weight="700" font-size="18" fill="#05070a">気</text>
+  <!-- Flat Kehai mark: red 気 on a solid black tile. -->
+  <rect width="32" height="32" rx="9.6" fill="#05070a"/>
+  <text x="16" y="23.2" text-anchor="middle" font-family="'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', sans-serif" font-weight="700" font-size="18" fill="#ff2d55">気</text>
 </svg>
