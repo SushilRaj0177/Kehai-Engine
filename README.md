@@ -600,9 +600,12 @@ All routes are under `/api`. Representative endpoints:
   new pages at the same time (so mid-way neither was fully there), and the
   installed-app screens faded their panels up from invisible on every
   visit. Now the incoming page is fully opaque underneath from the first
-  frame while the outgoing one recedes and fades on top, and the panel
-  fade-up plays only when the app opens (`PageTransition` marks
-  `html[data-navigated]` after the first in-app navigation).
+  frame while the outgoing one recedes and fades on top, and the
+  installed app's entrance animations (the PWA screens' panel fade-up and
+  the shared `.page-stagger` section rise, both of which started content at
+  opacity 0) play only when the app opens (`PageTransition` marks
+  `html[data-navigated]` after the first in-app navigation). The browser
+  site keeps its staggered entrance.
   `useIsStandalone` uses `useSyncExternalStore`, so a page reached by
   in-app navigation knows it's in the installed app on its first render.
   Measured on composited frames: the darkest frame of a tab switch used to

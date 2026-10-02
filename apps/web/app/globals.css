@@ -576,6 +576,16 @@ body {
    new containing block for `position: fixed` descendants for the
    animation's duration, which would drag the nav along with the page's
    entrance motion instead of leaving it anchored to the viewport. */
+/* Installed app only: after the first in-app navigation (PageTransition
+   sets html[data-navigated]) page sections appear at once instead of
+   rising from opacity 0. The page-switch View Transition is the motion
+   there, and sections starting invisible made the screen go black for a
+   moment on every tab switch (Classrooms, Settings, ...). The browser
+   site keeps the staggered entrance. */
+html[data-standalone="true"][data-navigated] .page-stagger > * {
+  opacity: 1;
+  animation: none;
+}
 @keyframes page-enter {
   /* Not from 0: starting fully transparent flashed the dark background
      between pages. */
