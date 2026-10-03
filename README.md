@@ -634,15 +634,20 @@ All routes are under `/api`. Representative endpoints:
 
 - **Haptic feedback (phones)** — `lib/haptics.ts` holds the patterns and
   `components/HapticsLayer.tsx` (mounted once in the layout) gives every
-  finger press on a button, link, tab, switch, checkbox or list row a light
-  **tap** (8 ms); a mouse or pen never triggers it. The moments that matter
+  finger tap on a button, link, tab, switch, checkbox or list row a light
+  **tap** (8 ms); a mouse or pen never triggers it. It buzzes only for a
+  real tap, never for a scroll that happens to start on a button: the tap
+  is confirmed when the finger lifts on the same element without having
+  moved more than 10 px, and it's dropped the moment the browser takes the
+  touch over for scrolling (`pointercancel`). The moments that matter
   get their own: a double pulse when the scanner **reads a QR code**, a
   **success** pattern when a check-in is confirmed (events and classes),
   and a longer **error** pattern when it's rejected, the code is invalid,
   or the network fails. It uses the Vibration API (Chrome, Samsung Internet
   and Firefox on Android); Safari on iPhone doesn't offer it to websites, so
   there it does nothing. Verified in a phone-profile browser by recording
-  every vibration requested: tap → `[8]`, mouse click → none, confirmed
+  every vibration requested with real touch input: tap → `[8]`, a swipe
+  starting on a button → scrolls with no vibration, mouse click → none, confirmed
   check-in → tap then success, rejected check-in → tap then error.
 
 ## Limitations
