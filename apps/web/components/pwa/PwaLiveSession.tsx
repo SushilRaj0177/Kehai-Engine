@@ -224,6 +224,11 @@ export function PwaLiveSession({ classroomId }: { classroomId: string }) {
   const ratio = enrolled > 0 ? Math.min(1, present.length / enrolled) : 0;
   const ARC_R = 84;
   const arcLength = 2 * Math.PI * ARC_R;
+  const arcEnd = { x: 100 + Math.sin(ratio * 2 * Math.PI) * ARC_R, y: 100 - Math.cos(ratio * 2 * Math.PI) * ARC_R };
+  // Inner ring: what's left of the current QR window, draining to the next rotation.
+  const QR_R = 74;
+  const qrLength = 2 * Math.PI * QR_R;
+  const qrLeft = qr && qr.rotationSeconds > 0 ? Math.min(1, Math.max(0, countdown / qr.rotationSeconds)) : 0;
 
   return (
     <PwaScreen withDock={false} tight>
@@ -238,10 +243,19 @@ export function PwaLiveSession({ classroomId }: { classroomId: string }) {
           {/* Sweeps inside the dial while the session listens for check-ins. */}
           <div className="pwa-radar-sweep" aria-hidden />
           <svg viewBox="0 0 200 200" aria-hidden>
-            {/* Bezel: 60 fine ticks, every fifth longer, like a watch face. */}
+            <defs>
+              <radialGradient id="pwa-dial-disc" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" className="pwa-disc-in" />
+                <stop offset="100%" className="pwa-disc-out" />
+              </radialGradient>
+            </defs>
+            <circle cx="100" cy="100" r="80" fill="url(#pwa-dial-disc)" />
+            {/* Bezel: 60 fine ticks, every fifth longer, like a watch face.
+                Ticks light up to the checked-in share, like a level meter. */}
             {Array.from({ length: 60 }, (_, i) => {
               const a = (i / 60) * 2 * Math.PI;
               const major = i % 5 === 0;
+              const lit = ratio > 0 && i / 60 < ratio;
               const r1 = 98;
               const r2 = major ? 92 : 95;
               return (
@@ -251,13 +265,38 @@ export function PwaLiveSession({ classroomId }: { classroomId: string }) {
                   y1={100 - Math.cos(a) * r1}
                   x2={100 + Math.sin(a) * r2}
                   y2={100 - Math.cos(a) * r2}
-                  className={major ? "pwa-tick pwa-tick-major" : "pwa-tick"}
+                  className={`pwa-tick${major ? " pwa-tick-major" : ""}${lit ? " pwa-tick-lit" : ""}`}
                 />
               );
             })}
-            {/* Range rings for the dots. */}
+            {/* Range rings and crosshair marks for the dots. */}
             <circle cx="100" cy="100" r="58" fill="none" className="pwa-radar-guide" />
             <circle cx="100" cy="100" r="34" fill="none" className="pwa-radar-guide" />
+            {[0, 90, 180, 270].map((deg) => {
+              const a = (deg * Math.PI) / 180;
+              return (
+                <line
+                  key={deg}
+                  x1={100 + Math.sin(a) * 36}
+                  y1={100 - Math.cos(a) * 36}
+                  x2={100 + Math.sin(a) * 56}
+                  y2={100 - Math.cos(a) * 56}
+                  className="pwa-crosshair"
+                />
+              );
+            })}
+            {/* QR window: drains to the next rotation (same cyan as the "Every …" chip). */}
+            <circle cx="100" cy="100" r={QR_R} fill="none" className="pwa-qr-track" />
+            <circle
+              cx="100"
+              cy="100"
+              r={QR_R}
+              fill="none"
+              className="pwa-qr-ring"
+              strokeDasharray={`${qrLength} ${qrLength}`}
+              strokeDashoffset={qrLength * (1 - qrLeft)}
+              transform="rotate(-90 100 100)"
+            />
             {/* Attendance arc: track, then the checked-in share from 12 o'clock. */}
             <circle cx="100" cy="100" r={ARC_R} fill="none" className="pwa-arc-track" />
             <circle
@@ -271,6 +310,9 @@ export function PwaLiveSession({ classroomId }: { classroomId: string }) {
               transform="rotate(-90 100 100)"
               style={{ opacity: ratio > 0 ? 1 : 0 }}
             />
+            {ratio > 0 && ratio < 1 && <circle cx={arcEnd.x} cy={arcEnd.y} r="3.4" className="pwa-arc-head" />}
+            {/* A ripple from the centre on every new check-in. */}
+            {present.length > 0 && <circle key={present.length} cx="100" cy="100" r="30" fill="none" className="pwa-checkin-ripple" />}
             {dots.map((d) => (
               <g key={d.key}>
                 {d.fresh && <circle cx={d.x} cy={d.y} r="4" className="pwa-dot-ping" style={{ transformOrigin: `${d.x}px ${d.y}px` }} />}
@@ -281,7 +323,11 @@ export function PwaLiveSession({ classroomId }: { classroomId: string }) {
           <div className="pwa-count">
             <strong>{present.length}</strong>
             <span>{t("pwa.checkedIn")}</span>
-            {enrolled > 0 && <em>{t("pwa.ofEnrolled", { n: enrolled })}</em>}
+            {enrolled > 0 && (
+              <em>
+                {t("pwa.ofEnrolled", { n: enrolled })} · {Math.round(ratio * 100)}%
+              </em>
+            )}
           </div>
         </div>
         <div className="pwa-timer-row">

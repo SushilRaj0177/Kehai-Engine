@@ -703,15 +703,68 @@ html[data-theme="light"] {
 }
 .pwa-radar-sweep {
   position: absolute;
-  inset: 18%;
+  inset: 10%;
   border-radius: 50%;
-  background: conic-gradient(from 0deg, rgba(255, 45, 85, 0) 0deg 280deg, rgba(255, 45, 85, 0.04) 320deg, rgba(255, 45, 85, 0.13) 358.6deg, rgba(255, 45, 85, 0.55) 359.2deg 360deg);
+  background: conic-gradient(from 0deg, rgba(34, 226, 245, 0) 0deg 280deg, rgba(34, 226, 245, 0.04) 320deg, rgba(34, 226, 245, 0.14) 358.6deg, rgba(34, 226, 245, 0.6) 359.2deg 360deg);
   animation: pwa-spin 5.5s linear infinite;
   pointer-events: none;
+  /* Only the outer band: the centre readout stays clean. */
+  -webkit-mask: radial-gradient(circle closest-side, transparent 50%, #000 58%);
+  mask: radial-gradient(circle closest-side, transparent 50%, #000 58%);
 }
 @keyframes pwa-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+.pwa-tick-lit {
+  stroke: #ff2d55;
+}
+.pwa-tick-lit.pwa-tick-major {
+  stroke: #ff2d55;
+  stroke-width: 1.8;
+}
+.pwa-disc-in {
+  stop-color: rgb(var(--pwa-tint) / 0.035);
+}
+.pwa-disc-out {
+  stop-color: rgb(var(--pwa-tint) / 0);
+}
+.pwa-crosshair {
+  stroke: rgb(var(--pwa-tint) / 0.1);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+.pwa-qr-track {
+  stroke: rgb(var(--pwa-cyan-strong) / 0.08);
+  stroke-width: 1.6;
+}
+.pwa-qr-ring {
+  stroke: rgb(var(--pwa-cyan-strong) / 0.75);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear;
+}
+.pwa-arc-head {
+  fill: #fff;
+  stroke: #ff2d55;
+  stroke-width: 2;
+  filter: drop-shadow(0 0 5px rgba(255, 45, 85, 0.8));
+}
+.pwa-checkin-ripple {
+  stroke: rgb(var(--pwa-cyan-strong));
+  stroke-width: 1.5;
+  transform-origin: 100px 100px;
+  animation: pwa-ripple 1.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes pwa-ripple {
+  from {
+    transform: scale(0.6);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(2.6);
+    opacity: 0;
   }
 }
 .pwa-dot {
@@ -1461,6 +1514,7 @@ html[data-navigated] .pwa-rise > * {
   .pwa-rise > *,
   .pwa-radar-sweep,
   .pwa-dot-ping,
+  .pwa-checkin-ripple,
   .pwa-live-badge .pwa-pulse,
   .pwa-feed-row.pwa-new,
   .pwa-dock-chip,
@@ -1748,4 +1802,7 @@ html[data-theme="light"] .pwa-arc {
 }
 html[data-theme="light"] .pwa-radar-sweep {
   opacity: 0.7;
+}
+html[data-theme="light"] .pwa-arc-head {
+  filter: none;
 }
