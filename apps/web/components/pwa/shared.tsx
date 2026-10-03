@@ -57,7 +57,7 @@ export function PwaDial({ value, label, ratio, accent = "#ff2d55" }: { value: Re
   return (
     <div className="pwa-dial">
       <svg viewBox="0 0 68 68" aria-hidden>
-        <circle cx="34" cy="34" r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="5" />
+        <circle cx="34" cy="34" r={r} fill="none" style={{ stroke: "rgb(var(--pwa-tint) / 0.08)" }} strokeWidth="5" />
         <circle
           cx="34"
           cy="34"
@@ -92,7 +92,7 @@ export function PwaHeat({ levels, lessLabel, moreLabel }: { levels: (number | nu
             key={i}
             className="pwa-heat-cell"
             style={{
-              background: level === null ? "rgba(95,244,255,0.04)" : level >= 4 ? "#5ff4ff" : `rgba(95,244,255,${HEAT_LEVELS[level]})`,
+              background: level === null ? "rgb(var(--pwa-heat) / 0.04)" : level >= 4 ? "rgb(var(--pwa-heat))" : `rgb(var(--pwa-heat) / ${HEAT_LEVELS[level]})`,
             }}
           />
         ))}
@@ -100,7 +100,7 @@ export function PwaHeat({ levels, lessLabel, moreLabel }: { levels: (number | nu
       <div className="pwa-legend">
         {lessLabel}
         {HEAT_LEVELS.map((a, i) => (
-          <i key={i} style={{ background: i === 4 ? "#5ff4ff" : `rgba(95,244,255,${a})` }} />
+          <i key={i} style={{ background: i === 4 ? "rgb(var(--pwa-heat))" : `rgb(var(--pwa-heat) / ${a})` }} />
         ))}
         {moreLabel}
       </div>
@@ -129,9 +129,9 @@ export function initials(name: string) {
 // Avatar tints cycle through the two brand accents then neutral, the way
 // the mockup's feed rows do.
 export const AVATAR_TINTS = [
-  { background: "rgba(255,45,85,0.16)", color: "#ff8a9a" },
-  { background: "rgba(95,244,255,0.14)", color: "#8fefff" },
-  { background: "rgba(255,255,255,0.06)", color: "rgba(244,242,238,0.6)" },
+  { background: "rgba(255,45,85,0.16)", color: "rgb(var(--pwa-shu-text))" },
+  { background: "rgba(95,244,255,0.14)", color: "rgb(var(--pwa-cyan-soft))" },
+  { background: "rgb(var(--pwa-tint) / 0.06)", color: "rgb(var(--pwa-ink) / min(1, calc(0.6 * var(--pwa-ink-boost))))" },
 ];
 
 export const Icon = {

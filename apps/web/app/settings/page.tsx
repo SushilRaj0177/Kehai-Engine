@@ -16,6 +16,7 @@ import { apiFetch, ApiError, clearTokens } from "@/lib/api";
 import { useLocale } from "@/lib/i18n";
 import { SURFACE, SectionHead } from "@/components/ui/Hud";
 import { useIsStandalone } from "@/lib/useStandalone";
+import { setThemeChoice, useThemeChoice, type ThemeChoice } from "@/lib/theme";
 
 export default function SettingsPage() {
   const { t } = useLocale();
@@ -130,6 +131,13 @@ function AccountSection({ standalone }: { standalone?: boolean }) {
         <p className="text-sm font-medium text-white/85">{t("settings.languageLabel")}</p>
         <LocaleSwitch locale={locale} onToggle={toggle} />
       </div>
+      {/* Light mode is an installed-app feature; a browser tab stays dark. */}
+      {standalone && (
+        <div className="flex items-center justify-between gap-4 border-t border-white/[0.06] pt-4">
+          <p className="text-sm font-medium text-white/85">{t("settings.appearanceLabel")}</p>
+          <ThemeSwitch />
+        </div>
+      )}
       <div className="flex items-center justify-between gap-4 border-t border-white/[0.06] pt-4">
         <p className="text-sm font-medium text-white/85">{t("nav.signOut")}</p>
         <Button
@@ -144,6 +152,39 @@ function AccountSection({ standalone }: { standalone?: boolean }) {
         </Button>
       </div>
     </SettingsFrame>
+  );
+}
+
+// Auto (follow the phone) / Light / Dark. Applies at once; stored on the
+// device (see lib/theme.ts).
+function ThemeSwitch() {
+  const { t } = useLocale();
+  const choice = useThemeChoice();
+  const options: { id: ThemeChoice; label: string }[] = [
+    { id: "system", label: t("settings.appearanceSystem") },
+    { id: "light", label: t("settings.appearanceLight") },
+    { id: "dark", label: t("settings.appearanceDark") },
+  ];
+  return (
+    <div role="radiogroup" aria-label={t("settings.appearanceLabel")} className="flex shrink-0 rounded-full border border-white/10 bg-white/[0.04] p-[3px]">
+      {options.map((o) => {
+        const on = choice === o.id;
+        return (
+          <button
+            key={o.id}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            onClick={() => setThemeChoice(o.id)}
+            className={`h-[28px] rounded-full px-3 text-xs font-bold tracking-wide transition-colors ${
+              on ? "bg-gradient-to-br from-shu-500 to-shu-600 text-on-accent shadow-[0_0_12px_rgba(255,45,85,0.5)]" : "text-white/45"
+            }`}
+          >
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 

@@ -11,6 +11,8 @@ import { PageTransition } from "@/components/PageTransition";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { StandaloneModeFlag } from "@/components/StandaloneModeFlag";
 import { HapticsLayer } from "@/components/HapticsLayer";
+import { ThemeSync } from "@/components/ThemeSync";
+import { THEME_BOOT_SCRIPT } from "@/lib/theme-boot";
 
 // Space Grotesk carries the brand's actual display voice now — Noto Sans
 // JP's Latin glyphs are what made every heading read as generic/templated
@@ -89,7 +91,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         // stylesheet arrives the browser's default canvas is white, which
         // flashed between the launch screen and the app.
         style={{ backgroundColor: "#05070a" }}
+        // The boot script below may switch the installed app to light
+        // before React hydrates (data-theme, this background, color-scheme).
+        suppressHydrationWarning
       >
+        <head>
+          {/* Picks the theme before the first paint: dark everywhere, light
+              only in the installed app when the phone (or Settings) says so. */}
+          <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+        </head>
         {/* Bottom padding to clear MobileBottomNav's floating pill (its own
             h-16/64px plus the gap it floats above the edge by, plus safe-area
             padding) lives in globals.css now, not here as a plain `pb-24` --
@@ -100,6 +110,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <body className="min-h-screen bg-void-950 font-sans antialiased">
           <ApiBaseSetter apiBase={apiBase} />
           <StandaloneModeFlag />
+          <ThemeSync />
           <HapticsLayer />
           <CustomCursor />
           <LocaleProvider>

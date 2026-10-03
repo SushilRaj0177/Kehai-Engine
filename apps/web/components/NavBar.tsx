@@ -208,10 +208,10 @@ export function LocaleSwitch({ locale, onToggle }: { locale: "en" | "ja"; onTogg
           日本語 ("nihongo" = "the Japanese language") — not 日 alone,
           which just means "day/sun" and is ambiguous as a language label. */}
       <span className="relative z-10 flex h-full items-center justify-between px-4 text-xs font-bold tracking-wide">
-        <span ref={enRef} className={isJa ? "text-white/35" : "text-white"}>
+        <span ref={enRef} className={isJa ? "text-white/35" : "text-on-accent"}>
           EN
         </span>
-        <span ref={jaRef} className={`font-display text-sm ${isJa ? "text-white" : "text-white/35"}`}>
+        <span ref={jaRef} className={`font-display text-sm ${isJa ? "text-on-accent" : "text-white/35"}`}>
           日本語
         </span>
       </span>
@@ -266,7 +266,7 @@ function AccountMenu({
     // eslint-disable-next-line @next/next/no-img-element
     <img src={avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover ring-1 ring-white/15" />
   ) : (
-    <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-shu-500 to-kehai-500 font-display text-sm font-black text-white shadow-[0_0_14px_-2px_rgba(255,45,85,0.6)]">
+    <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-shu-500 to-kehai-500 font-display text-sm font-black text-on-accent shadow-[0_0_14px_-2px_rgba(255,45,85,0.6)]">
       {initial}
     </span>
   );

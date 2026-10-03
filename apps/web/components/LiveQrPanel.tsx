@@ -165,7 +165,7 @@ export function LiveQrPanel({
         {error ? (
           <p className="text-sm text-shu-400">{error}</p>
         ) : qr ? (
-          <div className="relative rounded-xl border-4 border-white bg-white p-2">
+          <div className="relative rounded-xl border-4 border-paper bg-paper p-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={qr.dataUrl} alt={t("qrPanel.altText")} width={260} height={260} />
           </div>
@@ -212,11 +212,11 @@ export function LiveQrPanel({
         makes the display big and scannable either way. */}
     {kiosk &&
       createPortal(
-        <div ref={kioskRef} className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-white p-8">
+        <div ref={kioskRef} className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-paper p-8">
           <button
             type="button"
             onClick={exitKiosk}
-            className="absolute right-6 top-6 rounded-full border border-void-950/15 px-4 py-2 text-sm font-semibold text-void-950/70 hover:bg-void-950/5"
+            className="absolute right-6 top-6 rounded-full border border-ink/15 px-4 py-2 text-sm font-semibold text-void-950/70 hover:bg-ink/5"
           >
             {t("qrPanel.exitFullscreen")}
           </button>

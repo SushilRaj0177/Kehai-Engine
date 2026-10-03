@@ -185,7 +185,7 @@ export const Button = forwardRef<HTMLButtonElement, Props>(function Button(
           <span
             aria-hidden
             className={cn(
-              "grid shrink-0 place-items-center rounded-full bg-gradient-to-br from-shu-400 to-shu-600 text-white shadow-[0_0_14px_rgba(255,45,85,0.55)] transition-transform duration-300 ease-out group-hover:translate-x-0.5",
+              "grid shrink-0 place-items-center rounded-full bg-gradient-to-br from-shu-400 to-shu-600 text-on-accent shadow-[0_0_14px_rgba(255,45,85,0.55)] transition-transform duration-300 ease-out group-hover:translate-x-0.5",
               disc
             )}
           >

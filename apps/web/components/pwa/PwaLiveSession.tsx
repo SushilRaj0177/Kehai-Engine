@@ -197,7 +197,7 @@ export function PwaLiveSession({ classroomId }: { classroomId: string }) {
         </div>
         <div className="pwa-radar">
           <svg viewBox="0 0 200 200" aria-hidden>
-            <circle cx="100" cy="100" r="94" fill="none" stroke="rgba(255,255,255,0.05)" />
+            <circle cx="100" cy="100" r="94" fill="none" style={{ stroke: "rgb(var(--pwa-tint) / 0.05)" }} />
             <circle cx="100" cy="100" r="70" fill="none" stroke="rgba(255,45,85,0.10)" />
             <circle cx="100" cy="100" r="46" fill="none" stroke="rgba(255,45,85,0.16)" />
             <circle
@@ -212,7 +212,7 @@ export function PwaLiveSession({ classroomId }: { classroomId: string }) {
               strokeLinecap="round"
             />
             {dots.map((d) => (
-              <circle key={d.key} cx={d.x} cy={d.y} r="4" fill="#5ff4ff" opacity={d.fresh ? 1 : 0.85} />
+              <circle key={d.key} cx={d.x} cy={d.y} r="4" style={{ fill: "rgb(var(--pwa-heat))" }} opacity={d.fresh ? 1 : 0.85} />
             ))}
           </svg>
           <div className="pwa-count">

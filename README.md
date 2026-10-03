@@ -65,7 +65,7 @@ event data.
 - Scan the organizer's QR (in-app camera scanner or by opening the code's deep link directly)
 - Share location once, see an honest distance readout, and get a confirmed/rejected check-in with a real reason
 - Cancel a registration, or delete their own account (blocked while they'd strand an organization as its sole owner)
-- Install it to the home screen as an app: its own phone-first screens, a dark launch screen, smooth page switches, and haptic feedback on Android (a tap on presses, a pulse when a code is read, and distinct buzzes for a confirmed or rejected check-in)
+- Install it to the home screen as an app: its own phone-first screens, a light mode that follows the phone (or a choice in Settings), a dark launch screen, smooth page switches, and haptic feedback on Android (a tap on presses, a pulse when a code is read, and distinct buzzes for a confirmed or rejected check-in)
 
 **Classrooms (teacher side)** — a second, parallel workflow for tracking a
 class's attendance over a semester rather than a one-off event:
@@ -632,6 +632,27 @@ All routes are under `/api`. Representative endpoints:
   launch screen it was installed with: remove it from the home screen and
   add it again to get the new one.
 
+- **Light mode (installed app only)** — the installed app follows the
+  phone's light/dark setting, and Settings → Appearance can pin it to
+  Auto, Light or Dark (saved on the device). A browser tab, on a phone or
+  a desktop, always stays dark. Every colour that changes is a CSS
+  variable: Tailwind's `white`, `void-*` and the light accent shades read
+  `--kc-*` (`globals.css`), and the installed-app screens read `--pwa-*`
+  (`pwa.css`). The dark values are the original colours, so dark mode
+  renders exactly as before; `html[data-theme="light"]` swaps in a warm
+  paper ground, near-black ink and deeper accents that read as text on a
+  light page. Faint text is multiplied up slightly in light mode
+  (`--kc-text-boost`) so labels stay legible, and white cards with a soft
+  shadow replace the dark mode's outlined panels. QR codes and the
+  full-screen QR display use fixed `paper`/`ink` colours, so they're
+  black-on-white in both themes. A tiny inline script in `<head>`
+  (`lib/theme-boot.ts`) picks the theme before the first paint, so the app
+  never flashes the wrong one, and also sets the status-bar colour.
+  `ThemeSync` follows the phone switching themes while the app is open.
+  The launch screen stays dark in both themes. Verified by screenshotting
+  20 screens (desktop, phone browser tab, installed app) before and after
+  the change: dark mode is pixel-identical apart from the new Settings
+  row.
 - **Haptic feedback (phones)** — `lib/haptics.ts` holds the patterns and
   `components/HapticsLayer.tsx` (mounted once in the layout) gives every
   finger tap on a button, link, tab, switch, checkbox or list row a light

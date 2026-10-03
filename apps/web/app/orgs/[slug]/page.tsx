@@ -789,7 +789,7 @@ function DesktopEventsPanel({
           <span aria-hidden className="pointer-events-none absolute -right-2 -bottom-6 select-none font-display text-[9rem] font-black leading-none text-white/[0.025] transition-colors group-hover:text-shu-500/[0.06]">
             催
           </span>
-          <span className="grid h-10 w-10 place-items-center rounded-full bg-white/[0.05] text-xl leading-none text-white/60 ring-1 ring-white/10 transition-all group-hover:bg-shu-500 group-hover:text-white group-hover:ring-shu-400/50 group-hover:shadow-[0_0_20px_-4px_rgba(255,45,85,0.7)]">
+          <span className="grid h-10 w-10 place-items-center rounded-full bg-white/[0.05] text-xl leading-none text-white/60 ring-1 ring-white/10 transition-all group-hover:bg-shu-500 group-hover:text-on-accent group-hover:ring-shu-400/50 group-hover:shadow-[0_0_20px_-4px_rgba(255,45,85,0.7)]">
             +
           </span>
           <span className="text-sm font-semibold text-white/70 transition-colors group-hover:text-white">{t("orgDetail.createEvent")}</span>

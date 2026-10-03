@@ -10,14 +10,48 @@
 :root {
   --pwa-display: var(--font-display-latin), var(--font-jp), system-ui, sans-serif;
   --pwa-mono: var(--font-mono), var(--font-jp), monospace;
+  /* Theme colours as "R G B" channels. These are the original (dark)
+     values; html[data-theme="light"] below swaps them for light mode. */
+  --pwa-ground: 5 6 9;
+  --pwa-ink: 244 242 238;
+  --pwa-ink-boost: 1; /* faint text is multiplied up by this (light only) */
+  --pwa-tint: 255 255 255;
+  --pwa-greet-start: 255 255 255;
+  --pwa-dock: 10 11 15;
+  --pwa-sheet: 10 11 16;
+  --pwa-cyan-text: 95 244 255;
+  --pwa-cyan-soft: 143 239 255;
+  --pwa-cyan-pale: 220 251 255;
+  --pwa-cyan-strong: 34 226 245;
+  --pwa-shu-text: 255 138 154;
+  --pwa-shu-label: 255 110 130;
+  --pwa-shu-pale: 255 227 232;
+  --pwa-heat: 95 244 255;
+}
+html[data-theme="light"] {
+  --pwa-ground: 246 244 239;
+  --pwa-ink: 20 22 29;
+  --pwa-ink-boost: 1.3;
+  --pwa-tint: 20 22 29;
+  --pwa-greet-start: 20 22 29;
+  --pwa-dock: 255 255 255;
+  --pwa-sheet: 255 255 255;
+  --pwa-cyan-text: 6 122 148;
+  --pwa-cyan-soft: 6 122 148;
+  --pwa-cyan-pale: 8 98 120;
+  --pwa-cyan-strong: 6 134 160;
+  --pwa-shu-text: 200 22 62;
+  --pwa-shu-label: 206 24 66;
+  --pwa-shu-pale: 168 14 46;
+  --pwa-heat: 8 150 180;
 }
 
 .pwa-screen {
   position: relative;
   min-height: 100vh;
   min-height: 100dvh;
-  background: #050609;
-  color: #f4f2ee;
+  background: rgb(var(--pwa-ground));
+  color: rgb(var(--pwa-ink));
   font-family: var(--pwa-display);
   font-feature-settings: normal;
   overflow-x: hidden;
@@ -112,18 +146,18 @@
   font-size: 11px;
   letter-spacing: 0.2em;
   font-weight: 700;
-  color: rgba(244, 242, 238, 0.55);
+  color: rgb(var(--pwa-ink) / min(1, calc(0.55 * var(--pwa-ink-boost))));
 }
 .pwa-bell {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgb(var(--pwa-tint) / 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  color: rgba(244, 242, 238, 0.8);
+  color: rgb(var(--pwa-ink) / min(1, calc(0.8 * var(--pwa-ink-boost))));
 }
 
 .pwa-greet-label {
@@ -131,7 +165,7 @@
   font-size: 10.5px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: rgba(244, 242, 238, 0.34);
+  color: rgb(var(--pwa-ink) / min(1, calc(0.34 * var(--pwa-ink-boost))));
   margin: 0 0 6px;
 }
 .pwa-greet {
@@ -143,7 +177,7 @@
 }
 .pwa-greet b {
   font-weight: 700;
-  background: linear-gradient(95deg, #ffffff 10%, #ff6d84 60%, #ff2d55 100%);
+  background: linear-gradient(95deg, rgb(var(--pwa-greet-start)) 10%, #ff6d84 60%, #ff2d55 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -153,8 +187,8 @@
 .pwa-panel {
   position: relative;
   border-radius: 26px;
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgb(var(--pwa-tint) / 0.09);
+  background: rgb(var(--pwa-tint) / 0.015);
   box-shadow:
     0 24px 48px -28px rgba(0, 0, 0, 0.85),
     6px -6px 30px -22px rgba(255, 45, 85, 0.35),
@@ -178,13 +212,13 @@
   font-size: 9.5px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(255, 110, 130, 0.85);
+  color: rgb(var(--pwa-shu-label) / 0.85);
   display: flex;
   align-items: center;
   gap: 6px;
 }
 .pwa-hero-label.pwa-live {
-  color: #8fefff;
+  color: rgb(var(--pwa-cyan-soft));
 }
 .pwa-hero-label .pwa-dot {
   width: 5px;
@@ -207,7 +241,7 @@
 }
 .pwa-hero-sub {
   font-size: 12.5px;
-  color: rgba(244, 242, 238, 0.42);
+  color: rgb(var(--pwa-ink) / min(1, calc(0.42 * var(--pwa-ink-boost))));
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -243,7 +277,7 @@
   font-size: 7px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(244, 242, 238, 0.4);
+  color: rgb(var(--pwa-ink) / min(1, calc(0.4 * var(--pwa-ink-boost))));
   margin-top: 2px;
 }
 
@@ -253,7 +287,7 @@
   border-radius: 18px;
   border: 1px solid rgba(255, 45, 85, 0.45) !important;
   background: linear-gradient(180deg, rgba(255, 45, 85, 0.14), rgba(255, 45, 85, 0.04)) !important;
-  color: #ffe3e8 !important;
+  color: rgb(var(--pwa-shu-pale)) !important;
   font-family: var(--pwa-mono) !important;
   font-size: 12.5px;
   font-weight: 700;
@@ -277,7 +311,7 @@
 .pwa-cta.pwa-cyan {
   border-color: rgba(34, 226, 245, 0.45) !important;
   background: linear-gradient(180deg, rgba(34, 226, 245, 0.14), rgba(34, 226, 245, 0.04)) !important;
-  color: #dcfbff !important;
+  color: rgb(var(--pwa-cyan-pale)) !important;
   box-shadow:
     0 0 0 1px rgba(34, 226, 245, 0.08) inset,
     0 14px 30px -18px rgba(34, 226, 245, 0.5);
@@ -309,13 +343,13 @@
   font-size: 8.5px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(244, 242, 238, 0.36);
+  color: rgb(var(--pwa-ink) / min(1, calc(0.36 * var(--pwa-ink-boost))));
 }
 .pwa-stat.pwa-accent {
-  color: #5ff4ff;
+  color: rgb(var(--pwa-cyan-text));
 }
 .pwa-stat.pwa-accent span {
-  color: rgba(95, 244, 255, 0.55);
+  color: rgb(var(--pwa-cyan-text) / 0.55);
 }
 
 .pwa-section-head {
@@ -330,14 +364,14 @@
   font-size: 10.5px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(244, 242, 238, 0.38);
+  color: rgb(var(--pwa-ink) / min(1, calc(0.38 * var(--pwa-ink-boost))));
   margin: 0;
   font-weight: 700;
 }
 .pwa-section-head a,
 .pwa-section-head .pwa-aside {
   font-size: 11px;
-  color: rgba(95, 244, 255, 0.75);
+  color: rgb(var(--pwa-cyan-text) / 0.75);
   font-weight: 600;
 }
 
@@ -362,7 +396,7 @@
   justify-content: flex-end;
   gap: 5px;
   font-size: 8.5px;
-  color: rgba(244, 242, 238, 0.32);
+  color: rgb(var(--pwa-ink) / min(1, calc(0.32 * var(--pwa-ink-boost))));
   font-family: var(--pwa-mono);
   letter-spacing: 0.06em;
   text-transform: capitalize;
@@ -382,7 +416,7 @@
   align-items: center;
   gap: 12px;
   padding: 13px 4px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgb(var(--pwa-tint) / 0.05);
 }
 .pwa-list-row:last-child {
   border-bottom: none;
@@ -395,7 +429,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(var(--pwa-tint) / 0.04);
   font-size: 14px;
 }
 .pwa-list-body {
@@ -412,7 +446,7 @@
 }
 .pwa-list-sub {
   font-size: 10.5px;
-  color: rgba(244, 242, 238, 0.38);
+  color: rgb(var(--pwa-ink) / min(1, calc(0.38 * var(--pwa-ink-boost))));
   margin: 2px 0 0;
   font-family: var(--pwa-mono);
   text-transform: uppercase;
@@ -424,14 +458,14 @@
   font-family: var(--pwa-mono);
   font-size: 13px;
   font-weight: 700;
-  color: #5ff4ff;
+  color: rgb(var(--pwa-cyan-text));
   flex-shrink: 0;
 }
 .pwa-empty {
   padding: 18px 4px;
   text-align: center;
   font-size: 12.5px;
-  color: rgba(244, 242, 238, 0.38);
+  color: rgb(var(--pwa-ink) / min(1, calc(0.38 * var(--pwa-ink-boost))));
 }
 
 .pwa-bottomfade {
@@ -440,7 +474,7 @@
   right: 0;
   bottom: 0;
   height: 120px;
-  background: linear-gradient(180deg, transparent, #050609 78%);
+  background: linear-gradient(180deg, transparent, rgb(var(--pwa-ground)) 78%);
   pointer-events: none;
   z-index: 30;
 }
@@ -470,8 +504,8 @@
   max-width: 350px;
   height: 66px;
   border-radius: 26px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(10, 11, 15, 0.72);
+  border: 1px solid rgb(var(--pwa-tint) / 0.1);
+  background: rgb(var(--pwa-dock) / 0.72);
   -webkit-backdrop-filter: blur(24px);
   backdrop-filter: blur(24px);
   display: flex;
@@ -489,7 +523,7 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  color: rgba(244, 242, 238, 0.34);
+  color: rgb(var(--pwa-ink) / min(1, calc(0.34 * var(--pwa-ink-boost))));
   transition: color 0.3s cubic-bezier(0.22, 1, 0.36, 1), transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .pwa-dock-item:active {
@@ -545,7 +579,7 @@
   color: #fff;
   box-shadow:
     0 12px 26px -8px rgba(255, 45, 85, 0.65),
-    0 0 0 6px #050609;
+    0 0 0 6px rgb(var(--pwa-ground));
   transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .pwa-fab:active {
@@ -567,7 +601,7 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgb(var(--pwa-tint) / 0.1) !important;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -583,7 +617,7 @@
 }
 .pwa-topbar .pwa-sub {
   font-size: 10.5px;
-  color: rgba(244, 242, 238, 0.4);
+  color: rgb(var(--pwa-ink) / min(1, calc(0.4 * var(--pwa-ink-boost))));
   font-family: var(--pwa-mono);
   text-transform: uppercase;
 }
@@ -608,7 +642,7 @@
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.14em;
-  color: #ff8a9a;
+  color: rgb(var(--pwa-shu-text));
   text-transform: uppercase;
 }
 .pwa-live-badge .pwa-pulse {
@@ -666,7 +700,7 @@
   font-size: 10px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(244, 242, 238, 0.4);
+  color: rgb(var(--pwa-ink) / min(1, calc(0.4 * var(--pwa-ink-boost))));
   margin-top: 4px;
 }
 .pwa-timer-row {
@@ -675,10 +709,10 @@
   gap: 8px;
   font-family: var(--pwa-mono);
   font-size: 12.5px;
-  color: rgba(244, 242, 238, 0.5);
+  color: rgb(var(--pwa-ink) / min(1, calc(0.5 * var(--pwa-ink-boost))));
 }
 .pwa-timer-row b {
-  color: #f4f2ee;
+  color: rgb(var(--pwa-ink));
   font-weight: 700;
 }
 
@@ -714,7 +748,7 @@
 .pwa-qr-info p {
   margin: 0;
   font-size: 11px;
-  color: rgba(244, 242, 238, 0.4);
+  color: rgb(var(--pwa-ink) / min(1, calc(0.4 * var(--pwa-ink-boost))));
   font-family: var(--pwa-mono);
   text-transform: uppercase;
 }
@@ -723,7 +757,7 @@
   width: 36px;
   height: 36px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgb(var(--pwa-tint) / 0.1) !important;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -742,14 +776,14 @@
   font-size: 10.5px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(244, 242, 238, 0.38);
+  color: rgb(var(--pwa-ink) / min(1, calc(0.38 * var(--pwa-ink-boost))));
   margin: 0;
   font-weight: 700;
 }
 .pwa-feed-head .pwa-n {
   font-family: var(--pwa-mono);
   font-size: 11px;
-  color: #5ff4ff;
+  color: rgb(var(--pwa-cyan-text));
 }
 .pwa-feed {
   padding: 4px 12px;
@@ -761,7 +795,7 @@
   align-items: center;
   gap: 11px;
   padding: 10px 2px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgb(var(--pwa-tint) / 0.05);
 }
 .pwa-feed-row:last-child {
   border-bottom: none;
@@ -810,7 +844,7 @@
 }
 .pwa-feed-time {
   font-size: 10px;
-  color: rgba(244, 242, 238, 0.35);
+  color: rgb(var(--pwa-ink) / min(1, calc(0.35 * var(--pwa-ink-boost))));
   font-family: var(--pwa-mono);
   margin-left: auto;
   flex-shrink: 0;
@@ -818,7 +852,7 @@
 .pwa-check {
   width: 18px;
   height: 18px;
-  color: #22e2f5;
+  color: rgb(var(--pwa-cyan-strong));
   flex-shrink: 0;
 }
 
@@ -849,17 +883,17 @@
   opacity: 0.55;
 }
 .pwa-btn.pwa-ghost {
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  color: rgba(244, 242, 238, 0.7) !important;
+  border: 1px solid rgb(var(--pwa-tint) / 0.12) !important;
+  color: rgb(var(--pwa-ink) / min(1, calc(0.7 * var(--pwa-ink-boost)))) !important;
 }
 .pwa-btn.pwa-danger {
   border: 1px solid rgba(255, 45, 85, 0.5) !important;
-  color: #ff8a9a !important;
+  color: rgb(var(--pwa-shu-text)) !important;
   background: rgba(255, 45, 85, 0.08) !important;
 }
 .pwa-error {
   font-size: 12px;
-  color: #ff8a9a;
+  color: rgb(var(--pwa-shu-text));
   text-align: center;
 }
 
@@ -907,32 +941,32 @@
 }
 .pwa-head p {
   font-size: 12.5px;
-  color: rgba(244, 242, 238, 0.4);
+  color: rgb(var(--pwa-ink) / min(1, calc(0.4 * var(--pwa-ink-boost))));
   margin: 0;
 }
 .pwa-search {
   height: 46px;
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgb(var(--pwa-tint) / 0.1);
+  background: rgb(var(--pwa-tint) / 0.02);
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 0 14px;
-  color: rgba(244, 242, 238, 0.4);
+  color: rgb(var(--pwa-ink) / min(1, calc(0.4 * var(--pwa-ink-boost))));
   font-size: 13px;
 }
 .pwa-search input {
   border: none;
   background: transparent;
   outline: none;
-  color: #f4f2ee;
+  color: rgb(var(--pwa-ink));
   font-size: 13px;
   width: 100%;
   font-family: inherit;
 }
 .pwa-search input::placeholder {
-  color: rgba(244, 242, 238, 0.4);
+  color: rgb(var(--pwa-ink) / min(1, calc(0.4 * var(--pwa-ink-boost))));
 }
 .pwa-chips {
   display: flex;
@@ -960,8 +994,8 @@
   color: #fff !important;
 }
 .pwa-chip.pwa-off {
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  color: rgba(244, 242, 238, 0.5) !important;
+  border: 1px solid rgb(var(--pwa-tint) / 0.1) !important;
+  color: rgb(var(--pwa-ink) / min(1, calc(0.5 * var(--pwa-ink-boost)))) !important;
 }
 .pwa-feed-list {
   display: flex;
@@ -995,13 +1029,13 @@
   font-weight: 700;
   line-height: 1;
   font-family: var(--pwa-mono);
-  color: #ff8a9a;
+  color: rgb(var(--pwa-shu-text));
 }
 .pwa-edate span {
   font-size: 8.5px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(255, 138, 154, 0.6);
+  color: rgb(var(--pwa-shu-text) / 0.6);
   margin-top: 2px;
 }
 .pwa-ebody {
@@ -1012,7 +1046,7 @@
   font-size: 9.5px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(95, 244, 255, 0.7);
+  color: rgb(var(--pwa-cyan-text) / 0.7);
   font-family: var(--pwa-mono);
   font-weight: 700;
   overflow: hidden;
@@ -1029,7 +1063,7 @@
 }
 .pwa-emeta {
   font-size: 10.5px;
-  color: rgba(244, 242, 238, 0.38);
+  color: rgb(var(--pwa-ink) / min(1, calc(0.38 * var(--pwa-ink-boost))));
   font-family: var(--pwa-mono);
   text-transform: uppercase;
   overflow: hidden;
@@ -1049,7 +1083,7 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  border: 2px solid #0a0b10;
+  border: 2px solid rgb(var(--pwa-ground));
   margin-left: -7px;
   display: flex;
   align-items: center;
@@ -1065,7 +1099,7 @@
 .pwa-ecount {
   font-size: 10px;
   font-family: var(--pwa-mono);
-  color: rgba(244, 242, 238, 0.35);
+  color: rgb(var(--pwa-ink) / min(1, calc(0.35 * var(--pwa-ink-boost))));
 }
 .pwa-rsvp {
   margin-left: auto;
@@ -1075,14 +1109,14 @@
   font-weight: 700;
   font-family: var(--pwa-mono);
   letter-spacing: 0.06em;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: rgba(244, 242, 238, 0.75);
+  border: 1px solid rgb(var(--pwa-tint) / 0.14);
+  color: rgb(var(--pwa-ink) / min(1, calc(0.75 * var(--pwa-ink-boost))));
   flex-shrink: 0;
 }
 .pwa-rsvp.pwa-going {
   background: rgba(34, 226, 245, 0.14);
   border-color: rgba(34, 226, 245, 0.4);
-  color: #8fefff;
+  color: rgb(var(--pwa-cyan-soft));
 }
 
 /* ----------------------------- Scan --------------------------------- */
@@ -1115,7 +1149,7 @@
 .pwa-scan-wrap > div {
   max-width: none !important;
   border-radius: 20px !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgb(var(--pwa-tint) / 0.08) !important;
 }
 .pwa-scan-wrap > div > div {
   display: none;
@@ -1149,7 +1183,7 @@
   top: 18%;
   height: 2px;
   background: linear-gradient(90deg, transparent, #5ff4ff, transparent);
-  box-shadow: 0 0 14px 2px rgba(95, 244, 255, 0.55);
+  box-shadow: 0 0 14px 2px rgb(var(--pwa-cyan-text) / 0.55);
   animation: pwa-sweep 2.2s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
 }
 @keyframes pwa-sweep {
@@ -1165,7 +1199,7 @@
   font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(244, 242, 238, 0.5);
+  color: rgb(var(--pwa-ink) / min(1, calc(0.5 * var(--pwa-ink-boost))));
 }
 .pwa-pulse-dot {
   width: 7px;
@@ -1185,10 +1219,10 @@
 }
 .pwa-step {
   border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgb(var(--pwa-tint) / 0.08);
   padding: 12px 10px;
   text-align: center;
-  color: rgba(244, 242, 238, 0.35);
+  color: rgb(var(--pwa-ink) / min(1, calc(0.35 * var(--pwa-ink-boost))));
 }
 .pwa-step b {
   display: block;
@@ -1206,7 +1240,7 @@
 .pwa-step.pwa-on {
   border-color: rgba(255, 45, 85, 0.45);
   background: rgba(255, 45, 85, 0.08);
-  color: #ff8a9a;
+  color: rgb(var(--pwa-shu-text));
 }
 
 /* Entrance: panels rise in sequence, same feel as the rest of the app. */
@@ -1262,7 +1296,7 @@ html[data-navigated] .pwa-rise > * {
   border-radius: 14px;
   border: 1px solid rgba(255, 45, 85, 0.45);
   background: linear-gradient(180deg, rgba(255, 45, 85, 0.14), rgba(255, 45, 85, 0.04));
-  color: #ffe3e8;
+  color: rgb(var(--pwa-shu-pale));
   font-family: var(--pwa-mono);
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -1279,27 +1313,27 @@ html[data-navigated] .pwa-rise > * {
 .pwa-v-cyan {
   border-color: rgba(34, 226, 245, 0.45);
   background: linear-gradient(180deg, rgba(34, 226, 245, 0.14), rgba(34, 226, 245, 0.04));
-  color: #dcfbff;
+  color: rgb(var(--pwa-cyan-pale));
   box-shadow: 0 0 0 1px rgba(34, 226, 245, 0.08) inset, 0 12px 26px -18px rgba(34, 226, 245, 0.5);
 }
 .pwa-v-secondary {
-  border-color: rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.02);
-  color: rgba(244, 242, 238, 0.75);
+  border-color: rgb(var(--pwa-tint) / 0.12);
+  background: rgb(var(--pwa-tint) / 0.02);
+  color: rgb(var(--pwa-ink) / min(1, calc(0.75 * var(--pwa-ink-boost))));
   box-shadow: none;
 }
 .pwa-v-danger {
   border-color: rgba(255, 45, 85, 0.5);
   background: rgba(255, 45, 85, 0.08);
-  color: #ff8a9a;
+  color: rgb(var(--pwa-shu-text));
   box-shadow: none;
 }
 
 .pwa-card {
   position: relative;
   border-radius: 26px;
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgb(var(--pwa-tint) / 0.09);
+  background: rgb(var(--pwa-tint) / 0.015);
   box-shadow:
     0 24px 48px -28px rgba(0, 0, 0, 0.85),
     6px -6px 30px -22px rgba(255, 45, 85, 0.35),
@@ -1313,22 +1347,22 @@ html[data-navigated] .pwa-rise > * {
   font-weight: 700 !important;
   letter-spacing: 0.16em !important;
   text-transform: uppercase;
-  color: rgba(244, 242, 238, 0.38) !important;
+  color: rgb(var(--pwa-ink) / min(1, calc(0.38 * var(--pwa-ink-boost)))) !important;
 }
 
 .pwa-field {
   width: 100%;
   height: 48px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgb(var(--pwa-tint) / 0.1);
+  background: rgb(var(--pwa-tint) / 0.02);
   padding: 0 16px;
-  color: #f4f2ee;
+  color: rgb(var(--pwa-ink));
   font-size: 14px;
   outline: none;
   transition: border-color 0.2s, background 0.2s;
 }
-.pwa-field::placeholder { color: rgba(244, 242, 238, 0.35); }
+.pwa-field::placeholder { color: rgb(var(--pwa-ink) / min(1, calc(0.35 * var(--pwa-ink-boost)))); }
 .pwa-field:focus { border-color: rgba(255, 45, 85, 0.5); background: rgba(255, 45, 85, 0.04); }
 .pwa-field:disabled { opacity: 0.45; }
 .pwa-textarea { height: auto; min-height: 96px; padding: 12px 16px; resize: none; }
@@ -1370,7 +1404,7 @@ html[data-navigated] .pwa-rise > * {
   font-weight: 700;
   line-height: 17px;
   text-align: center;
-  box-shadow: 0 0 0 2px #050609, 0 0 10px rgba(255, 45, 85, 0.6);
+  box-shadow: 0 0 0 2px rgb(var(--pwa-ground)), 0 0 10px rgba(255, 45, 85, 0.6);
   animation: pwa-chip-in 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .pwa-sheet-backdrop {
@@ -1392,10 +1426,10 @@ html[data-navigated] .pwa-rise > * {
   max-height: 78vh;
   overflow-y: auto;
   border-radius: 28px 28px 0 0;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgb(var(--pwa-tint) / 0.1);
   border-bottom: 0;
-  background: #0a0b10;
-  color: #f4f2ee;
+  background: rgb(var(--pwa-sheet));
+  color: rgb(var(--pwa-ink));
   font-family: var(--pwa-display);
   font-feature-settings: normal;
   padding: 10px 18px calc(env(safe-area-inset-bottom, 0px) + 22px);
@@ -1403,10 +1437,10 @@ html[data-navigated] .pwa-rise > * {
   animation: pwa-sheet-up 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 @keyframes pwa-sheet-up { from { transform: translateY(100%); } to { transform: none; } }
-.pwa-sheet-grip { width: 40px; height: 4px; border-radius: 3px; background: rgba(255, 255, 255, 0.15); margin: 0 auto 12px; }
+.pwa-sheet-grip { width: 40px; height: 4px; border-radius: 3px; background: rgb(var(--pwa-tint) / 0.15); margin: 0 auto 12px; }
 .pwa-sheet-head { display: flex; align-items: center; justify-content: space-between; padding: 0 4px 12px; }
 .pwa-sheet-head h2 { margin: 0; font-size: 18px; font-weight: 700; }
-.pwa-sheet-head button { width: 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.1); color: rgba(244, 242, 238, 0.6); font-size: 12px; }
+.pwa-sheet-head button { width: 32px; height: 32px; border-radius: 50%; border: 1px solid rgb(var(--pwa-tint) / 0.1); color: rgb(var(--pwa-ink) / min(1, calc(0.6 * var(--pwa-ink-boost)))); font-size: 12px; }
 .pwa-sheet-enable {
   width: 100%;
   display: flex;
@@ -1420,9 +1454,9 @@ html[data-navigated] .pwa-rise > * {
   border: 1px solid rgba(255, 45, 85, 0.45);
   background: linear-gradient(180deg, rgba(255, 45, 85, 0.14), rgba(255, 45, 85, 0.04));
 }
-.pwa-sheet-enable b { font-size: 13.5px; color: #ffe3e8; }
-.pwa-sheet-enable span { font-size: 11.5px; color: rgba(244, 242, 238, 0.5); }
-.pwa-sheet-note { font-size: 12px; color: rgba(244, 242, 238, 0.45); margin: 0 4px 12px; }
+.pwa-sheet-enable b { font-size: 13.5px; color: rgb(var(--pwa-shu-pale)); }
+.pwa-sheet-enable span { font-size: 11.5px; color: rgb(var(--pwa-ink) / min(1, calc(0.5 * var(--pwa-ink-boost)))); }
+.pwa-sheet-note { font-size: 12px; color: rgb(var(--pwa-ink) / min(1, calc(0.45 * var(--pwa-ink-boost)))); margin: 0 4px 12px; }
 .pwa-sheet-list { display: flex; flex-direction: column; gap: 8px; }
 .pwa-sheet-item {
   display: flex;
@@ -1432,22 +1466,61 @@ html[data-navigated] .pwa-rise > * {
   text-align: left;
   padding: 13px 14px;
   border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgb(var(--pwa-tint) / 0.07);
+  background: rgb(var(--pwa-tint) / 0.02);
   transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .pwa-sheet-item:active { transform: scale(0.98); }
 .pwa-sheet-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 .pwa-t-live { background: #ff2d55; box-shadow: 0 0 10px rgba(255, 45, 85, 0.7); }
 .pwa-t-open { background: #22e2f5; box-shadow: 0 0 10px rgba(34, 226, 245, 0.6); }
-.pwa-t-soon { background: rgba(244, 242, 238, 0.4); }
+.pwa-t-soon { background: rgb(var(--pwa-ink) / min(1, calc(0.4 * var(--pwa-ink-boost)))); }
 .pwa-sheet-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .pwa-sheet-text b { font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pwa-sheet-text span { font-size: 11.5px; color: rgba(244, 242, 238, 0.45); font-family: var(--pwa-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pwa-sheet-go { color: rgba(244, 242, 238, 0.3); font-size: 20px; }
+.pwa-sheet-text span { font-size: 11.5px; color: rgb(var(--pwa-ink) / min(1, calc(0.45 * var(--pwa-ink-boost)))); font-family: var(--pwa-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pwa-sheet-go { color: rgb(var(--pwa-ink) / min(1, calc(0.3 * var(--pwa-ink-boost)))); font-size: 20px; }
 
 .pwa-top-actions {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+
+/* ------------------------- Light mode ------------------------------- */
+/* Installed app in light mode (see lib/theme.ts). Colours come from the
+   variables above; these rules only reshape what doesn't translate by
+   swapping a colour: panels become white cards with a soft drop shadow
+   instead of a fill-less outline on a dark glow, and the ambient glows
+   are toned down so they read as a tint on paper rather than a stain. */
+html[data-theme="light"] .pwa-panel,
+html[data-theme="light"] .pwa-card,
+html[data-theme="light"] [data-standalone="true"] .hud-surface {
+  background: rgba(255, 255, 255, 0.78);
+  border-color: rgba(20, 22, 29, 0.08);
+  box-shadow:
+    0 1px 2px rgba(20, 22, 29, 0.04),
+    0 18px 40px -26px rgba(20, 22, 29, 0.22),
+    6px -6px 30px -24px rgba(255, 45, 85, 0.22),
+    -6px 6px 30px -24px rgba(34, 226, 245, 0.18);
+}
+html[data-theme="light"] .pwa-dock {
+  border-color: rgba(20, 22, 29, 0.08);
+  box-shadow: 0 18px 40px -18px rgba(20, 22, 29, 0.28);
+}
+html[data-theme="light"] .pwa-glow-shu,
+html[data-theme="light"] [data-standalone="true"] .page-glow-shu {
+  opacity: 0.45;
+}
+html[data-theme="light"] .pwa-glow-kehai,
+html[data-theme="light"] [data-standalone="true"] .page-glow-kehai {
+  opacity: 0.5;
+}
+html[data-theme="light"] .pwa-sheet {
+  box-shadow: 0 -20px 50px -24px rgba(20, 22, 29, 0.3);
+}
+/* No camera (permission denied, etc.): the scanner shows a message instead
+   of video, and the dark camera vignette would turn it into grey on grey. */
+html[data-theme="light"] .pwa-scan-wrap:has(> p) .pwa-scan-overlay {
+  display: none;
 }

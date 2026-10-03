@@ -117,7 +117,7 @@ export function Dial({
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth={strokeWidth} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" style={{ stroke: "rgb(var(--kc-white) / 0.07)" }} strokeWidth={strokeWidth} />
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -164,7 +164,8 @@ export function FlameIcon({ lit, size = 20 }: { lit: boolean; size?: number }) {
       height={size}
       viewBox="0 0 24 24"
       fill={lit ? "#ff9142" : "none"}
-      stroke={lit ? "none" : "rgba(255,255,255,0.35)"}
+      stroke={lit ? "none" : undefined}
+      style={lit ? undefined : { stroke: "rgb(var(--kc-white) / 0.35)" }}
       strokeWidth="1.75"
     >
       <path d="M12 2c1 3-3 4-3 7.5a3 3 0 006 0c1.5 1 2.5 2.8 2.5 4.9A5.5 5.5 0 0112 20a5.5 5.5 0 01-5.5-5.6c0-4.2 3.4-5.9 5.5-12.4z" />
