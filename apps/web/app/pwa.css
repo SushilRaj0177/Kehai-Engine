@@ -630,36 +630,38 @@ html[data-theme="light"] {
   gap: 14px;
   text-align: center;
 }
+/* Cyan, like every other "live" marker in the app (the home screen's
+   session-in-progress label, live dots); red is kept for danger and the brand. */
 .pwa-live-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 5px 12px 5px 9px;
   border-radius: 999px;
-  background: rgba(255, 45, 85, 0.14);
-  border: 1px solid rgba(255, 45, 85, 0.4);
+  background: rgba(34, 226, 245, 0.12);
+  border: 1px solid rgba(34, 226, 245, 0.42);
   font-family: var(--pwa-mono);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.14em;
-  color: rgb(var(--pwa-shu-text));
+  color: rgb(var(--pwa-cyan-soft));
   text-transform: uppercase;
 }
 .pwa-live-badge .pwa-pulse {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #ff2d55;
-  box-shadow: 0 0 0 3px rgba(255, 45, 85, 0.25);
+  background: #22e2f5;
+  box-shadow: 0 0 0 3px rgba(34, 226, 245, 0.25);
   animation: pwa-pulse 1.8s ease-in-out infinite;
 }
 @keyframes pwa-pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 3px rgba(255, 45, 85, 0.25);
+    box-shadow: 0 0 0 3px rgba(34, 226, 245, 0.25);
   }
   50% {
-    box-shadow: 0 0 0 6px rgba(255, 45, 85, 0.05);
+    box-shadow: 0 0 0 6px rgba(34, 226, 245, 0.05);
   }
 }
 .pwa-radar {
