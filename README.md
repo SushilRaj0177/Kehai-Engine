@@ -73,8 +73,10 @@ class's attendance over a semester rather than a one-off event:
 - Start, name, end, and restart as many check-in sessions as needed — a
   lecture and a separate quiz on the same day are two independent sessions,
   each with its own QR and its own record
-- Run a live session from the installed app's control room (live count,
-  check-in feed, the rotating QR) and change how often the QR rotates
+- Run a live session from the installed app's control room (a live dial
+  whose arc fills with the share of enrolled students checked in, a dot
+  per student and a slow radar sweep, plus the check-in feed and the
+  rotating QR) and change how often the QR rotates
   right there: tap "Every 20s" under the countdown for one-tap presets
   (10s to 1h) or a custom period (5 seconds to 24 hours). A new code starts
   as soon as you pick, so a code that was already passed around stops
@@ -648,8 +650,13 @@ All routes are under `/api`. Representative endpoints:
   renders exactly as before; `html[data-theme="light"]` swaps in a warm
   paper ground, near-black ink and deeper accents that read as text on a
   light page. Faint text is multiplied up slightly in light mode
-  (`--kc-text-boost`) so labels stay legible, and white cards with a soft
-  shadow replace the dark mode's outlined panels. QR codes and the
+  (`--kc-text-boost`) so labels stay legible, and near-solid white cards
+  replace the dark mode's outlined panels. Depth follows one light source
+  straight above the screen: every raised surface casts a tight contact
+  shadow plus a soft shadow falling straight down (longer for the floating
+  dock and sheets than for cards), in a warm grey taken from the paper
+  ground. The dark mode's pink and cyan corner glows are left out, since
+  on a light page they read as light from two directions at once. QR codes and the
   full-screen QR display use fixed `paper`/`ink` colours, so they're
   black-on-white in both themes. A tiny inline script in `<head>`
   (`lib/theme-boot.ts`) picks the theme before the first paint, so the app

@@ -535,6 +535,7 @@ const dict = {
     noGeofence: { en: "No geofence", ja: "範囲なし" },
     scanToCheckIn: { en: "Scan to check in", ja: "スキャンしてチェックイン" },
     rotatesIn: { en: "Rotates in {time}", ja: "{time}後に更新" },
+    ofEnrolled: { en: "of {n}", ja: "{n}人中" },
     rotationEvery: { en: "Every {time}", ja: "{time}ごと" },
     rotationChange: { en: "Change how often the QR code changes", ja: "QRコードの更新間隔を変更" },
     rotationTitle: { en: "QR rotation", ja: "QRの更新間隔" },

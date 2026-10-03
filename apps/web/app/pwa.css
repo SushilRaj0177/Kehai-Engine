@@ -672,13 +672,63 @@ html[data-theme="light"] {
   width: 100%;
   height: 100%;
 }
-.pwa-radar-ring {
-  transform-origin: 100px 100px;
-  animation: pwa-spin 40s linear infinite;
+/* Live dial (control room). A watch-like bezel of ticks, an arc for the
+   share of enrolled students checked in, a slow radar sweep inside, and a
+   dot per checked-in student. */
+.pwa-tick {
+  stroke: rgb(var(--pwa-ink) / 0.16);
+  stroke-width: 1;
+  stroke-linecap: round;
+}
+.pwa-tick-major {
+  stroke: rgb(var(--pwa-ink) / 0.34);
+  stroke-width: 1.4;
+}
+.pwa-radar-guide {
+  stroke: rgb(var(--pwa-tint) / 0.06);
+  stroke-width: 1;
+}
+.pwa-arc-track {
+  stroke: rgb(var(--pwa-tint) / 0.07);
+  stroke-width: 4;
+}
+.pwa-arc {
+  stroke: #ff2d55;
+  stroke-width: 4;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 6px rgba(255, 45, 85, 0.45));
+  transition: stroke-dashoffset 0.9s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
+}
+.pwa-radar-sweep {
+  position: absolute;
+  inset: 18%;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, rgba(255, 45, 85, 0) 0deg 280deg, rgba(255, 45, 85, 0.04) 320deg, rgba(255, 45, 85, 0.13) 358.6deg, rgba(255, 45, 85, 0.55) 359.2deg 360deg);
+  animation: pwa-spin 5.5s linear infinite;
+  pointer-events: none;
 }
 @keyframes pwa-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+.pwa-dot {
+  fill: rgb(var(--pwa-heat));
+}
+.pwa-dot-ping {
+  fill: none;
+  stroke: rgb(var(--pwa-heat));
+  stroke-width: 1.2;
+  animation: pwa-dot-ping 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+@keyframes pwa-dot-ping {
+  from {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(3.2);
+    opacity: 0;
   }
 }
 .pwa-radar .pwa-count {
@@ -695,6 +745,13 @@ html[data-theme="light"] {
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.02em;
+}
+.pwa-radar .pwa-count em {
+  font-style: normal;
+  font-family: var(--pwa-mono);
+  font-size: 10.5px;
+  color: rgb(var(--pwa-ink) / min(1, calc(0.32 * var(--pwa-ink-boost))));
+  margin-top: 3px;
 }
 .pwa-radar .pwa-count span {
   font-size: 10px;
@@ -1400,7 +1457,8 @@ html[data-navigated] .pwa-rise > * {
 }
 @media (prefers-reduced-motion: reduce) {
   .pwa-rise > *,
-  .pwa-radar-ring,
+  .pwa-radar-sweep,
+  .pwa-dot-ping,
   .pwa-live-badge .pwa-pulse,
   .pwa-feed-row.pwa-new,
   .pwa-dock-chip,
@@ -1618,38 +1676,74 @@ html[data-navigated] .pwa-rise > * {
 
 /* ------------------------- Light mode ------------------------------- */
 /* Installed app in light mode (see lib/theme.ts). Colours come from the
-   variables above; these rules only reshape what doesn't translate by
-   swapping a colour: panels become white cards with a soft drop shadow
-   instead of a fill-less outline on a dark glow, and the ambient glows
-   are toned down so they read as a tint on paper rather than a stain. */
+   variables above; these rules only reshape depth, which doesn't
+   translate by swapping a colour.
+
+   Shadow model: one light source straight above the screen. Every raised
+   surface casts the same two layers, never offset sideways:
+     - a tight contact shadow where it meets the page, and
+     - a soft key shadow falling straight down, longer for things that
+       float higher (the dock and the sheet sit above the cards).
+   Shadows are a warm grey taken from the paper ground, never black and
+   never tinted pink or cyan: coloured diagonal glows read as light from
+   two directions at once on a light page. Cards are near-solid white with
+   a hairline edge and a top highlight, so the page's colour wash doesn't
+   tint their faces. */
+html[data-theme="light"] {
+  --pwa-shadow-rgb: 74 58 46;
+  --pwa-elev-1:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 2px rgb(var(--pwa-shadow-rgb) / 0.07),
+    0 10px 24px -14px rgb(var(--pwa-shadow-rgb) / 0.2);
+  --pwa-elev-2:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 2px 4px rgb(var(--pwa-shadow-rgb) / 0.06),
+    0 18px 38px -16px rgb(var(--pwa-shadow-rgb) / 0.28);
+}
 html[data-theme="light"] .pwa-panel,
 html[data-theme="light"] .pwa-card,
-html[data-theme="light"] [data-standalone="true"] .hud-surface {
-  background: rgba(255, 255, 255, 0.78);
-  border-color: rgba(20, 22, 29, 0.08);
-  box-shadow:
-    0 1px 2px rgba(20, 22, 29, 0.04),
-    0 18px 40px -26px rgba(20, 22, 29, 0.22),
-    6px -6px 30px -24px rgba(255, 45, 85, 0.22),
-    -6px 6px 30px -24px rgba(34, 226, 245, 0.18);
+html[data-theme="light"][data-standalone="true"] .hud-surface {
+  background: rgb(255 255 255 / 0.92);
+  border-color: rgb(var(--pwa-shadow-rgb) / 0.09);
+  box-shadow: var(--pwa-elev-1);
+}
+/* Hero cards keep their own tinted fill; only their shadow changes. */
+html[data-theme="light"][data-standalone="true"] .hud-hero-shadow {
+  box-shadow: var(--pwa-elev-1);
 }
 html[data-theme="light"] .pwa-dock {
-  border-color: rgba(20, 22, 29, 0.08);
-  box-shadow: 0 18px 40px -18px rgba(20, 22, 29, 0.28);
+  background: rgb(255 255 255 / 0.86);
+  border-color: rgb(var(--pwa-shadow-rgb) / 0.09);
+  box-shadow: var(--pwa-elev-2);
+}
+html[data-theme="light"] .pwa-sheet {
+  border-color: rgb(var(--pwa-shadow-rgb) / 0.09);
+  box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.9), 0 -16px 40px -18px rgb(var(--pwa-shadow-rgb) / 0.3);
+}
+/* The red button floats highest: same straight-down shadow, its own red
+   only as a faint bounce close underneath it. */
+html[data-theme="light"] .pwa-fab {
+  box-shadow:
+    0 2px 4px rgb(var(--pwa-shadow-rgb) / 0.12),
+    0 14px 26px -12px rgba(200, 16, 54, 0.45),
+    0 0 0 6px rgb(var(--pwa-ground));
 }
 html[data-theme="light"] .pwa-glow-shu,
-html[data-theme="light"] [data-standalone="true"] .page-glow-shu {
+html[data-theme="light"][data-standalone="true"] .page-glow-shu {
   opacity: 0.45;
 }
 html[data-theme="light"] .pwa-glow-kehai,
-html[data-theme="light"] [data-standalone="true"] .page-glow-kehai {
+html[data-theme="light"][data-standalone="true"] .page-glow-kehai {
   opacity: 0.5;
-}
-html[data-theme="light"] .pwa-sheet {
-  box-shadow: 0 -20px 50px -24px rgba(20, 22, 29, 0.3);
 }
 /* No camera (permission denied, etc.): the scanner shows a message instead
    of video, and the dark camera vignette would turn it into grey on grey. */
 html[data-theme="light"] .pwa-scan-wrap:has(> p) .pwa-scan-overlay {
   display: none;
+}
+html[data-theme="light"] .pwa-arc {
+  filter: none;
+}
+html[data-theme="light"] .pwa-radar-sweep {
+  opacity: 0.7;
 }

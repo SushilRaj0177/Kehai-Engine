@@ -209,15 +209,21 @@ export function PwaLiveSession({ classroomId }: { classroomId: string }) {
     return t("pwa.hoursAgo", { n: Math.floor(s / 3600) });
   }
 
-  // Radar dots: one per checked-in student (up to 24), spread around the
-  // rings at a stable angle derived from their id so they don't jump about.
+  // Student dots: one per checked-in student (up to 24), inside the dial at
+  // a stable angle and distance derived from their id, so they never jump.
   const dots = present.slice(0, 24).map((r, i) => {
     let h = 0;
     for (const ch of r.student.id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
     const angle = ((h % 360) * Math.PI) / 180;
-    const radius = 60 + ((h >> 9) % 28);
+    const radius = 38 + ((h >> 9) % 34);
     return { key: r.student.id, x: 100 + Math.cos(angle) * radius, y: 100 + Math.sin(angle) * radius, fresh: i === 0 };
   });
+
+  // The dial's arc is real data: the share of enrolled students in.
+  const enrolled = classroom.studentCount ?? 0;
+  const ratio = enrolled > 0 ? Math.min(1, present.length / enrolled) : 0;
+  const ARC_R = 84;
+  const arcLength = 2 * Math.PI * ARC_R;
 
   return (
     <PwaScreen withDock={false} tight>
@@ -229,28 +235,53 @@ export function PwaLiveSession({ classroomId }: { classroomId: string }) {
           {t("pwa.liveNow")}
         </div>
         <div className="pwa-radar">
+          {/* Sweeps inside the dial while the session listens for check-ins. */}
+          <div className="pwa-radar-sweep" aria-hidden />
           <svg viewBox="0 0 200 200" aria-hidden>
-            <circle cx="100" cy="100" r="94" fill="none" style={{ stroke: "rgb(var(--pwa-tint) / 0.05)" }} />
-            <circle cx="100" cy="100" r="70" fill="none" stroke="rgba(255,45,85,0.10)" />
-            <circle cx="100" cy="100" r="46" fill="none" stroke="rgba(255,45,85,0.16)" />
+            {/* Bezel: 60 fine ticks, every fifth longer, like a watch face. */}
+            {Array.from({ length: 60 }, (_, i) => {
+              const a = (i / 60) * 2 * Math.PI;
+              const major = i % 5 === 0;
+              const r1 = 98;
+              const r2 = major ? 92 : 95;
+              return (
+                <line
+                  key={i}
+                  x1={100 + Math.sin(a) * r1}
+                  y1={100 - Math.cos(a) * r1}
+                  x2={100 + Math.sin(a) * r2}
+                  y2={100 - Math.cos(a) * r2}
+                  className={major ? "pwa-tick pwa-tick-major" : "pwa-tick"}
+                />
+              );
+            })}
+            {/* Range rings for the dots. */}
+            <circle cx="100" cy="100" r="58" fill="none" className="pwa-radar-guide" />
+            <circle cx="100" cy="100" r="34" fill="none" className="pwa-radar-guide" />
+            {/* Attendance arc: track, then the checked-in share from 12 o'clock. */}
+            <circle cx="100" cy="100" r={ARC_R} fill="none" className="pwa-arc-track" />
             <circle
-              className="pwa-radar-ring"
               cx="100"
               cy="100"
-              r="94"
+              r={ARC_R}
               fill="none"
-              stroke="rgba(255,45,85,0.5)"
-              strokeWidth="2"
-              strokeDasharray="6 10"
-              strokeLinecap="round"
+              className="pwa-arc"
+              strokeDasharray={`${arcLength} ${arcLength}`}
+              strokeDashoffset={arcLength * (1 - ratio)}
+              transform="rotate(-90 100 100)"
+              style={{ opacity: ratio > 0 ? 1 : 0 }}
             />
             {dots.map((d) => (
-              <circle key={d.key} cx={d.x} cy={d.y} r="4" style={{ fill: "rgb(var(--pwa-heat))" }} opacity={d.fresh ? 1 : 0.85} />
+              <g key={d.key}>
+                {d.fresh && <circle cx={d.x} cy={d.y} r="4" className="pwa-dot-ping" style={{ transformOrigin: `${d.x}px ${d.y}px` }} />}
+                <circle cx={d.x} cy={d.y} r={d.fresh ? 3.6 : 3} className="pwa-dot" opacity={d.fresh ? 1 : 0.7} />
+              </g>
             ))}
           </svg>
           <div className="pwa-count">
             <strong>{present.length}</strong>
             <span>{t("pwa.checkedIn")}</span>
+            {enrolled > 0 && <em>{t("pwa.ofEnrolled", { n: enrolled })}</em>}
           </div>
         </div>
         <div className="pwa-timer-row">
