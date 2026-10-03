@@ -7,7 +7,9 @@ import { useClassroom, useClassroomRoster, useClassroomSessions } from "@/lib/ho
 import { subscribeToClassroom } from "@/lib/realtime";
 import { formatCountdown } from "@/lib/format";
 import { useLocale } from "@/lib/i18n";
+import { haptic } from "@/lib/haptics";
 import { AVATAR_TINTS, Icon, PwaLoading, PwaScreen, initials } from "./shared";
+import { RotationSheet, formatPeriod } from "./RotationSheet";
 
 interface QrResponse {
   dataUrl: string;
@@ -87,6 +89,37 @@ export function PwaLiveSession({ classroomId }: { classroomId: string }) {
     }, 1000);
     return () => clearInterval(id);
   }, [qr, fetchQr]);
+
+  // How often the code changes. The server starts a fresh code the moment
+  // the period changes, so refetch straight away rather than waiting out
+  // the old countdown.
+  const [rotationOpen, setRotationOpen] = useState(false);
+  const [savingRotation, setSavingRotation] = useState(false);
+  const [rotationError, setRotationError] = useState<string | null>(null);
+  async function changeRotation(seconds: number) {
+    if (!openSession) return;
+    if (seconds === qr?.rotationSeconds) {
+      setRotationOpen(false);
+      return;
+    }
+    setSavingRotation(true);
+    setRotationError(null);
+    try {
+      await apiFetch(`/api/classrooms/${classroomId}/sessions/${openSession.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ qrRotationSeconds: seconds }),
+      });
+      await fetchQr();
+      void mutateSessions();
+      haptic("success");
+      setRotationOpen(false);
+    } catch (err) {
+      haptic("error");
+      setRotationError(err instanceof ApiError ? err.message : t("pwa.rotationError"));
+    } finally {
+      setSavingRotation(false);
+    }
+  }
 
   const [kiosk, setKiosk] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -235,6 +268,23 @@ export function PwaLiveSession({ classroomId }: { classroomId: string }) {
         <div className="pwa-qr-info">
           <h3>{t("pwa.scanToCheckIn")}</h3>
           <p>{qr ? t("pwa.rotatesIn", { time: formatCountdown(countdown) }) : "…"}</p>
+          {qr && (
+            <button
+              type="button"
+              className="pwa-rot-chip"
+              onClick={() => {
+                setRotationError(null);
+                setRotationOpen(true);
+              }}
+              aria-label={t("pwa.rotationChange")}
+            >
+              {Icon.clock}
+              {t("pwa.rotationEvery", { time: formatPeriod(qr.rotationSeconds) })}
+              <span aria-hidden className="pwa-rot-caret">
+                ▾
+              </span>
+            </button>
+          )}
         </div>
         <button type="button" className="pwa-qr-copy" onClick={copyJoinLink} aria-label={t("pwa.copyJoinLink")}>
           {copied ? Icon.check : Icon.copy}
@@ -282,6 +332,16 @@ export function PwaLiveSession({ classroomId }: { classroomId: string }) {
           {ending ? t("pwa.ending") : confirmEnd ? t("pwa.confirmEnd") : t("pwa.endSession")}
         </button>
       </div>
+
+      {rotationOpen && qr && (
+        <RotationSheet
+          seconds={qr.rotationSeconds}
+          saving={savingRotation}
+          error={rotationError}
+          onPick={changeRotation}
+          onClose={() => setRotationOpen(false)}
+        />
+      )}
 
       {kiosk && qr && (
         <div className="pwa-kiosk" onClick={() => setKiosk(false)}>

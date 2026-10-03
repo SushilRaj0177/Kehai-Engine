@@ -764,6 +764,135 @@ html[data-theme="light"] {
   flex-shrink: 0;
 }
 
+/* "Every 20s ▾" under the countdown: opens the rotation sheet. */
+.pwa-rot-chip {
+  margin-top: 7px !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px 4px 8px !important;
+  border-radius: 999px;
+  border: 1px solid rgb(var(--pwa-cyan-strong) / 0.35) !important;
+  background: rgb(var(--pwa-cyan-strong) / 0.08) !important;
+  color: rgb(var(--pwa-cyan-text)) !important;
+  font-family: var(--pwa-mono) !important;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.pwa-rot-chip:active {
+  transform: scale(0.96);
+}
+.pwa-rot-caret {
+  font-size: 9px;
+  opacity: 0.8;
+}
+
+/* Rotation sheet */
+.pwa-rot-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.pwa-rot-preset {
+  padding: 0 !important;
+  height: 42px;
+  border-radius: 13px;
+  border: 1px solid rgb(var(--pwa-tint) / 0.1) !important;
+  background: rgb(var(--pwa-tint) / 0.02) !important;
+  font-family: var(--pwa-mono) !important;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgb(var(--pwa-ink) / min(1, calc(0.75 * var(--pwa-ink-boost)))) !important;
+  transition: transform 0.15s ease;
+}
+.pwa-rot-preset:active {
+  transform: scale(0.95);
+}
+.pwa-rot-preset.pwa-on {
+  border-color: rgb(255 45 85 / 0.55) !important;
+  background: linear-gradient(180deg, rgba(255, 45, 85, 0.18), rgba(255, 45, 85, 0.06)) !important;
+  color: rgb(var(--pwa-shu-pale)) !important;
+}
+.pwa-rot-preset:disabled,
+.pwa-rot-set:disabled {
+  opacity: 0.45;
+}
+.pwa-rot-custom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 10px 10px 10px 14px;
+  border-radius: 14px;
+  border: 1px solid rgb(var(--pwa-tint) / 0.07);
+  background: rgb(var(--pwa-tint) / 0.02);
+}
+.pwa-rot-label {
+  font-family: var(--pwa-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(var(--pwa-ink) / min(1, calc(0.45 * var(--pwa-ink-boost))));
+  margin-right: auto;
+}
+.pwa-rot-input {
+  width: 58px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid rgb(var(--pwa-tint) / 0.12);
+  background: rgb(var(--pwa-tint) / 0.03);
+  color: rgb(var(--pwa-ink));
+  font-family: var(--pwa-mono);
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  outline: none;
+}
+.pwa-rot-input:focus {
+  border-color: rgb(255 45 85 / 0.55);
+}
+.pwa-rot-units {
+  display: flex;
+  border-radius: 10px;
+  border: 1px solid rgb(var(--pwa-tint) / 0.1);
+  overflow: hidden;
+}
+.pwa-rot-units button {
+  border: 0 !important;
+  background: none !important;
+  width: 30px;
+  height: 32px;
+  font-family: var(--pwa-mono) !important;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgb(var(--pwa-ink) / min(1, calc(0.45 * var(--pwa-ink-boost)))) !important;
+}
+.pwa-rot-units button.pwa-on {
+  background: rgb(var(--pwa-tint) / 0.1) !important;
+  color: rgb(var(--pwa-ink)) !important;
+}
+.pwa-rot-set {
+  height: 34px;
+  padding: 0 14px !important;
+  border-radius: 10px;
+  border: 1px solid rgb(255 45 85 / 0.5) !important;
+  background: rgba(255, 45, 85, 0.1) !important;
+  color: rgb(var(--pwa-shu-text)) !important;
+  font-family: var(--pwa-mono) !important;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.pwa-rot-msg {
+  margin: 10px 4px 0;
+  font-size: 12px;
+  color: rgb(var(--pwa-shu-text));
+}
+
 .pwa-feed-head {
   display: flex;
   align-items: center;

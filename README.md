@@ -73,6 +73,12 @@ class's attendance over a semester rather than a one-off event:
 - Start, name, end, and restart as many check-in sessions as needed — a
   lecture and a separate quiz on the same day are two independent sessions,
   each with its own QR and its own record
+- Run a live session from the installed app's control room (live count,
+  check-in feed, the rotating QR) and change how often the QR rotates
+  right there: tap "Every 20s" under the countdown for one-tap presets
+  (10s to 1h) or a custom period (5 seconds to 24 hours). A new code starts
+  as soon as you pick, so a code that was already passed around stops
+  working
 - Get notified in real time the moment a student joins
 - Track both individual and whole-class attendance on a GitHub-contribution
   -style heatmap, with current/longest streaks
