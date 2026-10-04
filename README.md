@@ -17,11 +17,14 @@ with real-time dashboards, deterministic analytics, rule-based anomaly
 detection, and an AI layer that interprets — rather than fabricates —
 event data.
 
+![Kehai Engine landing page](docs/screenshots/landing.png)
+
 ---
 
 ## Table of contents
 
 - [What it does](#what-it-does)
+- [Screenshots](#screenshots)
 - [Architecture](#architecture)
 - [Data model](#data-model)
 - [Authentication & authorization](#authentication--authorization)
@@ -111,6 +114,40 @@ class's attendance over a semester rather than a one-off event:
 - See their own attendance heatmap and streak for every class they're in,
   and where they land on the class leaderboard
 - Leave a classroom themselves, without needing the teacher to remove them
+
+---
+
+## Screenshots
+
+All taken from the seed data (see [Local setup](#local-setup)). The Japanese
+versions are in [README.ja.md](README.ja.md).
+
+**Organizer console**
+
+| Organization dashboard | Event analytics |
+|---|---|
+| ![Organization console with events, attendance trend and team](docs/screenshots/org-console.png) | ![Event analytics: headline numbers, arrival timeline and an anomaly flag](docs/screenshots/event-analytics.png) |
+
+**Classroom** (attendance heatmap and the live session QR)
+
+![Classroom page with the attendance heatmap and the live session QR](docs/screenshots/classroom.png)
+
+**Installed phone app** (home, the teacher's live control room in dark and
+light mode, and a student's confirmed check-in)
+
+<p align="center">
+<img src="docs/screenshots/app-home.png" alt="Phone app home" width="200">
+<img src="docs/screenshots/app-control-room.png" alt="Live control room: attendance dial, rotating QR and live feed" width="200">
+<img src="docs/screenshots/app-control-room-light.png" alt="Live control room in light mode" width="200">
+<img src="docs/screenshots/app-checkin.png" alt="Student check-in confirmed, 14 m from class" width="200">
+</p>
+
+To regenerate them, run the stack locally on a freshly seeded database and
+run `docs/screenshots/capture.mjs` (instructions at the top of the file).
+It writes the English shots to `docs/screenshots/` and the Japanese UI to
+`docs/screenshots/ja/`. The check-in shot follows the real flow: it decodes
+the teacher's live QR, opens the link inside it as an enrolled student,
+shares a location inside the geofence and confirms.
 
 ---
 
@@ -363,7 +400,7 @@ cp apps/server/.env.example apps/server/.env
 #   openssl rand -hex 16   (for QR_SIGNING_PEPPER)
 
 pnpm --filter server prisma:migrate
-pnpm --filter server db:seed   # creates a demo org, events, and attendees
+pnpm --filter server db:seed   # creates a demo org, events, attendees and a classroom
 
 # 2. Web
 cp apps/web/.env.example apps/web/.env.local
@@ -376,6 +413,12 @@ pnpm dev:web      # http://localhost:3000
 Seeded demo login: `organizer@kehai.dev` / `Password123!`
 (attendee accounts: `<first>.<last>@students.kehai.dev` / same password —
 see `apps/server/prisma/seed.ts` for the full list).
+
+The seed also creates a demo classroom for the organizer account, *Data
+Structures & Algorithms* (CS201): 12 enrolled students, six weeks of closed
+weekday sessions with attendance, and one session open right now, so the
+heatmap, streaks, leaderboard and live control room have data from the
+start.
 
 ---
 

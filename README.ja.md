@@ -11,11 +11,14 @@
 
 Kehai Engine は、位置情報で検証する QR コードベースの出席管理・イベント分析プラットフォームです。SRM NSCC の技術系採用課題「QR-Based Geo-Tagged Attendance Management System」への回答として始まり、そこから大きく発展させました。現在はマルチテナント構成で、リアルタイムダッシュボード、決定的（deterministic）な分析、ルールベースの異常検知、そしてイベントデータを「捏造せずに解釈する」AI レイヤーを備えています。
 
+![Kehai Engine のトップページ](docs/screenshots/ja/landing.png)
+
 ---
 
 ## 目次
 
 - [できること](#できること)
+- [スクリーンショット](#スクリーンショット)
 - [アーキテクチャ](#アーキテクチャ)
 - [データモデル](#データモデル)
 - [認証と認可](#認証と認可)
@@ -84,6 +87,33 @@ Kehai Engine は、位置情報で検証する QR コードベースの出席管
 - イベントと同じく QR とジオフェンスでチェックイン
 - 受講している各クラスについて、自分の出席ヒートマップと連続出席記録、ランキングでの順位を確認
 - 教員に頼まなくても、自分でクラスから退出可能
+
+---
+
+## スクリーンショット
+
+すべてシードデータ（[ローカル環境での起動](#ローカル環境での起動)を参照）を使い、日本語表示で撮影しています。英語表示のものは [README.md](README.md) にあります。
+
+**主催者向けコンソール**
+
+| 組織のダッシュボード | イベント分析 |
+|---|---|
+| ![イベント、出席率の推移、チームを表示した組織のコンソール](docs/screenshots/ja/org-console.png) | ![イベント分析：主要な数値、到着の推移、異常フラグ](docs/screenshots/ja/event-analytics.png) |
+
+**クラス**（出席ヒートマップと、実施中の授業の QR コード）
+
+![出席ヒートマップと実施中の授業の QR コードを表示したクラスのページ](docs/screenshots/ja/classroom.png)
+
+**インストールしたスマートフォンアプリ**（ホーム画面、教員用ライブコントロールルームのダークモードとライトモード、学生のチェックイン完了画面）
+
+<p align="center">
+<img src="docs/screenshots/ja/app-home.png" alt="スマートフォンアプリのホーム画面" width="200">
+<img src="docs/screenshots/ja/app-control-room.png" alt="ライブコントロールルーム：出席率のダイヤル、切り替わる QR コード、ライブフィード" width="200">
+<img src="docs/screenshots/ja/app-control-room-light.png" alt="ライトモードのライブコントロールルーム" width="200">
+<img src="docs/screenshots/ja/app-checkin.png" alt="学生のチェックイン完了画面（教室から 14 m）" width="200">
+</p>
+
+撮り直すときは、新しくシードしたデータベースでローカル環境を起動し、`docs/screenshots/capture.mjs` を実行してください（手順はファイルの冒頭に記載しています）。英語表示は `docs/screenshots/` に、日本語表示は `docs/screenshots/ja/` に保存されます。チェックインの画像は実際の流れをそのままたどります。教員画面の QR コードを読み取り、その中のリンクを登録済みの学生として開き、ジオフェンス内の位置情報を共有して出席を確定します。
 
 ---
 
@@ -213,7 +243,7 @@ cp apps/server/.env.example apps/server/.env
 #   openssl rand -hex 16   （QR_SIGNING_PEPPER 用）
 
 pnpm --filter server prisma:migrate
-pnpm --filter server db:seed   # デモ用の組織、イベント、参加者を作成
+pnpm --filter server db:seed   # デモ用の組織、イベント、参加者、クラスを作成
 
 # 2. Web
 cp apps/web/.env.example apps/web/.env.local
@@ -225,6 +255,8 @@ pnpm dev:web      # http://localhost:3000
 
 シードで作られるデモ用ログイン：`organizer@kehai.dev` / `Password123!`
 （参加者アカウントは `<名>.<姓>@students.kehai.dev` で、パスワードは同じです。一覧は `apps/server/prisma/seed.ts` を参照してください。）
+
+シードでは、主催者アカウントのデモ用クラス「Data Structures & Algorithms」（CS201）も作成されます。受講者は 12 人で、過去 6 週間の平日の授業（終了済み）と出席記録、さらに現在実施中の授業が 1 つ含まれるため、ヒートマップ、連続出席記録、ランキング、ライブコントロールルームに最初からデータが表示されます。
 
 ---
 
