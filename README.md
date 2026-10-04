@@ -2,10 +2,6 @@
 
 **English** · [日本語](README.ja.md)
 
-<p>
-  <a href="https://kehai-engine-web.vercel.app"><img alt="Live app: kehai-engine-web.vercel.app" src="https://img.shields.io/badge/LIVE%20APP-kehai--engine--web.vercel.app-ff2d55?style=for-the-badge"></a>
-</p>
-
 > **Try it live → [kehai-engine-web.vercel.app](https://kehai-engine-web.vercel.app)**
 > Open it on a phone and add it to the home screen for the installed app. The API runs on a free instance, so the first request after it has been idle can take 30–50 seconds.
 

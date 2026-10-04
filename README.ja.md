@@ -2,10 +2,6 @@
 
 [English](README.md) · **日本語**
 
-<p>
-  <a href="https://kehai-engine-web.vercel.app"><img alt="公開中のアプリ: kehai-engine-web.vercel.app" src="https://img.shields.io/badge/LIVE%20APP-kehai--engine--web.vercel.app-ff2d55?style=for-the-badge"></a>
-</p>
-
 > **公開中のアプリ → [kehai-engine-web.vercel.app](https://kehai-engine-web.vercel.app)**
 > スマートフォンで開き、ホーム画面に追加するとアプリとして使えます。API は無料プランで稼働しているため、しばらくアクセスがないと最初のリクエストに 30〜50 秒ほどかかることがあります。
 
