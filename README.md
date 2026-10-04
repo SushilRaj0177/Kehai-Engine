@@ -1,5 +1,14 @@
 # Kehai Engine (気配)
 
+**English** · [日本語](README.ja.md)
+
+<p>
+  <a href="https://kehai-engine-web.vercel.app"><img alt="Live app: kehai-engine-web.vercel.app" src="https://img.shields.io/badge/LIVE%20APP-kehai--engine--web.vercel.app-ff2d55?style=for-the-badge"></a>
+</p>
+
+> **Try it live → [kehai-engine-web.vercel.app](https://kehai-engine-web.vercel.app)**
+> Open it on a phone and add it to the home screen for the installed app. The API runs on a free instance, so the first request after it has been idle can take 30–50 seconds.
+
 **気配** (*kehai*) — a sign that someone is present, a felt presence before
 it's seen. That's the core idea: attendance you can actually verify, not
 just a checkbox someone clicked.
@@ -326,8 +335,9 @@ that exist to filter by) or by which admin performed it.
 
 - **Classroom join codes are rate-limited.** A 6-character code is
   low-entropy enough to be brute-forceable if an attacker could try
-  unlimited guesses; `POST /api/classrooms/join` is throttled per-IP to
-  make that impractical.
+  unlimited guesses; `POST /api/classrooms/join` is throttled per signed-in
+  account (10 attempts per 15 minutes), so spreading guesses across many IP
+  addresses doesn't help.
 - **Structured logging in production, readable text in dev.**
   `apps/server/src/lib/logger.ts` emits JSON when `NODE_ENV=production`
   (so a log aggregator can parse it) and a human-readable line otherwise.
@@ -393,7 +403,7 @@ logs the link server-side instead of emailing it).
 pnpm --filter server test
 ```
 
-179 tests across 26 files (Vitest): geofence math (including accuracy-padding
+185 tests across 27 files (Vitest): geofence math (including accuracy-padding
 edge cases and invalid-coordinate rejection), QR token signing/verification
 (cross-event rejection, expiry, tamper resistance) for both events and
 classroom sessions, duplicate check-in prevention, geofence rejection, and
