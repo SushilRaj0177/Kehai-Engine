@@ -8,6 +8,7 @@ import { subscribeToClassroom } from "@/lib/realtime";
 import { formatCountdown } from "@/lib/format";
 import { useLocale } from "@/lib/i18n";
 import { haptic } from "@/lib/haptics";
+import { DIAL, countFontSize, dotPosition } from "@/lib/liveDial";
 import { AVATAR_TINTS, Icon, PwaLoading, PwaScreen, initials } from "./shared";
 import { RotationSheet, formatPeriod } from "./RotationSheet";
 
@@ -209,24 +210,19 @@ export function PwaLiveSession({ classroomId }: { classroomId: string }) {
     return t("pwa.hoursAgo", { n: Math.floor(s / 3600) });
   }
 
-  // Student dots: one per checked-in student (up to 24), inside the dial at
-  // a stable angle and distance derived from their id, so they never jump.
-  const dots = present.slice(0, 24).map((r, i) => {
-    let h = 0;
-    for (const ch of r.student.id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-    const angle = ((h % 360) * Math.PI) / 180;
-    const radius = 38 + ((h >> 9) % 34);
-    return { key: r.student.id, x: 100 + Math.cos(angle) * radius, y: 100 + Math.sin(angle) * radius, fresh: i === 0 };
-  });
+  // Student dots: one per checked-in student (up to 24), in a band around
+  // the readout at a stable angle and distance derived from their id, so
+  // they never jump and never cover the count.
+  const dots = present.slice(0, 24).map((r, i) => ({ key: r.student.id, ...dotPosition(r.student.id), fresh: i === 0 }));
 
   // The dial's arc is real data: the share of enrolled students in.
   const enrolled = classroom.studentCount ?? 0;
   const ratio = enrolled > 0 ? Math.min(1, present.length / enrolled) : 0;
-  const ARC_R = 84;
+  const ARC_R = DIAL.arcR;
   const arcLength = 2 * Math.PI * ARC_R;
   const arcEnd = { x: 100 + Math.sin(ratio * 2 * Math.PI) * ARC_R, y: 100 - Math.cos(ratio * 2 * Math.PI) * ARC_R };
   // Inner ring: what's left of the current QR window, draining to the next rotation.
-  const QR_R = 74;
+  const QR_R = DIAL.qrR;
   const qrLength = 2 * Math.PI * QR_R;
   const qrLeft = qr && qr.rotationSeconds > 0 ? Math.min(1, Math.max(0, countdown / qr.rotationSeconds)) : 0;
 
@@ -269,18 +265,21 @@ export function PwaLiveSession({ classroomId }: { classroomId: string }) {
                 />
               );
             })}
-            {/* Range rings and crosshair marks for the dots. */}
-            <circle cx="100" cy="100" r="58" fill="none" className="pwa-radar-guide" />
-            <circle cx="100" cy="100" r="34" fill="none" className="pwa-radar-guide" />
+            {/* Range ring and crosshair marks for the dots, all outside the
+                readout's clear disc so nothing crosses the count. */}
+            {DIAL.guideRs.map((r) => (
+              <circle key={r} cx="100" cy="100" r={r} fill="none" className="pwa-radar-guide" />
+            ))}
             {[0, 90, 180, 270].map((deg) => {
               const a = (deg * Math.PI) / 180;
+              const [r1, r2] = DIAL.crosshair;
               return (
                 <line
                   key={deg}
-                  x1={100 + Math.sin(a) * 36}
-                  y1={100 - Math.cos(a) * 36}
-                  x2={100 + Math.sin(a) * 56}
-                  y2={100 - Math.cos(a) * 56}
+                  x1={100 + Math.sin(a) * r1}
+                  y1={100 - Math.cos(a) * r1}
+                  x2={100 + Math.sin(a) * r2}
+                  y2={100 - Math.cos(a) * r2}
                   className="pwa-crosshair"
                 />
               );
@@ -321,7 +320,7 @@ export function PwaLiveSession({ classroomId }: { classroomId: string }) {
             ))}
           </svg>
           <div className="pwa-count">
-            <strong>{present.length}</strong>
+            <strong style={{ fontSize: countFontSize(present.length) }}>{present.length}</strong>
             <span>{t("pwa.checkedIn")}</span>
             {enrolled > 0 && (
               <em>

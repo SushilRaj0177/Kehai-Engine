@@ -708,9 +708,11 @@ html[data-theme="light"] {
   background: conic-gradient(from 0deg, rgba(34, 226, 245, 0) 0deg 280deg, rgba(34, 226, 245, 0.04) 320deg, rgba(34, 226, 245, 0.14) 358.6deg, rgba(34, 226, 245, 0.6) 359.2deg 360deg);
   animation: pwa-spin 5.5s linear infinite;
   pointer-events: none;
-  /* Only the outer band: the centre readout stays clean. */
-  -webkit-mask: radial-gradient(circle closest-side, transparent 50%, #000 58%);
-  mask: radial-gradient(circle closest-side, transparent 50%, #000 58%);
+  /* Only the outer band: the centre readout stays clean. The sweep box is
+     160px across (radius 80), so 70% keeps clear of lib/liveDial's
+     56px readout disc. */
+  -webkit-mask: radial-gradient(circle closest-side, transparent 70%, #000 78%);
+  mask: radial-gradient(circle closest-side, transparent 70%, #000 78%);
 }
 @keyframes pwa-spin {
   to {
@@ -796,7 +798,8 @@ html[data-theme="light"] {
 }
 .pwa-radar .pwa-count strong {
   font-family: var(--pwa-mono);
-  font-size: 48px;
+  /* Set inline from lib/liveDial countFontSize so wide counts still fit. */
+  font-size: 44px;
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.02em;
@@ -1522,6 +1525,12 @@ html[data-navigated] .pwa-rise > * {
   .pwa-beam,
   .pwa-pulse-dot {
     animation: none !important;
+  }
+  /* Pure motion cues: without their animation they would sit still as
+     plain rings (the ripple right across the live dial's count). */
+  .pwa-checkin-ripple,
+  .pwa-dot-ping {
+    display: none;
   }
 }
 

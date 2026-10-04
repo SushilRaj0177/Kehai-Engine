@@ -176,7 +176,9 @@ Kehai-Engine/
 │       │                   flow) + PWA manifest (installable, with generated
 │       │                   icons)
 │       ├── components/     UI kit + feature components (QR scanner, live QR panel, charts, AI panels)
-│       └── lib/             API client, auth context, realtime client, hooks, types
+│       ├── lib/             API client, auth context, realtime client, hooks, types
+│       ├── tests/           Vitest unit tests (live dial geometry)
+│       └── e2e/             Playwright layout tests against a mocked API
 ├── docker-compose.yml
 └── PRIVACY.md
 ```
@@ -439,7 +441,9 @@ logs the link server-side instead of emailing it).
 ## Testing
 
 ```bash
-pnpm --filter server test
+pnpm --filter server test     # API (needs Postgres)
+pnpm --filter web test        # web unit tests
+pnpm --filter web test:e2e    # web layout tests in a real browser
 ```
 
 185 tests across 27 files (Vitest): geofence math (including accuracy-padding
@@ -467,7 +471,21 @@ middleware registered in the wrong order, a route shadowed by a more
 generic one (`/mine` vs `/:eventId`), auth not actually enforced at the
 HTTP boundary, or the error handler's real response shape.
 
-Frontend: `pnpm --filter web build` runs a full production build with
+Frontend: the installed app's live dial keeps its geometry in
+`lib/liveDial.ts` so it can be tested. Unit tests (Vitest, `tests/`) check
+that every student dot lands in the band around the count, for 20,000
+generated ids including the ones whose hash has the high bit set (a signed
+shift once sent about half the dots into the middle of the number), and that
+wider counts shrink to fit. The layout tests (Playwright, `e2e/`) render the
+real control room against a mocked API, so they need no database: 56 cases
+across English and Japanese, dark and light, normal and reduced motion, and
+class sizes from 0 to 120. Each one measures where the pixels actually land:
+the count, label and "of N" line must sit centred inside a clear disc, on
+separate lines, and nothing drawn on the dial (a guide ring, a student dot,
+a leftover animation ring) may change a single pixel inside it. Playwright
+starts the web app itself, or set `E2E_BASE_URL` to test a running one.
+
+`pnpm --filter web build` runs a full production build with
 type-checking. The complete demo flow (register → org → event → publish →
 activate → QR issue → register → check-in → duplicate rejection →
 geofence rejection → analytics → CSV export) has been manually verified

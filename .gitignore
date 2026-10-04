@@ -15,3 +15,5 @@ coverage/
 prisma/dev.db
 *.tsbuildinfo
 .vercel
+test-results/
+playwright-report/
